@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Text;
 
 using MySql.Data;
@@ -27,7 +28,16 @@ namespace SampSharpGameMode1
         {
             if (mySqlConnection == null)
             {
-                string connstring = string.Format("Server=localhost; database=samp_br; UID=samp; password=kqZaBnx3mcdRe41g", "samp_br");
+                Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                KeyValueConfigurationCollection configCollection = config.AppSettings.Settings;
+                string connstring = string.Format(
+                    "Server=" + ConfigurationManager.AppSettings["mysql_host"] + 
+                    "; Port=" + ConfigurationManager.AppSettings["mysql_port"] + 
+                    "; database=" + ConfigurationManager.AppSettings["mysql_db"] + 
+                    "; UID=" + ConfigurationManager.AppSettings["mysql_user"] + 
+                    "; password=" + ConfigurationManager.AppSettings["mysql_pass"], 
+                    ConfigurationManager.AppSettings["mysql_db"]);
+
                 try
                 {
                     mySqlConnection = new MySqlConnection(connstring);

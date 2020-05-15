@@ -9,7 +9,7 @@ using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
 using SampSharp.GameMode.World;
 
-using SampSharpGameMode1.Race;
+using SampSharpGameMode1.Events.Races;
 
 namespace SampSharpGameMode1
 {

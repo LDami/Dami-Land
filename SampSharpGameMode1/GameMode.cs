@@ -1,6 +1,7 @@
 ﻿using System;
 using SampSharp.GameMode;
 using SampSharp.GameMode.World;
+using SampSharpGameMode1.Events.Races;
 
 namespace SampSharpGameMode1
 {
@@ -9,7 +10,7 @@ namespace SampSharpGameMode1
         #region Overrides of BaseMode
 
         public static MySQLConnector mySQLConnector = null;
-        public static Race.RaceLauncher raceLauncher = null;
+        public static RaceLauncher raceLauncher = null;
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
@@ -25,7 +26,7 @@ namespace SampSharpGameMode1
             Boolean isConnected = false;
             while (!isConnected)
             {
-                System.Threading.Thread.Sleep(100);
+                System.Threading.Thread.Sleep(1000);
                 if (mySQLConnector.Connect())
                 {
                     Console.WriteLine("Done");
@@ -33,7 +34,7 @@ namespace SampSharpGameMode1
                     isConnected = true;
                 }
             }
-            raceLauncher = Race.RaceLauncher.Instance();
+            raceLauncher = RaceLauncher.Instance();
             Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Gamemode ready !");
             //NPC npc = new NPC();
             //npc.Create();

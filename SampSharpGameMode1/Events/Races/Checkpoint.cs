@@ -1,7 +1,7 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 
-namespace SampSharpGameMode1.Race
+namespace SampSharpGameMode1.Events.Races
 {
     public enum CheckpointType //0-Normal, 1-Finish, 3-Air normal, 4-Air finish, 5-Air (rotates and stops), 6-Air (increases, decreases and disappears), 7-Air (swings down and up), 8-Air (swings up and down)
     {

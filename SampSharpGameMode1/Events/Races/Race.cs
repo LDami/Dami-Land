@@ -2,9 +2,8 @@
 using SampSharp.GameMode.Definitions;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
-namespace SampSharpGameMode1.Race
+namespace SampSharpGameMode1.Events.Races
 {
     class Race
     {

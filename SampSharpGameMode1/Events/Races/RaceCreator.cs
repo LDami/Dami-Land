@@ -7,11 +7,9 @@ using SampSharp.GameMode.World;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 
-namespace SampSharpGameMode1.Race
+namespace SampSharpGameMode1.Events.Races
 {
     class RaceCreator
     {

@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Timers;
 
-namespace SampSharpGameMode1.Race
+namespace SampSharpGameMode1.Events.Races
 {
     public class RaceLauncher
     {
@@ -61,7 +60,7 @@ namespace SampSharpGameMode1.Race
 
         public Boolean Load(int id)
         {
-            if(id > 0)
+            if (id > 0)
             {
                 if (loadedRaces.Count < MAX_RACES)
                 {
@@ -84,7 +83,33 @@ namespace SampSharpGameMode1.Race
             }
             return false;
         }
-
+        /*
+        public override void Load()
+        {
+            if (id > 0)
+            {
+                if (loadedRaces.Count < MAX_RACES)
+                {
+                    Race loadedRace = new Race();
+                    loadedRace.Load(id);
+                    if (loadedRace.IsPlayable())
+                    {
+                        loadedRaces.Enqueue(loadedRace);
+                        RaceLoadedEventArgs args = new RaceLoadedEventArgs();
+                        args.RaceID = id;
+                        args.CheckpointsCount = loadedRace.checkpoints.Count;
+                        RaceLoaded(this, args);
+                        return true;
+                    }
+                    else
+                        return false;
+                }
+                else
+                    return false;
+            }
+            return false;
+        }
+        */
         public void LaunchNext()
         {
             if (playersWaiting.Count >= Race.MIN_PLAYERS_IN_RACE)
@@ -105,7 +130,12 @@ namespace SampSharpGameMode1.Race
 
         private void LaunchingRaceTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-
+            //int virtualWord = Event.GetAvailableVirtualWorld();
+            foreach(Player player in playersWaiting)
+            {
+                //player.VirtualWorld = virtualWord;
+            }
+            
         }
 
         public void AbortNext()
