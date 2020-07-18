@@ -27,7 +27,8 @@ namespace SampSharpGameMode1.Civilisation
 
         static Int16 GetLittleEndianInt16FromByteArray(byte[] data, int startIndex)
         {
-            return Convert.ToInt16((data[startIndex + 1] << 8) | data[startIndex]);
+            string hexValue = data[startIndex + 1].ToString("X") + data[startIndex].ToString("X");
+            return Int16.Parse(hexValue, System.Globalization.NumberStyles.HexNumber);
         }
 
         static Vector3 GetLittleEndianVector3FromByteArray(byte[] data, int startIndex)
@@ -61,11 +62,11 @@ namespace SampSharpGameMode1.Civilisation
         }
         struct NaviNode
         {
-            Vector2 position; // diviser par 8
-            UInt16 areaID;
-            UInt16 nodeID;
-            Vector2 direction;
-            int flags;
+            public Vector2 position;
+            public UInt16 areaID;
+            public UInt16 nodeID;
+            public Vector2 direction;
+            public int flags;
             /*
              *  0- 7 - unknown
              *  8-10 - number of left lanes
@@ -81,6 +82,14 @@ namespace SampSharpGameMode1.Civilisation
                 byte[] result = new byte[14];
 
                 return result;
+            }
+            public override string ToString()
+            {
+                return "Position: " + position.ToString() + "\r\n" +
+                    "areaID: " + areaID + "\r\n" +
+                    "nodeID: " + nodeID + "\r\n" +
+                    "direction: " + direction.ToString() + "\r\n" +
+                    "nodeFlag: " + flags.ToString("X") + "\r\n";
             }
         }
         struct Links
@@ -117,7 +126,7 @@ namespace SampSharpGameMode1.Civilisation
 
         struct PathNode
         {
-            public Vector3 position; // diviser par 8
+            public Vector3 position;
             public UInt16 linkID;
             public UInt16 areaID;
             public UInt16 nodeID;
@@ -137,7 +146,7 @@ namespace SampSharpGameMode1.Civilisation
                     "pathWidth: " + pathWidth + "\r\n" +
                     "nodeType: " + nodeType + "\r\n" +
                     "linkCount: " + linkCount + "\r\n" +
-                    "nodeFlag: " + nodeFlag + "\r\n";
+                    "nodeFlag: " + nodeFlag.ToString("X") + "\r\n";
             }
         }
 
@@ -151,30 +160,57 @@ namespace SampSharpGameMode1.Civilisation
                     byte[] buffer = new byte[20];
                     for(int i=0; i < 20; i++)
                     {
-                        fs.Read(buffer, 0, 20);
+                        fs.Read(buffer, i, 1);
                     }
                     header.nodes = GetLittleEndianInt32FromByteArray(buffer, 0);
                     header.vehiclesNodes = GetLittleEndianInt32FromByteArray(buffer, 4);
                     header.pedNodes = GetLittleEndianInt32FromByteArray(buffer, 8);
                     header.naviNodes = GetLittleEndianInt32FromByteArray(buffer, 12);
                     header.links = GetLittleEndianInt32FromByteArray(buffer, 16);
-                    Console.WriteLine("Header: \r\n" + header.ToString());
+                    Console.WriteLine("== Header == \r\n" + header.ToString());
 
-                    buffer = new byte[28];
-                    for (int i = 0; i < 28; i++)
+                    PathNode[] pathNodes = new PathNode[header.nodes];
+                    PathNode tmpPathNode;
+
+                    for (int j=0; j < header.nodes; j++)
                     {
-                        fs.Read(buffer, 0, 28);
+                        buffer = new byte[28];
+                        for (int i = 0; i < 28; i++)
+                        {
+                            fs.Read(buffer, i, 1);
+                        }
+                        tmpPathNode = new PathNode();
+                        tmpPathNode.position = new Vector3(GetLittleEndianInt16FromByteArray(buffer, 8) / 8, GetLittleEndianInt16FromByteArray(buffer, 10) / 8, GetLittleEndianInt16FromByteArray(buffer, 12) / 8);
+                        tmpPathNode.linkID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 16);
+                        tmpPathNode.areaID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 18);
+                        tmpPathNode.nodeID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 20);
+                        tmpPathNode.pathWidth = buffer[22];
+                        tmpPathNode.nodeType = buffer[23];
+                        tmpPathNode.flags = GetLittleEndianInt32FromByteArray(buffer, 24);
+                        pathNodes[j] = tmpPathNode;
+                        Console.WriteLine("== PathNode " + j + " == \r\n" + tmpPathNode.ToString());
                     }
 
-                    PathNode pathNode = new PathNode();
-                    pathNode.position = GetLittleEndianVector3FromByteArray(buffer, 8);
-                    pathNode.linkID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 14);
-                    pathNode.areaID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 18);
-                    pathNode.nodeID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 20);
-                    pathNode.pathWidth = buffer[21];
-                    pathNode.nodeType = buffer[22];
-                    pathNode.flags = GetLittleEndianInt32FromByteArray(buffer, 23);
-                    Console.WriteLine("PathNode: \r\n" + pathNode.ToString());
+                    NaviNode[] naviNodes = new NaviNode[header.naviNodes];
+                    NaviNode tmpNaviNode;
+
+                    for (int j = 0; j < header.naviNodes; j++)
+                    {
+                        buffer = new byte[14];
+                        for (int i = 0; i < 14; i++)
+                        {
+                            fs.Read(buffer, i, 1);
+                            Console.WriteLine("buffer[" + i + "] {0:X}", buffer[i]);
+                        }
+
+                        tmpNaviNode = new NaviNode();
+                        tmpNaviNode.position = new Vector2(GetLittleEndianInt16FromByteArray(buffer, 0) / 8, GetLittleEndianInt16FromByteArray(buffer, 2) / 8);
+                        tmpNaviNode.areaID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 4);
+                        tmpNaviNode.nodeID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 6);
+                        tmpNaviNode.direction = new Vector2(sbyte.Parse(buffer[8].ToString("X"), System.Globalization.NumberStyles.HexNumber), sbyte.Parse(buffer[9].ToString("X"), System.Globalization.NumberStyles.HexNumber));
+                        tmpNaviNode.flags = GetLittleEndianInt32FromByteArray(buffer, 10);
+                        Console.WriteLine("== NaviNode " + j + " == \r\n" + tmpNaviNode.ToString());
+                    }
 
                     fs.Close();
                 }

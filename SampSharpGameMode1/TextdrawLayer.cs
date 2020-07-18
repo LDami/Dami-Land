@@ -63,16 +63,32 @@ namespace SampSharpGameMode1
                 textdrawList[tdname].Hide();
         }
 
-        public void SetTextdrawPosition(string name, Vector2 position)
+        public Boolean SetTextdrawPosition(string name, Vector2 position)
         {
-            textdrawList[name].Position = new Vector2(position.X, position.Y);
-            Console.WriteLine("SetTextdrawPosition: " + name + " - "  + position.X + ";" + position.Y);
+            try
+            {
+                textdrawList[name].Position = new Vector2(position.X, position.Y);
+                return true;
+            }
+            catch(KeyNotFoundException e)
+            {
+                Console.WriteLine("TextdrawLayer.cs - TextdrawLayer.SetTextdrawPosition:E: " + e.Message);
+                return false;
+            }
         }
-        public void SetTextdrawSize(string name, float width, float height)
+        public Boolean SetTextdrawSize(string name, float width, float height)
         {
-            textdrawList[name].Width = width;
-            textdrawList[name].Height = height;
-            Console.WriteLine("SetTextdrawSize: " + name + " - " + width + ";" + height);
+            try
+            {
+                textdrawList[name].Width = width;
+                textdrawList[name].Height = height;
+                return true;
+            }
+            catch (KeyNotFoundException e)
+            {
+                Console.WriteLine("TextdrawLayer.cs - TextdrawLayer.SetTextdrawSize:E: " + e.Message);
+                return false;
+            }
         }
         public void Move(string name, Vector2 offset)
         {
@@ -89,6 +105,24 @@ namespace SampSharpGameMode1
         {
             textdrawList[name].text = text;
             this.ChangeTextdrawMode(name, textdrawEditMode[name]);
+        }
+
+        public void SetTextdrawColor(string name, Color color)
+        {
+            textdrawList[name].Color = color;
+        }
+        public Color GetTextdrawColor(string name)
+        {
+            return textdrawList[name].Color;
+        }
+
+        public void SetTextdrawBackColor(string name, Color color)
+        {
+            textdrawList[name].BackColor = color;
+        }
+        public Color GetTextdrawBackColor(string name)
+        {
+            return textdrawList[name].BackColor;
         }
 
         public bool SelectTextdraw(string name)
@@ -149,15 +183,15 @@ namespace SampSharpGameMode1
             textdrawEditMode[name] = mode;
         }
 
+        public EditingMode GetEditingMode(string name)
+        {
+            return textdrawEditMode[name];
+        }
+
         public void UnselectAllTextdraw()
         {
             foreach (string tdname in textdrawList.Keys)
                 ChangeTextdrawMode(tdname, EditingMode.Unselected);
-        }
-
-        public EditingMode GetEditingMode(string name)
-        {
-            return textdrawEditMode[name];
         }
     }
 }

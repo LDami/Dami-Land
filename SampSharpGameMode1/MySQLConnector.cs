@@ -28,8 +28,6 @@ namespace SampSharpGameMode1
         {
             if (mySqlConnection == null)
             {
-                Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                KeyValueConfigurationCollection configCollection = config.AppSettings.Settings;
                 string connstring = string.Format(
                     "Server=" + ConfigurationManager.AppSettings["mysql_host"] + 
                     "; Port=" + ConfigurationManager.AppSettings["mysql_port"] + 

@@ -1,6 +1,6 @@
-﻿using System;
+﻿using SampSharp.GameMode.SAMP;
+using System;
 using System.Collections.Generic;
-using System.Timers;
 
 namespace SampSharpGameMode1.Events.Races
 {
@@ -23,6 +23,7 @@ namespace SampSharpGameMode1.Events.Races
         public bool IsWaitlistOpened { get => isWaitlistOpened; private set => isWaitlistOpened = value; }
 
         private Timer launchingRaceTimer;
+        private Race startingRace = null;
 
         public event EventHandler<RaceLoadedEventArgs> RaceLoaded;
         public class RaceLoadedEventArgs : EventArgs
@@ -45,10 +46,6 @@ namespace SampSharpGameMode1.Events.Races
             playersWaiting = new List<Player>(Race.MAX_PLAYERS_IN_RACE);
             loadedRaces = new Queue<Race>();
             runningRaces = new List<Race>();
-            launchingRaceTimer = new Timer(TIMER_LAUNCH_RACE);
-            launchingRaceTimer.Elapsed += LaunchingRaceTimer_Elapsed;
-            launchingRaceTimer.AutoReset = false;
-            launchingRaceTimer.Enabled = true;
         }
 
         public static RaceLauncher Instance()
@@ -72,7 +69,7 @@ namespace SampSharpGameMode1.Events.Races
                         RaceLoadedEventArgs args = new RaceLoadedEventArgs();
                         args.RaceID = id;
                         args.CheckpointsCount = loadedRace.checkpoints.Count;
-                        RaceLoaded(this, args);
+                        //RaceLoaded(this, args);
                         return true;
                     }
                     else
@@ -110,32 +107,28 @@ namespace SampSharpGameMode1.Events.Races
             return false;
         }
         */
-        public void LaunchNext()
+        public Boolean LaunchNext()
         {
             if (playersWaiting.Count >= Race.MIN_PLAYERS_IN_RACE)
             {
-                Race race = loadedRaces.Dequeue();
-                runningRaces.Add(race);
-                race.IsStarted = true;
-
-                this.IsWaitlistOpened = false;
-
-                launchingRaceTimer.Start();
+                launchingRaceTimer = new Timer(TIMER_LAUNCH_RACE, false);
+                launchingRaceTimer.Tick += LaunchingRaceTimer_Elapsed;
                 foreach (Player player in playersWaiting)
                 {
-                    player.SendClientMessage("La course démarre dans " + (TIMER_LAUNCH_RACE / 1000).ToString() + " secondes");
+                    player.SendClientMessage("The next race starts in " + (TIMER_LAUNCH_RACE / 1000).ToString() + " seconds, you can still join with " + Color.AliceBlue + "/race join");
                 }
+                return true;
             }
+            else return false;
         }
 
-        private void LaunchingRaceTimer_Elapsed(object sender, ElapsedEventArgs e)
+        private void LaunchingRaceTimer_Elapsed(object sender, EventArgs e)
         {
-            //int virtualWord = Event.GetAvailableVirtualWorld();
-            foreach(Player player in playersWaiting)
-            {
-                //player.VirtualWorld = virtualWord;
-            }
-            
+            Race race = loadedRaces.Dequeue();
+            runningRaces.Add(race);
+            race.IsStarted = true;
+            this.IsWaitlistOpened = false;
+            race.Prepare(playersWaiting, 1);
         }
 
         public void AbortNext()

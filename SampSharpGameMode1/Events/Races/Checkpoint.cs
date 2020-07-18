@@ -10,25 +10,25 @@ namespace SampSharpGameMode1.Events.Races
         AirNormal=3,
         AirFinish=4
     }
-    class Checkpoint
+    public class Checkpoint
     {
         public const double DefaultSize = 3.0;
         private Vector3 position;
         private CheckpointType type;
         private double size;
-        private VehicleModelType nextVehicle;
+        private VehicleModelType? nextVehicle;
 
         public Vector3 Position { get => position; set => position = value; }
         public CheckpointType Type { get => type; set => type = value; }
         public double Size { get => size; set => size = value; }
-        public VehicleModelType NextVehicle { get => nextVehicle; set => nextVehicle = value; }
+        public VehicleModelType? NextVehicle { get => nextVehicle; set => nextVehicle = value; }
 
         public Checkpoint(Vector3 _pos, CheckpointType _type, double _size = DefaultSize)
         {
             this.Position = _pos;
             this.Type = _type;
             this.Size = _size;
-            this.NextVehicle = VehicleModelType.Ambulance;
+            this.NextVehicle = null;
         }
     }
 }

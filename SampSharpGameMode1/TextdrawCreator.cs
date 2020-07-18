@@ -1,12 +1,14 @@
 ﻿using Newtonsoft.Json;
 using SampSharp.GameMode;
+using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
 using SampSharp.GameMode.SAMP;
-using SampSharp.GameMode.World;
+using SampSharpGameMode1.Events;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace SampSharpGameMode1
 {
@@ -132,25 +134,30 @@ namespace SampSharpGameMode1
                 //if(!e.NewKeys.Equals("0")) Console.WriteLine("TextdrawCreator.cs - Player_KeyStateChanged:I: key: " + e.NewKeys.ToString());
                 switch (e.NewKeys)
                 {
-                    case SampSharp.GameMode.Definitions.Keys.Fire:
+                    case Keys.Submission:
+                        {
+                            ShowTextdrawDialog();
+                            break;
+                        }
+                    case Keys.Fire:
                         {
                             layers[layerIndex].SwitchTextdrawMode(editingTDName);
                             tdHUD.SetMode(layers[layerIndex].GetEditingMode(editingTDName).ToString());
                             break;
                         }
-                    case SampSharp.GameMode.Definitions.Keys.No:
+                    case Keys.No:
                         {
                             moveSpeed -= 0.5f;
                             player.GameText("Speed: " + moveSpeed.ToString(), 500, 3);
                             break;
                         }
-                    case SampSharp.GameMode.Definitions.Keys.Yes:
+                    case Keys.Yes:
                         {
                             moveSpeed += 0.5f;
                             player.GameText("Speed: " + moveSpeed.ToString(), 500, 3);
                             break;
                         }
-                    case SampSharp.GameMode.Definitions.Keys.AnalogLeft:
+                    case Keys.AnalogLeft:
                         {
                             if(layers[layerIndex].GetEditingMode(editingTDName) == TextdrawLayer.EditingMode.Position)
                             {
@@ -162,7 +169,7 @@ namespace SampSharpGameMode1
                             }
                             break;
                         }
-                    case SampSharp.GameMode.Definitions.Keys.AnalogRight:
+                    case Keys.AnalogRight:
                         {
                             if (layers[layerIndex].GetEditingMode(editingTDName) == TextdrawLayer.EditingMode.Position)
                             {
@@ -174,7 +181,7 @@ namespace SampSharpGameMode1
                             }
                             break;
                         }
-                    case SampSharp.GameMode.Definitions.Keys.AnalogUp:
+                    case Keys.AnalogUp:
                         {
                             if (layers[layerIndex].GetEditingMode(editingTDName) == TextdrawLayer.EditingMode.Position)
                             {
@@ -186,7 +193,7 @@ namespace SampSharpGameMode1
                             }
                             break;
                         }
-                    case SampSharp.GameMode.Definitions.Keys.AnalogDown:
+                    case Keys.AnalogDown:
                         {
                             if (layers[layerIndex].GetEditingMode(editingTDName) == TextdrawLayer.EditingMode.Position)
                             {
@@ -200,6 +207,79 @@ namespace SampSharpGameMode1
                         }
                 }
             }
+        }
+
+        private void ShowTextdrawDialog()
+        {
+            ListDialog textdrawDialog = new ListDialog("Textdraw options", "Select", "Cancel");
+            textdrawDialog.AddItem("Color [" + layers[layerIndex].GetTextdrawColor(editingTDName) + layers[layerIndex].GetTextdrawColor(editingTDName).ToString() + Color.White + "]");
+            textdrawDialog.AddItem("Back color [" + layers[layerIndex].GetTextdrawBackColor(editingTDName) + layers[layerIndex].GetTextdrawBackColor(editingTDName).ToString() + Color.White + "]");
+
+            textdrawDialog.Show(player);
+            textdrawDialog.Response += (sender, eventArgs) =>
+            {
+                if (eventArgs.DialogButton == DialogButton.Left)
+                {
+                    switch(eventArgs.ListItem)
+                    {
+                        case 0: // Color
+                            {
+                                InputDialog colorDialog = new InputDialog("Enter color", "Supported formats: 0xFF0000 ; red ; rbg(255, 0, 0)", false, "Set", "Cancel");
+                                colorDialog.Response += (sender, eventArgs) =>
+                                {
+                                    if (eventArgs.DialogButton == DialogButton.Left)
+                                    {
+                                        string input = eventArgs.InputText;
+                                        if (input.Length > 0)
+                                        {
+                                            if(input.StartsWith("0x"))
+                                            {
+                                                if (input.Length == 8)
+                                                {
+                                                    string r, g, b;
+                                                    r = input.Substring(2, 2);
+                                                    g = input.Substring(4, 2);
+                                                    b = input.Substring(6, 2);
+                                                    Color newColor = new Color(
+                                                        int.Parse(r, System.Globalization.NumberStyles.HexNumber),
+                                                        int.Parse(g, System.Globalization.NumberStyles.HexNumber),
+                                                        int.Parse(b, System.Globalization.NumberStyles.HexNumber)
+                                                    );
+                                                    layers[layerIndex].SetTextdrawColor(editingTDName, newColor);
+                                                    player.SendClientMessage("Color set to " + layers[layerIndex].GetTextdrawColor(editingTDName));
+                                                }
+                                                else player.SendClientMessage(Color.Red, "Format error");
+                                                ShowTextdrawDialog();
+                                            }
+                                            else if(input.StartsWith("rgb("))
+                                            {
+                                                Regex regex = new Regex(@"[r][g][b][(](\d{1,3})[,;]\s*(\d{1,3})[,;]\s*(\d{1,3})[)]", RegexOptions.IgnoreCase);
+                                                Match match = regex.Match(input);
+                                                if(match.Success)
+                                                {
+                                                    int r, g, b;
+                                                    r = int.Parse(match.Groups[0].Value);
+                                                    g = int.Parse(match.Groups[1].Value);
+                                                    b = int.Parse(match.Groups[2].Value);
+                                                    Color newColor = new Color(r, g, b);
+                                                    layers[layerIndex].SetTextdrawColor(editingTDName, newColor);
+                                                    player.SendClientMessage("Color set to " + layers[layerIndex].GetTextdrawColor(editingTDName));
+                                                }
+                                                else player.SendClientMessage(Color.Red, "Format error");
+                                                ShowTextdrawDialog();
+                                            }
+                                        }
+                                    }
+                                };
+                                break;
+                            }
+                        case 1: // Back color
+                            {
+                                break;
+                            }
+                    }
+                }
+            };
         }
 
         public void Close()
@@ -243,8 +323,6 @@ namespace SampSharpGameMode1
                             idx += readBytes;
                         }
                         jsonData = new UTF8Encoding(true).GetString(output);
-                        Console.WriteLine("Load: ");
-                        Console.WriteLine(jsonData);
                         List<textdraw> textdraws = JsonConvert.DeserializeObject<List<textdraw>>(jsonData);
                         layers.Add(new TextdrawLayer());
                         layerIndex = layers.Count - 1;
@@ -254,10 +332,13 @@ namespace SampSharpGameMode1
                                 layers[layerIndex].CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Box);
                             if (textdraw.Type.Equals("text"))
                                 layers[layerIndex].CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Text);
-                            layers[layerIndex].SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
-                            layers[layerIndex].SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height);
+                            if (!layers[layerIndex].SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY)))
+                                player.SendClientMessage(Color.Red, "Cannot set position for '" + textdraw.Name + "'");
+                            if (!layers[layerIndex].SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height))
+                                player.SendClientMessage(Color.Red, "Cannot set size for '" + textdraw.Name + "'");
                             editingTDName = textdraw.Name;
                         }
+                        this.Init();
                         this.Select(editingTDName);
                         fs.Close();
                     }
@@ -265,7 +346,7 @@ namespace SampSharpGameMode1
                 }
                 catch (IOException e)
                 {
-                    Console.WriteLine("TextdrawCreator.cs - TextdrawCreator.Save:E: Cannot write Textdraw data in file:");
+                    Console.WriteLine("TextdrawCreator.cs - TextdrawCreator.Save:E: Cannot read Textdraw data in file:");
                     Console.WriteLine(e.Message);
                 }
             }

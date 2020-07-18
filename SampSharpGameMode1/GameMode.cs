@@ -40,7 +40,7 @@ namespace SampSharpGameMode1
             //npc.Create();
             //Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: NPC Created !");
 
-            //Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\maps\\paths.ipl");
+            //Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths\\NODES0.DAT");
             // TODO: Put logic to initialize your game mode here
         }
 

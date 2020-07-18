@@ -1,13 +1,14 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
+using SampSharp.GameMode.World;
 using System;
 using System.Collections.Generic;
 
 namespace SampSharpGameMode1.Events.Races
 {
-    class Race
+    public class Race
     {
-        public const int MIN_PLAYERS_IN_RACE = 2;
+        public const int MIN_PLAYERS_IN_RACE = 1;
         public const int MAX_PLAYERS_IN_RACE = 100;
 
         private int id;
@@ -28,6 +29,9 @@ namespace SampSharpGameMode1.Events.Races
         // Launcher only
 
         private bool isStarted;
+        private List<Player> players;
+        private Dictionary<Player, int> playersStartingPos;
+        private int virtualWorld;
 
         public bool IsStarted { get => isStarted; set => isStarted = value; }
 
@@ -107,6 +111,54 @@ namespace SampSharpGameMode1.Events.Races
         public Boolean IsPlayable()
         {
             return (checkpoints.Count > 0 && !IsStartingVehicleNull) ? true : false;
+        }
+
+        public void Prepare(List<Player> players, int virtualWorld)
+        {
+            bool isAborted = false;
+            this.players = players;
+            this.virtualWorld = virtualWorld;
+
+            Random rdm = new Random();
+            List<int> generatedPos = new List<int>();
+            int pos;
+            int tries = 0;
+
+            foreach (Player p in players)
+            {
+                p.VirtualWorld = virtualWorld;
+
+                pos = rdm.Next(1, players.Count);
+                while (generatedPos.Contains(pos) && tries++ < MAX_PLAYERS_IN_RACE)
+                    pos = rdm.Next(1, players.Count);
+
+                if (tries >= MAX_PLAYERS_IN_RACE)
+                {
+                    Player.SendClientMessageToAll("Error during position randomization for the race. Race aborted");
+                    isAborted = true;
+                    break;
+                }
+                tries = 0;
+
+                playersStartingPos[p] = pos;
+
+                BaseVehicle veh = BaseVehicle.Create(startingVehicle, this.startingSpawn[pos].Position, this.startingSpawn[pos].Rotation, 1, 1);
+                veh.VirtualWorld = virtualWorld;
+                veh.Engine = false;
+                veh.Doors = true;
+                p.PutInVehicle(veh);
+            }
+
+            //TODO: remettre les joueurs dans leurs vw et positions initiales
+        }
+
+        public void Start()
+        {
+            foreach(Player p in players)
+            {
+                p.Vehicle.Engine = true;
+
+            }
         }
     }
 }

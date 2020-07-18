@@ -8,10 +8,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Xml;
 
 namespace SampSharpGameMode1.Events.Races
 {
-    class RaceCreator
+    public class RaceCreator
     {
         class HUD
         {
@@ -72,6 +73,10 @@ namespace SampSharpGameMode1.Events.Races
                     }
                 }
             }
+            public void Destroy()
+            {
+                layer.HideAll();
+            }
             public void SetRaceName(string name)
             {
                 layer.SetTextdrawText("racename", name);
@@ -114,7 +119,7 @@ namespace SampSharpGameMode1.Events.Races
         int spawnIndex;
 
         PlayerObject moverObject;
-        int moverObjectModelID = 19133;
+        const int moverObjectModelID = 19133;
         Vector3 moverObjectOffset = new Vector3(0.0f, 0.0f, 1.0f);
 
 
@@ -129,8 +134,11 @@ namespace SampSharpGameMode1.Events.Races
             player.EnterCheckpoint += Player_EnterCheckpoint;
             player.EnterRaceCheckpoint += Player_EnterRaceCheckpoint;
 
-            BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, player.Position + new Vector3(0.0, 5.0, 0.0), 0.0f, 1, 1);
-            player.PutInVehicle(veh);
+            if(!player.InAnyVehicle)
+            {
+                BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, player.Position + new Vector3(0.0, 5.0, 0.0), 0.0f, 1, 1);
+                player.PutInVehicle(veh);
+            }
 
             hud = new HUD(_player);
 
@@ -172,6 +180,19 @@ namespace SampSharpGameMode1.Events.Races
                     return false;
             }
             else return false;
+        }
+
+        public void Unload()
+        {
+            editingRace = null;
+            isEditing = false;
+            hud.Destroy();
+            moverObject.Edited -= moverObject_Edited;
+            moverObject.Dispose();
+            moverObject = null;
+            //TODO: cancel edit ?
+            player.DisableCheckpoint();
+            player.DisableRaceCheckpoint();
         }
 
         public Boolean Save()
