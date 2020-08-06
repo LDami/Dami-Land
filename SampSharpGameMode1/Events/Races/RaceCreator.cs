@@ -155,31 +155,32 @@ namespace SampSharpGameMode1.Events.Races
             editingRace = new Race();
             isEditing = true;
             checkpointIndex = 0;
+            editingRace.StartingVehicle = VehicleModelType.Infernus;
         }
 
-        public Boolean Load(int id)
+        public void Load(int id)
         {
             if (id > 0)
             {
                 Race loadingRace = new Race();
+                loadingRace.Loaded += LoadingRace_Loaded;
                 loadingRace.Load(id);
-                if (loadingRace.checkpoints.Count > 0)
-                {
-                    hud.SetRaceName(loadingRace.Name);
-                    hud.SetSelectedIdx("S", editingMode);
-                    hud.SetTotalCP(loadingRace.checkpoints.Count-1);
-
-                    checkpointIndex = 0;
-                    editingRace = loadingRace;
-                    UpdatePlayerCheckpoint();
-                    isEditing = true;
-                    editingMode = EditingMode.Checkpoints;
-                    return true;
-                }
-                else
-                    return false;
             }
-            else return false;
+            else player.SendClientMessage(Color.Red, "Error loading race #" + id);
+        }
+
+        private void LoadingRace_Loaded(object sender, RaceLoadedEventArgs e)
+        {
+            hud.SetRaceName(e.race.Name);
+            hud.SetSelectedIdx("S", editingMode);
+            hud.SetTotalCP(e.race.checkpoints.Count - 1);
+
+            checkpointIndex = 0;
+            editingRace = e.race;
+            UpdatePlayerCheckpoint();
+            isEditing = true;
+            editingMode = EditingMode.Checkpoints;
+            player.SendClientMessage(Color.Green, "Race #" + e.race.Id + " loaded successfully in creation mode");
         }
 
         public void Unload()
@@ -219,6 +220,27 @@ namespace SampSharpGameMode1.Events.Races
                     mySQLConnector.Execute("INSERT INTO race_checkpoints " +
                         "(race_id, checkpoint_number, checkpoint_pos_x, checkpoint_pos_y, checkpoint_pos_z, checkpoint_size, checkpoint_type) VALUES" +
                         "(@id, @checkpoint_number, @checkpoint_pos_x, @checkpoint_pos_y, @checkpoint_pos_z, @checkpoint_size, @checkpoint_type)", param);
+                }
+                param = new Dictionary<string, object>
+                {
+                    { "@id", editingRace.Id }
+                };
+                mySQLConnector.Execute("DELETE FROM race_spawnpos WHERE race_id=@id", param);
+                for (int i = 0; i < editingRace.startingSpawn.Length; i++)
+                {
+                    param = new Dictionary<string, object>
+                    {
+                        { "@id", editingRace.Id },
+                        { "@spawn_index",  i },
+                        { "@spawn_pos_x",  editingRace.startingSpawn[i].Position.X },
+                        { "@spawn_pos_y",  editingRace.startingSpawn[i].Position.Y },
+                        { "@spawn_pos_z",  editingRace.startingSpawn[i].Position.Z },
+                        { "@spawn_rot",  editingRace.startingSpawn[i].Rotation },
+                    };
+                    mySQLConnector.Execute("INSERT INTO race_spawnpos " +
+                        "(race_id, spawn_index, spawnpos_x, spawnpos_y, spawnpos_z, spawnpos_rot) VALUES " +
+                        "(@id, @spawn_index, @spawn_pos_x, @spawn_pos_y, @spawn_pos_z, @spawn_rot)", param);
+
                 }
                 return (mySQLConnector.RowsAffected > 0);
             }
@@ -442,7 +464,7 @@ namespace SampSharpGameMode1.Events.Races
                                 }
                                 if (editingRace.startingSpawn[0].Position == Vector3.Zero)
                                 {
-                                    spawnVehicles[0] = BaseVehicle.Create(editingRace.StartingVehicle, editingRace.checkpoints[editingRace.checkpoints.Count-1].Position, 0.0f, 0, 0);
+                                    spawnVehicles[0] = BaseVehicle.Create(editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus), editingRace.checkpoints[editingRace.checkpoints.Count-1].Position, 0.0f, 0, 0);
                                 }
                                 else
                                 {
@@ -451,10 +473,11 @@ namespace SampSharpGameMode1.Events.Races
                                     {
                                         if(spawn.Position != Vector3.Zero)
                                         {
-                                            spawnVehicles[idx++] = BaseVehicle.Create(editingRace.StartingVehicle, spawn.Position, spawn.Rotation, 0, 0);
+                                            spawnVehicles[idx++] = BaseVehicle.Create(editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus), spawn.Position, spawn.Rotation, 0, 0);
                                         }
                                     }
                                 }
+                                //TODO: canceledit
                                 UpdatePlayerSpawnMover();
                                 moverObject.Edit();
                                 break;
@@ -511,7 +534,7 @@ namespace SampSharpGameMode1.Events.Races
 
             if (cp.Type == CheckpointType.Normal || cp.Type == CheckpointType.Finish)
                 cpDialog.AddItem("Change checkpoint type: " + Color.Green + "Normal" + Color.White + "/Air");
-            else if (cp.Type == CheckpointType.AirNormal || cp.Type == CheckpointType.AirFinish)
+            else if (cp.Type == CheckpointType.Air || cp.Type == CheckpointType.AirFinish)
                 cpDialog.AddItem("Change checkpoint type: Normal/" + Color.Green + "Air");
 
             if(checkpointIndex > 0)
@@ -562,7 +585,7 @@ namespace SampSharpGameMode1.Events.Races
                                 if (e.ListItem == 0) // To Air
                                 {
                                     if (cp.Type == CheckpointType.Normal)
-                                        editingRace.checkpoints[checkpointIndex].Type = CheckpointType.AirNormal;
+                                        editingRace.checkpoints[checkpointIndex].Type = CheckpointType.Air;
                                     else if (cp.Type == CheckpointType.Finish)
                                         editingRace.checkpoints[checkpointIndex].Type = CheckpointType.AirFinish;
                                     UpdatePlayerCheckpoint();
@@ -572,7 +595,7 @@ namespace SampSharpGameMode1.Events.Races
                                 }
                                 if (e.ListItem == 1) // To Normal
                                 {
-                                    if (cp.Type == CheckpointType.AirNormal)
+                                    if (cp.Type == CheckpointType.Air)
                                         cp.Type = CheckpointType.Normal;
                                     else if (cp.Type == CheckpointType.AirFinish)
                                         cp.Type = CheckpointType.Finish;
@@ -603,7 +626,7 @@ namespace SampSharpGameMode1.Events.Races
                     {
                         try
                         {
-                            editingRace.checkpoints[checkpointIndex].Size = Convert.ToDouble(e.InputText);
+                            editingRace.checkpoints[checkpointIndex].Size = (float)Convert.ToDouble(e.InputText);
                             UpdatePlayerCheckpoint();
                             player.Notificate("Updated");
                         }

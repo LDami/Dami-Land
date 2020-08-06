@@ -1,4 +1,5 @@
-﻿using SampSharp.GameMode.Definitions;
+﻿using SampSharp.GameMode;
+using SampSharp.GameMode.Definitions;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -69,6 +70,17 @@ namespace SampSharpGameMode1
             }
             // Step 7
             return d[n, m];
+        }
+
+        public static Boolean IsPlayerInRangeOfPoint(Player player, float range, Vector3 target)
+        {
+            //return Vector3.Distance(player.Position, target) <= range;
+            return (
+                player.Position.X > (target.X + range) &&
+                player.Position.X < (target.X - range) &&
+                player.Position.Y > (target.Y + range) &&
+                player.Position.Y < (target.Y - range)
+            );
         }
     }
 }

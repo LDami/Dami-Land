@@ -1,7 +1,8 @@
 ﻿using System;
 using SampSharp.GameMode;
 using SampSharp.GameMode.World;
-using SampSharpGameMode1.Events.Races;
+using SampSharpGameMode1.Civilisation;
+using SampSharpGameMode1.Events;
 
 namespace SampSharpGameMode1
 {
@@ -10,7 +11,7 @@ namespace SampSharpGameMode1
         #region Overrides of BaseMode
 
         public static MySQLConnector mySQLConnector = null;
-        public static RaceLauncher raceLauncher = null;
+        public static EventManager eventManager = null;
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
@@ -34,14 +35,37 @@ namespace SampSharpGameMode1
                     isConnected = true;
                 }
             }
-            raceLauncher = RaceLauncher.Instance();
-            Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Gamemode ready !");
+            eventManager = EventManager.Instance();
             //NPC npc = new NPC();
             //npc.Create();
             //Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: NPC Created !");
 
-            //Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths\\NODES0.DAT");
-            // TODO: Put logic to initialize your game mode here
+            Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths\\NODES35.DAT");
+            /*
+            for (int i=0; i < 64; i++)
+            {
+                Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths\\NODES" + i + ".DAT");
+            }
+            */
+            Console.WriteLine("Total path points: " + PathExtractor.pathPoints.Count);
+            /*
+            if(PathExtractor.pathPoints != null)
+            {
+                GlobalObject[] globalObject = new GlobalObject[PathExtractor.pathPoints.Length];
+                TextLabel[] textLabels = new TextLabel[PathExtractor.pathPoints.Length];
+                int idx = 0;
+                foreach(Vector3 point in PathExtractor.pathPoints)
+                {
+                    Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Creating object " + idx + "/" + PathExtractor.pathPoints.Length);
+                    Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Position: " + point.ToString());
+                    globalObject[idx] = new GlobalObject(18808, point + new Vector3(0.0f, 0.0f, 5.0f), Vector3.Zero);
+                    textLabels[idx] = new TextLabel("N°" + idx + "\n" + point.ToString(), SampSharp.GameMode.SAMP.Color.White, point + new Vector3(0, 0, 20.0), 200.0f);
+                    idx++;
+                    //globalObject[idx++] = new GlobalObject(18876, point + new Vector3(0.0f, 0.0f, 5.0f), Vector3.Zero);
+                }
+            }
+            */
+            Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Gamemode ready !");
         }
 
         protected override void OnExited(EventArgs e)

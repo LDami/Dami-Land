@@ -28,10 +28,7 @@ namespace SampSharpGameMode1.Commands
                 if (player.playerRaceCreator == null)
                     player.playerRaceCreator = new RaceCreator(player);
 
-                if (player.playerRaceCreator.Load(id))
-                    player.SendClientMessage(Color.Green, "Race #" + id + " loaded successfully in creation mode");
-                else
-                    player.SendClientMessage(Color.Red, "Error loading race #" + id);
+                player.playerRaceCreator.Load(id);
             }
 
             [Command("save")]
@@ -166,7 +163,7 @@ namespace SampSharpGameMode1.Commands
             }
 
             // Launcher
-
+            /*
             [Command("join")]
             private static void Join(Player player)
             {
@@ -181,18 +178,23 @@ namespace SampSharpGameMode1.Commands
             [Command("load")]
             private static void LoadRace(Player player, int id)
             {
-                if (GameMode.raceLauncher.Load(id))
-                    player.SendClientMessage(Color.Green, "Race #" + id + " loaded successfully");
-                else
-                    player.SendClientMessage(Color.Red, "Error loading race #" + id);
+                GameMode.raceLauncher.Load(player, id);
             }
 
             [Command("launchnext")]
             private static void LaunchNextRace(Player player)
             {
-                if(GameMode.raceLauncher.LaunchNext())
+                if (GameMode.raceLauncher.LaunchNext())
                     player.SendClientMessage(Color.Green, "Race launched, waiting for players !");
             }
+
+            [Command("abortnext")]
+            private static void AbortNextRace(Player player)
+            {
+                GameMode.raceLauncher.AbortNext();
+                player.SendClientMessage(Color.Green, "The next race will not be played");
+            }
+            */
         }
     }
 }

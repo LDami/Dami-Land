@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SampSharp.GameMode.SAMP;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -8,57 +9,48 @@ namespace SampSharpGameMode1.Events.Races
     class RaceEvent : Event
     {
         private Race loadedRace;
-        private int id;
-        public string name { get; set; }
-        public EventStatus status { get; set; }
-
-        #region Event
-        public event EventHandler<RaceLoadedEventArgs> Loaded;
-        public class RaceLoadedEventArgs : EventArgs
-        {
-            public int RaceID { get; set; }
-            public int CheckpointsCount { get; set; }
-        }
-        #endregion
 
         public RaceEvent(int _id)
         {
             if (_id > 0)
             {
-                this.id = _id;
-                loadedRace = new Race();
+                this.Id = _id;
             }
         }
 
-        public void Load()
+        public override void Load()
         {
-            Thread t = new Thread(() =>
+            Race loadingRace = new Race();
+            loadingRace.Loaded += LoadingRace_Loaded;
+            loadingRace.Load(this.Id);
+        }
+
+        private void LoadingRace_Loaded(object sender, RaceLoadedEventArgs e)
+        {
+            if (e.race.IsPlayable())
             {
-                loadedRace.Load(this.id);
-                if (loadedRace.IsPlayable())
-                {
-                    RaceLoadedEventArgs args = new RaceLoadedEventArgs();
-                    args.RaceID = this.id;
-                    args.CheckpointsCount = loadedRace.checkpoints.Count;
-                    this.Loaded(this, args);
-                }
-            });
-            t.Start();
+                loadedRace = e.race;
+                OnLoaded(new EventLoadedEventArgs { EventLoaded = this, ErrorMessage = null });
+            }
+            else OnLoaded(new EventLoadedEventArgs { ErrorMessage = "This race is not playable !" });
         }
 
-        public void Start()
+        public override void Start()
         {
-
+            if(loadedRace != null && this.players.Count > Race.MIN_PLAYERS_IN_RACE)
+            {
+                loadedRace.Prepare(this.players, 1);
+                Player.SendClientMessageToAll("[Event] The " + this.Type.ToString() + " is starting, you cannot longer join it !");
+                this.Status = EventStatus.Running;
+                loadedRace.Finished += (sender, eventArgs) => { this.End(); } ;
+                this.OnStarted(new EventStartedOrEndedEventArgs { });
+            }
         }
-
-        public void End()
+        public override void End()
         {
-
-        }
-
-        public void Join(Player player)
-        {
-
+            this.Status = EventStatus.Finished;
+            players.Clear();
+            this.OnEnded(new EventStartedOrEndedEventArgs { });
         }
     }
 }

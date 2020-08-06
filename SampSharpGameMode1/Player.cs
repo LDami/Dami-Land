@@ -8,7 +8,7 @@ using SampSharp.GameMode.Pools;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
 using SampSharp.GameMode.World;
-
+using SampSharpGameMode1.Civilisation;
 using SampSharpGameMode1.Events.Races;
 
 namespace SampSharpGameMode1
@@ -18,6 +18,9 @@ namespace SampSharpGameMode1
     {
         MySQLConnector mySQLConnector = null;
 
+        private int db_id;
+        public int Db_Id { get => db_id; set => db_id = value; }
+
         Boolean isConnected;
         int passwordEntryTries = 3;
 
@@ -25,7 +28,12 @@ namespace SampSharpGameMode1
         PlayerMapping playerMapping;
         public RaceCreator playerRaceCreator;
 
+        public Race playerRace;
+
         NPC npc;
+        private Timer pathObjectsTimer;
+        private List<GlobalObject> pathObjects = new List<GlobalObject>();
+        private List<TextLabel> pathLabels = new List<TextLabel>();
 
         #region Overrides of BasePlayer
         public override void OnConnected(EventArgs e)
@@ -42,12 +50,45 @@ namespace SampSharpGameMode1
             textdrawCreator = new TextdrawCreator(this);
             playerMapping = new PlayerMapping(this);
             playerRaceCreator = null;
+            playerRace = null;
+
+            pathObjectsTimer = new Timer(1000, true);
+            //pathObjectsTimer.Tick += PathObjectsTimer_Tick;
 
             if (this.IsRegistered())
                 ShowLoginForm();
             else
                 ShowSignupForm();
         }
+
+        private void PathObjectsTimer_Tick(object sender, EventArgs e)
+        {
+            if (this.State == PlayerState.OnFoot)
+            {
+                Console.WriteLine("Player.cs - Timer tick");
+                foreach (Vector3 point in PathExtractor.pathPoints)
+                {
+                    if (Utils.IsPlayerInRangeOfPoint(this, 500.0f, point) && !pathObjects.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
+                    {
+                        Console.WriteLine("Player.cs - true");
+                        GlobalObject go = new GlobalObject(18808, point, Vector3.Zero);
+                        pathObjects.Add(go);
+                        Console.WriteLine("Object n° " + pathObjects.LastIndexOf(go) + " created: " + point);
+                    }
+                    else if (!Utils.IsPlayerInRangeOfPoint(this, 500.0f, point))
+                    {
+                        if (pathObjects.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
+                        {
+                            int removedIdx = pathObjects.LastIndexOf(pathObjects.Find(x => x.Position.X == point.X && x.Position.Y == point.Y));
+                            pathObjects.RemoveAt(removedIdx);
+                            Console.WriteLine("Object n° " + removedIdx + " removed");
+                        }
+                    }
+                }
+            }
+            else Console.WriteLine("not spawned");
+        }
+
         public override void OnDisconnected(DisconnectEventArgs e)
         {
             base.OnDisconnected(e);
@@ -58,7 +99,11 @@ namespace SampSharpGameMode1
             playerMapping = null;
             playerRaceCreator = null;
 
-            if(npc != null) npc.Dispose();
+            pathObjectsTimer.IsRunning = false;
+            pathObjectsTimer.Dispose();
+            pathObjectsTimer = null;
+
+            if (npc != null) npc.Dispose();
         }
 
         public override void OnRequestClass(RequestClassEventArgs e)
@@ -80,7 +125,19 @@ namespace SampSharpGameMode1
         public override void OnEnterVehicle(EnterVehicleEventArgs e)
         {
             base.OnEnterVehicle(e);
-            this.SendClientMessage("You entered a vehicle");
+        }
+
+        public override void OnEnterRaceCheckpoint(EventArgs e)
+        {
+            if(playerRace != null)
+            {
+                playerRace.OnPlayerEnterCheckpoint(this);
+            }
+        }
+
+        public override void OnSpawned(SpawnEventArgs e)
+        {
+            base.OnSpawned(e);
         }
         #endregion
 
@@ -96,17 +153,20 @@ namespace SampSharpGameMode1
             {
                 Dictionary<string, object> param = new Dictionary<string, object>();
                 param.Add("@name", this.Name);
-                mySQLConnector.OpenReader("SELECT id FROM userlogin WHERE name=@name", param);
+                mySQLConnector.OpenReader("SELECT id FROM users WHERE name=@name", param);
                 Dictionary<string, string> results = mySQLConnector.GetNextRow();
                 mySQLConnector.CloseReader();
                 if (results.Count > 0)
+                {
+                    this.Db_Id = Convert.ToInt32(results["id"]);
                     return true;
+                }
                 else
                     return false;
             }
             else
             {
-                Console.WriteLine("Player.cs - Player.IsRegisterd: MySQL not started");
+                Console.WriteLine("Player.cs - Player.IsRegisterd:E: MySQL not started");
                 return false;
             }
         }
@@ -132,13 +192,21 @@ namespace SampSharpGameMode1
                     Dictionary<string, object> param = new Dictionary<string, object>();
                     param.Add("@name", this.Name);
                     param.Add("@password", hashPassword);
-                    mySQLConnector.Execute("INSERT INTO userlogin (name, password, adminlvl) VALUES (@name, @password, 0)", param);
+                    mySQLConnector.Execute("INSERT INTO users (name, password, adminlvl) VALUES (@name, @password, 0)", param);
                     if (mySQLConnector.RowsAffected > 0)
                     {
                         this.Notificate("Registered");
                         isConnected = true;
+                        param = new Dictionary<string, object>();
+                        param.Add("@name", this.Name);
+                        mySQLConnector.OpenReader("SELECT id FROM users WHERE name=@name", param);
+                        Dictionary<string, string> results = mySQLConnector.GetNextRow();
+                        this.Db_Id = Convert.ToInt32(results["id"]);
+                        mySQLConnector.CloseReader();
                         this.Spawn();
                     }
+                    else
+                        Console.WriteLine("Player.cs - Player.PwdSignupDialog_Response:E: Unable to create player (state: " + mySQLConnector.GetState() + ")");
                 }
             }
             else
@@ -171,7 +239,7 @@ namespace SampSharpGameMode1
                 {
                     Dictionary<string, object> param = new Dictionary<string, object>();
                     param.Add("@name", this.Name);
-                    mySQLConnector.OpenReader("SELECT password FROM userlogin WHERE name=@name", param);
+                    mySQLConnector.OpenReader("SELECT password FROM users WHERE name=@name", param);
                     Dictionary<string, string> results = mySQLConnector.GetNextRow();
                     mySQLConnector.CloseReader();
                     if (results.Count > 0)
@@ -210,6 +278,89 @@ namespace SampSharpGameMode1
             return false;
         }
 
+        public static Player GetPlayerByDatabaseId(int id)
+        {
+            Player result = null;
+            foreach(Player player in Player.All)
+            {
+                if(player.Db_Id == id)
+                {
+                    result = player;
+                    break;
+                }
+            }
+            return result;
+        }
+
+        [Command("test")]
+        private void TestCommand()
+        {
+            if (PathExtractor.pathPoints != null)
+            {
+                this.Position = PathExtractor.pathPoints[0] + new Vector3(0.0f, 0.0f, 30.0f);
+            }
+        }
+
+        [Command("test2")]
+        private void Test2Command()
+        {
+            if (PathExtractor.pathPoints != null)
+            {
+                this.Notificate("Processing ...");
+                int idx = 0;
+                foreach (Vector3 point in PathExtractor.pathPoints.FindAll(x => x.DistanceTo(this.Position) < 200.0))
+                {
+                    Console.WriteLine("Point " + idx + " position: " + point + ", distance to player: " + point.DistanceTo(this.Position));
+                    Console.WriteLine("pathObjects.Exists: " + pathObjects.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y));
+                    if (!pathObjects.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
+                    {
+                        TextLabel lbl = new TextLabel("N°" + idx + "\n" + point.ToString(), Color.White, point, 200.0f);
+                        pathLabels.Add(lbl);
+                        Console.WriteLine("Label n° " + lbl.Id + " created: " + point);
+                    }
+                    idx++;
+                }
+                foreach (TextLabel lbl in pathLabels.FindAll(x => x.Position.DistanceTo(this.Position) > 200.0))
+                {
+                    Console.WriteLine("Label n° " + lbl.Id + " removed");
+                    pathLabels.Remove(lbl);
+                    lbl.Dispose();
+                }
+                
+                this.Notificate("Done !");
+            }
+        }
+
+        [Command("getpos")]
+        private void GetPosCommand()
+        {
+            this.SendClientMessage("Your position is: " + this.Position.ToString());
+        }
+
+        [Command("getz")]
+        private void GetZCommand()
+        {
+            if (PathExtractor.pathPoints != null)
+            {
+                this.SendClientMessage("Position.Z = " + PathExtractor.FindZFromVector2(this.Position.X, this.Position.Y));
+            }
+        }
+
+        [Command("join")]
+        private void JoinCommand()
+        {
+            if (GameMode.eventManager.openedEvent != null)
+            {
+                GameMode.eventManager.openedEvent.Join(this);
+            }
+            else this.SendClientMessage(Color.Red, "There is no event to join");
+        }
+
+        [Command("event")]
+        private void EventCommand()
+        {
+            GameMode.eventManager.ShowManagerDialog(this);
+        }
 
         [Command("mapping")]
         private void MappingCommand()

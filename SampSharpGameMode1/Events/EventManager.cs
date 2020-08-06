@@ -20,12 +20,13 @@ namespace SampSharpGameMode1.Events
             return _instance;
         }
 
-        private Event nextEvent;
-        private Queue<Event> eventList;
+        public Event openedEvent;
+        private List<Event> eventList;
 
         public EventManager()
         {
-            nextEvent = null;
+            openedEvent = null;
+            eventList = new List<Event>();
         }
 
         public void ShowManagerDialog(Player player)
@@ -34,7 +35,7 @@ namespace SampSharpGameMode1.Events
             managerDialog.AddItem(Color.Green + "Create event");
             foreach (Event evt in eventList)
             {
-                managerDialog.AddItem(Color.White + evt.name);
+                managerDialog.AddItem(Color.White + "[" + evt.Status.ToString() + "]" + evt.Name);
             }
 
             managerDialog.Show(player);
@@ -44,10 +45,7 @@ namespace SampSharpGameMode1.Events
                 {
                     if(eventArgs.ListItem == 0) // Create event
                     {
-                        if (nextEvent == null)
-                            ShowCreateEventTypeDialog(player);
-                        else
-                            player.SendClientMessage("There is already an event to join");
+                        ShowCreateEventTypeDialog(player);
                     }
                     else
                         ShowEventOptionDialog(player, eventList.ElementAt(eventArgs.ListItem + 1));
@@ -72,7 +70,14 @@ namespace SampSharpGameMode1.Events
             {
                 if (eventArgs.DialogButton == DialogButton.Left)
                 {
-                    ShowCreateEventNameDialog(player, (EventType)Convert.ToInt32(eventArgs.InputText));
+                    EventType evtType;
+                    if (Enum.TryParse(eventArgs.InputText, out evtType))
+                        ShowCreateEventNameDialog(player, evtType);
+                    else
+                    {
+                        ShowCreateEventTypeDialog(player);
+                        player.Notificate("Unable to parse event type");
+                    }
                 }
                 else
                 {
@@ -84,15 +89,34 @@ namespace SampSharpGameMode1.Events
 
         public void ShowEventOptionDialog(Player player, Event evt)
         {
-            ListDialog managerOptionDialog = new ListDialog(evt.name, "Select", "Cancel");
-            if(evt.status == EventStatus.Loaded)
+            ListDialog managerOptionDialog = new ListDialog(evt.Name, "Select", "Cancel");
+            if (evt.Status == EventStatus.Loaded)
+                managerOptionDialog.AddItem("Open event to players");
+            if (evt.Status == EventStatus.Waiting)
                 managerOptionDialog.AddItem("Start event");
             managerOptionDialog.AddItem(Color.Red + "Abort event");
 
             managerOptionDialog.Show(player);
             managerOptionDialog.Response += (sender, eventArgs) =>
             {
-
+                if (eventArgs.DialogButton == DialogButton.Left)
+                {
+                    if (eventArgs.ListItem == 0) // Open / Start
+                    {
+                        if (evt.Status == EventStatus.Loaded)
+                        {
+                            evt.Open();
+                        }
+                        if (evt.Status == EventStatus.Waiting)
+                        {
+                            evt.Start();
+                        }
+                    }
+                    else if(eventArgs.ListItem == 1) // Abort
+                    {
+                        evt.End();
+                    }
+                }
             };
         }
 
@@ -108,7 +132,7 @@ namespace SampSharpGameMode1.Events
                         {
                             if (eventArgs.DialogButton == DialogButton.Left)
                             {
-                                ShowCreateEventSearchDialog(player, (EventType)Convert.ToInt32(eventArgs.InputText), eventArgs.InputText);
+                                ShowCreateEventSearchDialog(player, EventType.Race, eventArgs.InputText);
                             }
                             else
                             {
@@ -170,13 +194,25 @@ namespace SampSharpGameMode1.Events
             {
                 case EventType.Race:
                     {
-                        RaceEvent race = new RaceEvent(id);
+                        Event newEvent = new RaceEvent(id);
                         player.SendClientMessage(Color.Green, "Loading Race #" + id);
-                        race.Loaded += (sender, eventArgs) =>
+                        newEvent.Loaded += (sender, eventArgs) =>
                         {
-                            player.SendClientMessage(Color.Green, "Race #" + eventArgs.RaceID + " loaded with " + eventArgs.CheckpointsCount + " checkpoints");
+                            if (eventArgs.ErrorMessage == null)
+                            {
+                                if(player.IsConnected) player.SendClientMessage(Color.Green, "Race loaded !");
+                                eventList.Add(eventArgs.EventLoaded);
+                                if(openedEvent == null)
+                                {
+                                    openedEvent = eventArgs.EventLoaded;
+                                    eventArgs.EventLoaded.Open();
+                                    eventArgs.EventLoaded.Started += (sender, eventArgs) => { openedEvent = null; };
+                                    eventArgs.EventLoaded.Ended += (sender, eventArgs) => { eventList.Remove((Event)sender); };
+                                }
+                            }
+                            else
+                                if (player.IsConnected) player.SendClientMessage(Color.Red, "Cannot load the race: " + eventArgs.ErrorMessage);
                         };
-                        eventList.Enqueue(race);
                         break;
                     }
             }
