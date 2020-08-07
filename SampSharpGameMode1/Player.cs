@@ -34,6 +34,7 @@ namespace SampSharpGameMode1
         private Timer pathObjectsTimer;
         private List<GlobalObject> pathObjects = new List<GlobalObject>();
         private List<TextLabel> pathLabels = new List<TextLabel>();
+        private List<TextLabel> pathLabels2 = new List<TextLabel>();
 
         #region Overrides of BasePlayer
         public override void OnConnected(EventArgs e)
@@ -52,8 +53,8 @@ namespace SampSharpGameMode1
             playerRaceCreator = null;
             playerRace = null;
 
-            pathObjectsTimer = new Timer(1000, true);
-            //pathObjectsTimer.Tick += PathObjectsTimer_Tick;
+            pathObjectsTimer = new Timer(10000, true);
+            pathObjectsTimer.Tick += PathObjectsTimer_Tick;
 
             if (this.IsRegistered())
                 ShowLoginForm();
@@ -63,28 +64,69 @@ namespace SampSharpGameMode1
 
         private void PathObjectsTimer_Tick(object sender, EventArgs e)
         {
-            if (this.State == PlayerState.OnFoot)
+            if (this.State == PlayerState.OnFoot || this.State == PlayerState.Driving)
             {
                 Console.WriteLine("Player.cs - Timer tick");
-                foreach (Vector3 point in PathExtractor.pathPoints)
+                this.Notificate("Updating ...");
+                int count = 0;
+                foreach (PathExtractor.PathNode node in PathExtractor.pathNodes.FindAll(x => x.position.DistanceTo(this.Position) <= 200.0))
                 {
-                    if (Utils.IsPlayerInRangeOfPoint(this, 500.0f, point) && !pathObjects.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
+                    Vector3 point = node.position;
+                    if (!pathObjects.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
                     {
-                        Console.WriteLine("Player.cs - true");
-                        GlobalObject go = new GlobalObject(18808, point, Vector3.Zero);
+                        GlobalObject go = new GlobalObject(18728, point, Vector3.Zero);
                         pathObjects.Add(go);
                         Console.WriteLine("Object n° " + pathObjects.LastIndexOf(go) + " created: " + point);
                     }
-                    else if (!Utils.IsPlayerInRangeOfPoint(this, 500.0f, point))
+                    count++;
+                }
+                Console.WriteLine("Player.cs - Number of PathNode <= 200: " + count);
+                count = 0;
+                foreach (GlobalObject go in pathObjects.FindAll(x => x.Position.DistanceTo(this.Position) > 200.0))
+                {
+                    pathObjects.Remove(go);
+                    go.Dispose();
+                    count++;
+                }
+                Console.WriteLine("Player.cs - Number of GlobalObjects > 200: " + count);
+                count = 0;
+                foreach (PathExtractor.PathNode node in PathExtractor.pathNodes.FindAll(x => x.position.DistanceTo(this.Position) <= 100.0))
+                {
+                    Vector3 point = node.position;
+                    if (!pathLabels.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
                     {
-                        if (pathObjects.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
-                        {
-                            int removedIdx = pathObjects.LastIndexOf(pathObjects.Find(x => x.Position.X == point.X && x.Position.Y == point.Y));
-                            pathObjects.RemoveAt(removedIdx);
-                            Console.WriteLine("Object n° " + removedIdx + " removed");
-                        }
+                        TextLabel lbl = new TextLabel("PathNode: " + node.nodeID + "\n" + point.ToString(), Color.White, point, 200.0f);
+                        pathLabels.Add(lbl);
+                    }
+                    count++;
+                }
+                Console.WriteLine("Player.cs - Number of PathNode <= 100: " + count);
+                count = 0;
+                foreach (TextLabel lbl in pathLabels.FindAll(x => x.Position.DistanceTo(this.Position) > 100.0))
+                {
+                    pathLabels.Remove(lbl);
+                    lbl.Dispose();
+                    count++;
+                }
+                Console.WriteLine("Player.cs - Number of TextLabel > 100: " + count);
+
+                /*
+                foreach (PathExtractor.NaviNode node in PathExtractor.naviNodes[0].FindAll(x => x.position.DistanceTo(new Vector2(this.Position.X, this.Position.Y)) <= 100.0))
+                {
+                    Vector2 point = node.position;
+                    if (!pathLabels2.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
+                    {
+                        TextLabel lbl = new TextLabel("NaviNode: " + node.nodeID + "\n" + point.ToString(), Color.White, new Vector3(point.X, point.Y, 20.0f), 100.0f);
+                        pathLabels2.Add(lbl);
                     }
                 }
+                foreach (TextLabel lbl in pathLabels2.FindAll(x => x.Position.DistanceTo(this.Position) > 100.0))
+                {
+                    pathLabels2.Remove(lbl);
+                    lbl.Dispose();
+                }
+                */
+                this.Notificate("Updated !");
             }
             else Console.WriteLine("not spawned");
         }
@@ -308,14 +350,27 @@ namespace SampSharpGameMode1
             {
                 this.Notificate("Processing ...");
                 int idx = 0;
-                foreach (Vector3 point in PathExtractor.pathPoints.FindAll(x => x.DistanceTo(this.Position) < 200.0))
+                foreach (PathExtractor.PathNode node in PathExtractor.pathNodes[0].FindAll(x => x.position.DistanceTo(this.Position) < 200.0))
                 {
-                    Console.WriteLine("Point " + idx + " position: " + point + ", distance to player: " + point.DistanceTo(this.Position));
-                    Console.WriteLine("pathObjects.Exists: " + pathObjects.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y));
-                    if (!pathObjects.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
+                    Vector3 point = node.position;
+                    Console.WriteLine("PathNode " + idx + " position: " + point + ", distance to player: " + point.DistanceTo(this.Position));
+                    if (!pathLabels.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
                     {
-                        TextLabel lbl = new TextLabel("N°" + idx + "\n" + point.ToString(), Color.White, point, 200.0f);
+                        TextLabel lbl = new TextLabel("PathNode: " + node.nodeID + "\n" + point.ToString(), Color.White, point, 200.0f);
                         pathLabels.Add(lbl);
+                        Console.WriteLine("Label n° " + lbl.Id + " created: " + point);
+                    }
+                    idx++;
+                }
+                idx = 0;
+                foreach (PathExtractor.NaviNode node in PathExtractor.naviNodes[0].FindAll(x => x.position.DistanceTo(new Vector2(this.Position.X, this.Position.Y)) < 200.0))
+                {
+                    Vector2 point = node.position;
+                    Console.WriteLine("Point " + idx + " position: " + point + ", distance to player: " + point.DistanceTo(new Vector2(this.Position.X, this.Position.Y)));
+                    if (!pathLabels2.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
+                    {
+                        TextLabel lbl = new TextLabel("NaviNode: " + node.nodeID + "\n" + point.ToString(), Color.White, new Vector3(point.X, point.Y, 20.0f), 200.0f);
+                        pathLabels2.Add(lbl);
                         Console.WriteLine("Label n° " + lbl.Id + " created: " + point);
                     }
                     idx++;
@@ -326,7 +381,13 @@ namespace SampSharpGameMode1
                     pathLabels.Remove(lbl);
                     lbl.Dispose();
                 }
-                
+                foreach (TextLabel lbl in pathLabels2.FindAll(x => x.Position.DistanceTo(this.Position) > 200.0))
+                {
+                    Console.WriteLine("Label n° " + lbl.Id + " removed");
+                    pathLabels2.Remove(lbl);
+                    lbl.Dispose();
+                }
+
                 this.Notificate("Done !");
             }
         }

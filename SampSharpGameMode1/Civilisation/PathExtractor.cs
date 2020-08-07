@@ -79,7 +79,7 @@ namespace SampSharpGameMode1.Civilisation
             }
         }
 
-        struct PathNode
+        public struct PathNode
         {
             public Vector3 position;
             public UInt16 linkID;
@@ -105,7 +105,7 @@ namespace SampSharpGameMode1.Civilisation
             }
         }
 
-        struct NaviNode
+        public struct NaviNode
         {
             public Vector2 position;
             public UInt16 areaID;
@@ -156,6 +156,13 @@ namespace SampSharpGameMode1.Civilisation
             }
         }
 
+        public static List<Vector3>[] pathRoad = new List<Vector3>[10000];
+        public static List<PathNode>[] pathNodes = new List<PathNode>[64];
+        public static List<NaviNode>[] naviNodes = new List<NaviNode>[64];
+
+
+
+
         public static List<Vector3> pathPoints = new List<Vector3>();
         public static Vector3[] tmpPathPoints;
         private static ushort[] dataPoints;
@@ -166,19 +173,28 @@ namespace SampSharpGameMode1.Civilisation
             using (FileStream fs = File.Open(heighmapFile, FileMode.Open, FileAccess.Read))
             {
                 long mapLength = 6000 * 6000;
-                dataPoints = new ushort[mapLength];
-                for (int i = 0; i < mapLength; i++)
+                long fsLen = fs.Length;
+                dataPoints = new ushort[fsLen/2];
+                Console.Write("Loading dataPoints ...");
+
+                byte[] buffer;
+                for(int i = 0; i < fsLen/2; i++)
                 {
-                    dataPoints[i] = (ushort)fs.ReadByte();
+                    buffer = new byte[2];
+                    for (int j = 0; j < 2; j++)
+                        fs.Read(buffer, j, 1);
+                    dataPoints[i] = (ushort)GetLittleEndianInt16FromByteArray(buffer, 0);
                 }
+                Console.WriteLine(" Done");
                 fs.Close();
             }
         }
 
-        public static void Extract(string filename)
+        public static void Extract(string path, int index)
         {
             try
             {
+                string filename = path + "\\NODES" + index + ".DAT";
                 using (FileStream fs = File.Open(filename, FileMode.Open, FileAccess.Read))
                 {
                     Header header = new Header();
@@ -192,12 +208,12 @@ namespace SampSharpGameMode1.Civilisation
                     header.pedNodes = GetLittleEndianInt32FromByteArray(buffer, 8);
                     header.naviNodes = GetLittleEndianInt32FromByteArray(buffer, 12);
                     header.links = GetLittleEndianInt32FromByteArray(buffer, 16);
-                    Console.WriteLine("== Header == \r\n" + header.ToString());
+                    //Console.WriteLine("== Header == \r\n" + header.ToString());
 
                     tmpPathPoints = new Vector3[header.naviNodes];
 
-                    PathNode[] pathNodes = new PathNode[header.nodes];
                     PathNode tmpPathNode;
+                    pathNodes[index] = new List<PathNode>();
 
                     for (int j = 0; j < header.nodes; j++)
                     {
@@ -214,12 +230,12 @@ namespace SampSharpGameMode1.Civilisation
                         tmpPathNode.pathWidth = buffer[22];
                         tmpPathNode.nodeType = buffer[23];
                         tmpPathNode.flags = GetLittleEndianInt32FromByteArray(buffer, 24);
-                        pathNodes[j] = tmpPathNode;
-                        Console.WriteLine("== PathNode " + j + " == \r\n" + tmpPathNode.ToString());
+                        pathNodes[index].Add(tmpPathNode);
+                        //Console.WriteLine("== PathNode " + j + " == \r\n" + tmpPathNode.ToString());
                     }
 
-                    NaviNode[] naviNodes = new NaviNode[header.naviNodes];
                     NaviNode tmpNaviNode;
+                    naviNodes[index] = new List<NaviNode>();
 
                     for (int j = 0; j < header.naviNodes; j++)
                     {
@@ -236,8 +252,8 @@ namespace SampSharpGameMode1.Civilisation
                         tmpNaviNode.nodeID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 6);
                         tmpNaviNode.direction = new Vector2(sbyte.Parse(buffer[8].ToString("X"), System.Globalization.NumberStyles.HexNumber), sbyte.Parse(buffer[9].ToString("X"), System.Globalization.NumberStyles.HexNumber));
                         tmpNaviNode.flags = GetLittleEndianInt32FromByteArray(buffer, 10);
-                        naviNodes[j] = tmpNaviNode;
-                        Console.WriteLine("== NaviNode " + j + " == \r\n" + tmpNaviNode.ToString());
+                        naviNodes[index].Add(tmpNaviNode);
+                        //Console.WriteLine("== NaviNode " + j + " == \r\n" + tmpNaviNode.ToString());
                         pathPoints.Add(new Vector3(tmpNaviNode.position.X, tmpNaviNode.position.Y, GetAverageZ(tmpNaviNode.position.X, tmpNaviNode.position.Y) + 20.0));
                     }
 
@@ -293,6 +309,11 @@ namespace SampSharpGameMode1.Civilisation
             {
                 Console.WriteLine("PathExtractor.cs - PathExtractor.Extract:E: " + e);
             }
+        }
+
+        public static void CalculateRoads()
+        {
+
         }
 
         public static float FindZFromVector2(float x, float y)

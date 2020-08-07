@@ -40,13 +40,14 @@ namespace SampSharpGameMode1
             //npc.Create();
             //Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: NPC Created !");
 
-            Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths\\NODES35.DAT");
-            /*
+            Civilisation.PathExtractor.Load();
+            //Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths\\NODES0.DAT");
+            
             for (int i=0; i < 64; i++)
             {
-                Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths\\NODES" + i + ".DAT");
+                Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths", i);
             }
-            */
+            
             Console.WriteLine("Total path points: " + PathExtractor.pathPoints.Count);
             /*
             if(PathExtractor.pathPoints != null)
