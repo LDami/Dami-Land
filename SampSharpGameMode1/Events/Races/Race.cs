@@ -19,7 +19,7 @@ namespace SampSharpGameMode1.Events.Races
 
     public class Race
     {
-        public const int MIN_PLAYERS_IN_RACE = 1;
+        public const int MIN_PLAYERS_IN_RACE = 0;
         public const int MAX_PLAYERS_IN_RACE = 100;
 
         private int id;
@@ -55,6 +55,7 @@ namespace SampSharpGameMode1.Events.Races
         public Dictionary<Player, int> spectatingPlayersIndex = new Dictionary<Player, int>();
         private Dictionary<Player, int> playersStartingPos = new Dictionary<Player, int>();
         private Dictionary<Player, int> playerCheckpoint = new Dictionary<Player, int>(); // Showed checkpoint (destination for player)
+        private List<Player> playersEndingList;
         private Dictionary<Player, TimeSpan> playerTimeSpan = new Dictionary<Player, TimeSpan>();
         private Dictionary<Player, TimeSpan> personalRecords = new Dictionary<Player, TimeSpan>();
         private Dictionary<string, TimeSpan> records = new Dictionary<string, TimeSpan>();
@@ -188,6 +189,7 @@ namespace SampSharpGameMode1.Events.Races
                 bool isAborted = false;
                 this.players = players;
                 this.spectatingPlayers = new List<Player>();
+                this.playersEndingList = new List<Player>();
                 this.virtualWorld = virtualWorld;
 
                 Random rdm = new Random();
@@ -275,13 +277,14 @@ namespace SampSharpGameMode1.Events.Races
         {
             if(playerCheckpoint[player] != -1)
             {
-                if(playerCheckpoint[player] == this.checkpoints.Count)
+                if(playerCheckpoint[player] == this.checkpoints.Count - 1)
                 {
                     OnPlayerFinished(player, "Finished");
                 }
                 else
                 {
-                    player.Notificate("CP: " + (playerCheckpoint[player] - 1).ToString() + "/" + (this.checkpoints.Count - 1).ToString());
+                    Console.WriteLine("Race.cs - OnPlayerEnterCheckpoint:I: playerCheckpoint[" + player.Name + "] = " + playerCheckpoint[player]);
+                    player.Notificate("CP: " + (playerCheckpoint[player]).ToString() + "/" + (this.checkpoints.Count - 1).ToString());
                     playerCheckpoint[player]++;
                     UpdatePlayerCheckpoint(player);
                 }
@@ -291,12 +294,12 @@ namespace SampSharpGameMode1.Events.Races
         private void UpdatePlayerCheckpoint(Player player)
         {
             player.DisableRaceCheckpoint();
-            if (playerCheckpoint[player] < this.checkpoints.Count)
+            if (playerCheckpoint[player] < this.checkpoints.Count - 1)
             {
-                Checkpoint cp = this.checkpoints[playerCheckpoint[player] - 1];
+                Checkpoint cp = this.checkpoints[playerCheckpoint[player]];
                 try
                 {
-                    Checkpoint nextcp = this.checkpoints[playerCheckpoint[player]];
+                    Checkpoint nextcp = this.checkpoints[playerCheckpoint[player] + 1];
                     player.SetRaceCheckpoint(cp.Type, cp.Position, nextcp.Position, cp.Size);
                     if(nextcp.NextVehicle != null)
                     {
@@ -317,12 +320,24 @@ namespace SampSharpGameMode1.Events.Races
                     player.SetRaceCheckpoint(cp.Type, cp.Position, Vector3.Zero, cp.Size);
                 }
             }
+
+            if (playerCheckpoint[player] == this.checkpoints.Count - 1) // If it's the last checkpoint
+            {
+                Checkpoint cp = this.checkpoints[this.checkpoints.Count-1];
+                player.SetCheckpoint(cp.Position, cp.Size);
+            }
         }
 
         public void OnPlayerFinished(Player player, string reason)
         {
             if(reason.Equals("Finished"))
             {
+                if(playersEndingList.Count == 0)
+                {
+                    winner = player;
+                }
+                playersEndingList.Add(player);
+
                 TimeSpan duration = DateTime.Now - startedTime;
                 playerTimeSpan[player] = duration;
                 int place = playerTimeSpan.Count;
@@ -354,7 +369,11 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     isNewRecord = true;
                 }
-                player.GameText(placeStr + " place !~n~" + duration.ToString(@"hh\:mm\:ss\.fff") + ((isNewRecord) ? "~n~~r~New record  ! -" + @personalRecords[player].Subtract(duration).ToString(@"hh\:mm\:ss\.fff") : ""), 5000, 4);
+
+                if (personalRecords.ContainsKey(player))
+                    player.GameText(placeStr + " place !~n~" + duration.ToString(@"hh\:mm\:ss\.fff") + ((isNewRecord) ? "~n~~r~New record  ! -" + @personalRecords[player].Subtract(duration).ToString(@"hh\:mm\:ss\.fff") : ""), 5000, 4);
+                else
+                    player.GameText(placeStr + " place !~n~" + duration.ToString(@"hh\:mm\:ss\.fff") + ((isNewRecord) ? "~n~~r~New record  ! " : ""), 5000, 4);
 
                 if (isNewRecord)
                 {
@@ -366,7 +385,7 @@ namespace SampSharpGameMode1.Events.Races
                     param.Add("@race_id", this.Id);
                     param.Add("@player_id", player.Db_Id);
                     param.Add("@record_duration", duration.ToString(@"hh\:mm\:ss\.fff"));
-                    GameMode.mySQLConnector.Execute("INSERT INTO race_records (race_id, player_id, record_duration) VALUES (@race_id, @player_id, TIME_FORMAT(@record_duration, \"%H:\")", param);
+                    GameMode.mySQLConnector.Execute("INSERT INTO race_records (race_id, player_id, record_duration) VALUES (@race_id, @player_id, TIME_FORMAT(@record_duration, \"%H:\"))", param);
                 }
             }
 

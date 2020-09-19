@@ -161,40 +161,6 @@ namespace SampSharpGameMode1.Commands
                     infoList.Show(player);
                 }
             }
-
-            // Launcher
-            /*
-            [Command("join")]
-            private static void Join(Player player)
-            {
-                if (GameMode.raceLauncher.Join(player))
-                {
-                    player.SendClientMessage(Color.Green, "You joined the race !");
-                }
-                else
-                    player.SendClientMessage(Color.Red, "You cannot join the race");
-            }
-
-            [Command("load")]
-            private static void LoadRace(Player player, int id)
-            {
-                GameMode.raceLauncher.Load(player, id);
-            }
-
-            [Command("launchnext")]
-            private static void LaunchNextRace(Player player)
-            {
-                if (GameMode.raceLauncher.LaunchNext())
-                    player.SendClientMessage(Color.Green, "Race launched, waiting for players !");
-            }
-
-            [Command("abortnext")]
-            private static void AbortNextRace(Player player)
-            {
-                GameMode.raceLauncher.AbortNext();
-                player.SendClientMessage(Color.Green, "The next race will not be played");
-            }
-            */
         }
     }
 }

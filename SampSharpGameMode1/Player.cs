@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
@@ -31,10 +32,13 @@ namespace SampSharpGameMode1
         public Race playerRace;
 
         NPC npc;
-        private Timer pathObjectsTimer;
+        private SampSharp.GameMode.SAMP.Timer pathObjectsTimer;
         private List<GlobalObject> pathObjects = new List<GlobalObject>();
-        private List<TextLabel> pathLabels = new List<TextLabel>();
-        private List<TextLabel> pathLabels2 = new List<TextLabel>();
+        private List<GlobalObject> naviObjects = new List<GlobalObject>();
+        private TextLabel[] pathLabels = new TextLabel[1000];
+        private TextLabel[] naviLabels = new TextLabel[1000];
+
+        private int viewAreaID = -1;
 
         #region Overrides of BasePlayer
         public override void OnConnected(EventArgs e)
@@ -53,8 +57,8 @@ namespace SampSharpGameMode1
             playerRaceCreator = null;
             playerRace = null;
 
-            pathObjectsTimer = new Timer(10000, true);
-            pathObjectsTimer.Tick += PathObjectsTimer_Tick;
+            pathObjectsTimer = new SampSharp.GameMode.SAMP.Timer(10000, true);
+            //pathObjectsTimer.Tick += PathObjectsTimer_Tick;
 
             if (this.IsRegistered())
                 ShowLoginForm();
@@ -67,66 +71,8 @@ namespace SampSharpGameMode1
             if (this.State == PlayerState.OnFoot || this.State == PlayerState.Driving)
             {
                 Console.WriteLine("Player.cs - Timer tick");
-                this.Notificate("Updating ...");
-                int count = 0;
-                foreach (PathExtractor.PathNode node in PathExtractor.pathNodes.FindAll(x => x.position.DistanceTo(this.Position) <= 200.0))
-                {
-                    Vector3 point = node.position;
-                    if (!pathObjects.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
-                    {
-                        GlobalObject go = new GlobalObject(18728, point, Vector3.Zero);
-                        pathObjects.Add(go);
-                        Console.WriteLine("Object n° " + pathObjects.LastIndexOf(go) + " created: " + point);
-                    }
-                    count++;
-                }
-                Console.WriteLine("Player.cs - Number of PathNode <= 200: " + count);
-                count = 0;
-                foreach (GlobalObject go in pathObjects.FindAll(x => x.Position.DistanceTo(this.Position) > 200.0))
-                {
-                    pathObjects.Remove(go);
-                    go.Dispose();
-                    count++;
-                }
-                Console.WriteLine("Player.cs - Number of GlobalObjects > 200: " + count);
-                count = 0;
-                foreach (PathExtractor.PathNode node in PathExtractor.pathNodes.FindAll(x => x.position.DistanceTo(this.Position) <= 100.0))
-                {
-                    Vector3 point = node.position;
-                    if (!pathLabels.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
-                    {
-                        TextLabel lbl = new TextLabel("PathNode: " + node.nodeID + "\n" + point.ToString(), Color.White, point, 200.0f);
-                        pathLabels.Add(lbl);
-                    }
-                    count++;
-                }
-                Console.WriteLine("Player.cs - Number of PathNode <= 100: " + count);
-                count = 0;
-                foreach (TextLabel lbl in pathLabels.FindAll(x => x.Position.DistanceTo(this.Position) > 100.0))
-                {
-                    pathLabels.Remove(lbl);
-                    lbl.Dispose();
-                    count++;
-                }
-                Console.WriteLine("Player.cs - Number of TextLabel > 100: " + count);
-
-                /*
-                foreach (PathExtractor.NaviNode node in PathExtractor.naviNodes[0].FindAll(x => x.position.DistanceTo(new Vector2(this.Position.X, this.Position.Y)) <= 100.0))
-                {
-                    Vector2 point = node.position;
-                    if (!pathLabels2.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
-                    {
-                        TextLabel lbl = new TextLabel("NaviNode: " + node.nodeID + "\n" + point.ToString(), Color.White, new Vector3(point.X, point.Y, 20.0f), 100.0f);
-                        pathLabels2.Add(lbl);
-                    }
-                }
-                foreach (TextLabel lbl in pathLabels2.FindAll(x => x.Position.DistanceTo(this.Position) > 100.0))
-                {
-                    pathLabels2.Remove(lbl);
-                    lbl.Dispose();
-                }
-                */
-                this.Notificate("Updated !");
+                Thread t = new Thread(new ThreadStart(UpdatePath));
+                t.Start();
             }
             else Console.WriteLine("not spawned");
         }
@@ -144,6 +90,11 @@ namespace SampSharpGameMode1
             pathObjectsTimer.IsRunning = false;
             pathObjectsTimer.Dispose();
             pathObjectsTimer = null;
+
+            pathObjects = new List<GlobalObject>();
+            naviObjects = new List<GlobalObject>();
+            pathLabels = new TextLabel[1000];
+            naviLabels = new TextLabel[1000];
 
             if (npc != null) npc.Dispose();
         }
@@ -169,9 +120,17 @@ namespace SampSharpGameMode1
             base.OnEnterVehicle(e);
         }
 
+        public override void OnEnterCheckpoint(EventArgs e)
+        {
+            if (playerRace != null)
+            {
+                playerRace.OnPlayerEnterCheckpoint(this);
+            }
+        }
+
         public override void OnEnterRaceCheckpoint(EventArgs e)
         {
-            if(playerRace != null)
+            if (playerRace != null)
             {
                 playerRace.OnPlayerEnterCheckpoint(this);
             }
@@ -334,6 +293,161 @@ namespace SampSharpGameMode1
             return result;
         }
 
+        private int GetArea(Vector3 position)
+        {
+            for (int i = 0; i < 64; i++)
+            {
+                /*
+                Console.WriteLine("position: " + position.ToString());
+                Console.WriteLine("index: " + i);
+                Console.WriteLine(((position.X > PathExtractor.nodeBorders[i][0]) ? "true" : "false") + "-" + ((position.X < PathExtractor.nodeBorders[i][0] + 750) ? "true" : "false"));
+                Console.WriteLine(((position.Y > PathExtractor.nodeBorders[i][1]) ? "true" : "false") + "-" + ((position.Y < PathExtractor.nodeBorders[i][1] + 750) ? "true" : "false"));
+                */
+
+                if (position.X > PathExtractor.nodeBorders[i][0] && position.X < PathExtractor.nodeBorders[i][0] + 750
+                    && position.Y > PathExtractor.nodeBorders[i][1] && position.Y < PathExtractor.nodeBorders[i][1] + 750)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private void UpdatePath()
+        {
+            this.Notificate("Updating ...");
+            int naviNodeCount = 0;
+
+            Vector3 playerPos = this.Position;
+            if(viewAreaID == -1) viewAreaID = GetArea(playerPos);
+            Vector3 nearestPoint = Vector3.Zero;
+            Console.WriteLine("playerpos: " + playerPos.ToString());
+
+            Console.WriteLine("NodeIndex: " + viewAreaID + " ( " + PathExtractor.pathNodes[viewAreaID].Count + " nodes )");
+            if (viewAreaID != -1)
+            {
+                /*
+                foreach (PathExtractor.PathNode node in PathExtractor.pathNodes[nodeIndex])
+                {
+                    Vector3 point = node.position;
+                    if (nearestPoint == Vector3.Zero || nearestPoint.DistanceTo(playerPos) > point.DistanceTo(playerPos))
+                    {
+                        nearestPoint = point;
+                    }
+                    if (point.DistanceTo(playerPos) < 200)
+                    {
+                        if (!pathObjects.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
+                        {
+                            GlobalObject go = new GlobalObject(19130, point + new Vector3(0.0, 0.0, 1.0), Vector3.Zero);
+                            pathObjects.Add(go);
+                            string txt = "Node ID: " + node.nodeID + "\n" +
+                                "Area ID: " + node.areaID + "\n" +
+                                "Flags: " + node.flags;
+                            TextLabel lbl = new TextLabel(txt, Color.White, point + new Vector3(0.0, 0.0, 2.0), 200.0f);
+                            pathLabels[pathObjects.Count] = lbl;
+                            Console.WriteLine("Path node n° " + pathObjects.LastIndexOf(go) + " created: " + point.ToString());
+                        }
+                        naviNodeCount++;
+                    }
+                }
+                */
+                int idx = 0;
+                Vector3 lastNodePos = Vector3.Zero;
+
+                PathExtractor.pathNodes[viewAreaID].Sort(delegate (PathExtractor.PathNode a, PathExtractor.PathNode b)
+                {
+                    return a.nodeID.CompareTo(b.nodeID);
+                });
+                foreach (PathExtractor.PathNode node in PathExtractor.pathNodes[viewAreaID])
+                {
+                    if (idx > 0 && lastNodePos != Vector3.Zero)
+                    {
+                        if (nearestPoint == Vector3.Zero || nearestPoint.DistanceTo(playerPos) > lastNodePos.DistanceTo(playerPos))
+                        {
+                            nearestPoint = lastNodePos;
+                        }
+                        GlobalObject go = new GlobalObject(19130, lastNodePos + new Vector3(0.0, 0.0, 1.0), Vector3.Zero);
+
+                        double angle = Math.Atan((node.position.X - lastNodePos.X) / (node.position.Y - lastNodePos.Y));
+                        double angledegree = angle * 57.295779513;
+
+                        go.Rotation = new Vector3(90.0, 0.0, -angledegree);
+                        pathObjects.Add(go);
+
+                        string txt = "Path Node ID: " + (node.nodeID - 1) + "\n" +
+                            "Area ID: " + node.areaID + "\n" +
+                            "Flags: " + node.flags;
+                        TextLabel lbl = new TextLabel(txt, Color.White, lastNodePos + new Vector3(0.0, 0.0, 2.0), 200.0f);
+                        pathLabels[pathObjects.Count] = lbl;
+                    }
+
+                    lastNodePos = node.position;
+                    idx++;
+                }
+                /*
+                foreach (PathExtractor.NaviNode node in PathExtractor.naviNodes[viewAreaID])
+                {
+                    Vector3 point = new Vector3(node.position.X, node.position.Y, PathExtractor.GetAverageZ(node.position.X, node.position.Y));
+                    if (nearestPoint == Vector3.Zero || nearestPoint.DistanceTo(playerPos) > point.DistanceTo(playerPos))
+                    {
+                        nearestPoint = point;
+                    }
+                    if (point.DistanceTo(playerPos) < 200)
+                    {
+                        if (!naviObjects.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
+                        {
+                            GlobalObject go = new GlobalObject(19130, point + new Vector3(0.0, 0.0, 1.0), Vector3.Zero);
+                            double angle = Math.Atan(node.direction.X / node.direction.Y);
+                            double angledegree = angle * 57.295779513;
+
+                            go.Rotation = new Vector3(90.0, 0.0, -angledegree);
+                            naviObjects.Add(go);
+                            string txt = "Navi Node ID: " + node.nodeID + "\n" +
+                                "Area ID: " + node.areaID + "\n" +
+                                "Direction: " + node.direction.ToString() + "\n" +
+                                "Angle: " + angledegree + "\n" +
+                                "Flags: " + node.flags;
+                            TextLabel lbl = new TextLabel(txt, Color.White, point + new Vector3(0.0, 0.0, 2.0), 200.0f);
+                            naviLabels[naviObjects.Count] = lbl;
+                            Console.WriteLine("Navi node n° " + naviObjects.LastIndexOf(go) + " created: " + point.ToString());
+                        }
+                        naviNodeCount++;
+                    }
+                }
+                */
+
+                if (nearestPoint == Vector3.Zero)
+                    this.SendClientMessage("No path node in this area !");
+                else
+                {
+                    if (this.InAnyVehicle)
+                        this.Vehicle.Position = nearestPoint + new Vector3(0.0, 0.0, 2.0);
+                    else
+                        this.Position = nearestPoint + new Vector3(0.0, 0.0, 2.0);
+                }
+            }
+            Console.WriteLine("");
+            Console.WriteLine("Player.cs - Number of Navinodes <= 500: " + naviNodeCount);
+
+            /*
+            foreach (PathExtractor.NaviNode node in PathExtractor.naviNodes[0].FindAll(x => x.position.DistanceTo(new Vector2(this.Position.X, this.Position.Y)) <= 100.0))
+            {
+                Vector2 point = node.position;
+                if (!pathLabels2.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
+                {
+                    TextLabel lbl = new TextLabel("NaviNode: " + node.nodeID + "\n" + point.ToString(), Color.White, new Vector3(point.X, point.Y, 20.0f), 100.0f);
+                    pathLabels2.Add(lbl);
+                }
+            }
+            foreach (TextLabel lbl in pathLabels2.FindAll(x => x.Position.DistanceTo(this.Position) > 100.0))
+            {
+                pathLabels2.Remove(lbl);
+                lbl.Dispose();
+            }
+            */
+            this.Notificate("Updated !");
+        }
+
         [Command("test")]
         private void TestCommand()
         {
@@ -344,52 +458,22 @@ namespace SampSharpGameMode1
         }
 
         [Command("test2")]
-        private void Test2Command()
+        private void Test2Command(int area = -1)
         {
+            if (area == -1) area = this.GetArea(this.Position);
             if (PathExtractor.pathPoints != null)
             {
-                this.Notificate("Processing ...");
-                int idx = 0;
-                foreach (PathExtractor.PathNode node in PathExtractor.pathNodes[0].FindAll(x => x.position.DistanceTo(this.Position) < 200.0))
-                {
-                    Vector3 point = node.position;
-                    Console.WriteLine("PathNode " + idx + " position: " + point + ", distance to player: " + point.DistanceTo(this.Position));
-                    if (!pathLabels.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
-                    {
-                        TextLabel lbl = new TextLabel("PathNode: " + node.nodeID + "\n" + point.ToString(), Color.White, point, 200.0f);
-                        pathLabels.Add(lbl);
-                        Console.WriteLine("Label n° " + lbl.Id + " created: " + point);
-                    }
-                    idx++;
-                }
-                idx = 0;
-                foreach (PathExtractor.NaviNode node in PathExtractor.naviNodes[0].FindAll(x => x.position.DistanceTo(new Vector2(this.Position.X, this.Position.Y)) < 200.0))
-                {
-                    Vector2 point = node.position;
-                    Console.WriteLine("Point " + idx + " position: " + point + ", distance to player: " + point.DistanceTo(new Vector2(this.Position.X, this.Position.Y)));
-                    if (!pathLabels2.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
-                    {
-                        TextLabel lbl = new TextLabel("NaviNode: " + node.nodeID + "\n" + point.ToString(), Color.White, new Vector3(point.X, point.Y, 20.0f), 200.0f);
-                        pathLabels2.Add(lbl);
-                        Console.WriteLine("Label n° " + lbl.Id + " created: " + point);
-                    }
-                    idx++;
-                }
-                foreach (TextLabel lbl in pathLabels.FindAll(x => x.Position.DistanceTo(this.Position) > 200.0))
-                {
-                    Console.WriteLine("Label n° " + lbl.Id + " removed");
-                    pathLabels.Remove(lbl);
-                    lbl.Dispose();
-                }
-                foreach (TextLabel lbl in pathLabels2.FindAll(x => x.Position.DistanceTo(this.Position) > 200.0))
-                {
-                    Console.WriteLine("Label n° " + lbl.Id + " removed");
-                    pathLabels2.Remove(lbl);
-                    lbl.Dispose();
-                }
-
-                this.Notificate("Done !");
+                viewAreaID = area;
+                UpdatePath();
             }
+        }
+
+        [Command("getarea")]
+        private void GetareaCommand()
+        {
+            int area = this.GetArea(this.Position);
+            this.SendClientMessage("Your area is: " + area);
+            this.SendClientMessage(PathExtractor.headers[area].ToString());
         }
 
         [Command("getpos")]
@@ -434,6 +518,129 @@ namespace SampSharpGameMode1
 
         class GroupedCommandClass
         {
+
+            [CommandGroup("pathnode")]
+            class PathnodeCommandClass
+            {
+                [Command("hide")]
+                private static void Hide(Player player)
+                {
+                    foreach (TextLabel lbl in player.pathLabels)
+                    {
+                        if (lbl != null)
+                            lbl.Color = new Color(255, 255, 255, 0);
+                    }
+                }
+                [Command("show")]
+                private static void Show(Player player)
+                {
+                    foreach (TextLabel lbl in player.pathLabels)
+                    {
+                        if (lbl != null)
+                            lbl.Color = new Color(255, 255, 255, 255);
+                    }
+                }
+                [Command("tp")]
+                private static void tp(Player player, int index, int area = -1)
+                {
+                    if (area == -1) area = player.GetArea(player.Position);
+                    foreach (PathExtractor.PathNode node in PathExtractor.pathNodes[area])
+                    {
+                        if (node.nodeID == index)
+                        {
+                            if (player.InAnyVehicle)
+                                player.Vehicle.Position = node.position + new Vector3(0.0, 0.0, 2.0);
+                            else
+                                player.Position = node.position + new Vector3(0.0, 0.0, 2.0);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            [CommandGroup("navinode")]
+            class NavinodeCommandClass
+            {
+                [Command("hide")]
+                private static void Hide(Player player)
+                {
+                    foreach (TextLabel lbl in player.naviLabels)
+                    {
+                        if(lbl != null)
+                            lbl.Color = new Color(255, 255, 255, 0);
+                    }
+                }
+                [Command("show")]
+                private static void Show(Player player)
+                {
+                    foreach (TextLabel lbl in player.naviLabels)
+                    {
+                        if (lbl != null)
+                            lbl.Color = new Color(255, 255, 255, 255);
+                    }
+                }
+                [Command("tp")]
+                private static void tp(Player player, int index, int area = -1)
+                {
+                    if (area == -1) area = player.GetArea(player.Position);
+                    foreach (PathExtractor.NaviNode node in PathExtractor.naviNodes[area])
+                    {
+                        if (node.nodeID == index)
+                        {
+                            Vector3 pos = new Vector3(node.position.X, node.position.Y, PathExtractor.GetAverageZ(node.position.X, node.position.Y) + 2.0);
+                            Console.WriteLine("Teleporting player to navi node " + node.nodeID + " in area " + node.areaID + " at position " + pos.ToString());
+                            if (player.InAnyVehicle)
+                                player.Vehicle.Position = pos;
+                            else
+                                player.Position = pos;
+                            break;
+                        }
+                    }
+                }
+                [Command("create")]
+                private static void Create(Player player, int index, int area = -1)
+                {
+                    if (area == -1) area = player.GetArea(player.Position);
+                    var watch = System.Diagnostics.Stopwatch.StartNew();
+                    List<PathExtractor.NaviNode> nodes = PathExtractor.naviNodes[area].FindAll(x => x.areaID == area && x.nodeID == index);
+                    watch.Stop();
+                    Console.WriteLine("Player.cs - Execution time with .Find method: " + watch.ElapsedMilliseconds + " ms");
+
+                    nodes.Clear();
+                    watch = System.Diagnostics.Stopwatch.StartNew();
+                    foreach (PathExtractor.NaviNode node in PathExtractor.naviNodes[area])
+                    {
+                        if (node.areaID == area && node.nodeID == index)
+                        {
+                            nodes.Add(node);
+                        }
+                    }
+                    watch.Stop();
+                    Console.WriteLine("Player.cs - Execution time with for loop: " + watch.ElapsedMilliseconds + " ms");
+
+                    foreach(PathExtractor.NaviNode node in nodes)
+                    {
+                        Vector3 point = new Vector3(node.position.X, node.position.Y, PathExtractor.GetAverageZ(node.position.X, node.position.Y));
+                        if (!player.naviObjects.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
+                        {
+                            GlobalObject go = new GlobalObject(19130, point + new Vector3(0.0, 0.0, 1.0), Vector3.Zero);
+                            double angle = Math.Atan(node.direction.X / node.direction.Y);
+                            double angledegree = angle * 57.295779513;
+
+                            go.Rotation = new Vector3(90.0, 0.0, -angledegree);
+                            player.naviObjects.Add(go);
+                            string txt = "Navi Node ID: " + node.nodeID + "\n" +
+                                "area ID: " + node.areaID + "\n" +
+                                "Direction: " + node.direction.ToString() + "\n" +
+                                "Angle: " + angledegree + "\n" +
+                                "Flags: " + node.flags;
+                            TextLabel lbl = new TextLabel(txt, Color.White, point + new Vector3(0.0, 0.0, 2.0), 200.0f);
+                            player.naviLabels[player.naviObjects.Count] = lbl;
+                            Console.WriteLine("Navi node n° " + player.naviObjects.LastIndexOf(go) + " created: " + point.ToString());
+                        }
+                    }
+                }
+            }
             [CommandGroup("td")]
             class TextdrawCommandClass
             {

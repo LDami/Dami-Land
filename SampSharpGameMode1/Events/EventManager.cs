@@ -1,4 +1,5 @@
-﻿using SampSharp.GameMode.Definitions;
+﻿using Google.Protobuf;
+using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
 using SampSharp.GameMode.SAMP;
 using SampSharpGameMode1.Events.Races;
@@ -48,7 +49,7 @@ namespace SampSharpGameMode1.Events
                         ShowCreateEventTypeDialog(player);
                     }
                     else
-                        ShowEventOptionDialog(player, eventList.ElementAt(eventArgs.ListItem + 1));
+                        ShowEventOptionDialog(player, eventList.ElementAt(eventArgs.ListItem - 1));
                 }
                 else
                 {
@@ -62,7 +63,8 @@ namespace SampSharpGameMode1.Events
             ListDialog createEventDialog = new ListDialog("Create an event", "Create", "Cancel");
             foreach (EventType t in (EventType[])Enum.GetValues(typeof(EventType)))
             {
-                createEventDialog.AddItem(t.ToString());
+                if(t.ToString() != "Unknown")
+                    createEventDialog.AddItem(t.ToString());
             }
 
             createEventDialog.Show(player);
@@ -76,7 +78,7 @@ namespace SampSharpGameMode1.Events
                     else
                     {
                         ShowCreateEventTypeDialog(player);
-                        player.Notificate("Unable to parse event type");
+                        player.Notificate("Unable to parse event type: " + eventArgs.InputText);
                     }
                 }
                 else
@@ -195,12 +197,11 @@ namespace SampSharpGameMode1.Events
                 case EventType.Race:
                     {
                         Event newEvent = new RaceEvent(id);
-                        player.SendClientMessage(Color.Green, "Loading Race #" + id);
                         newEvent.Loaded += (sender, eventArgs) =>
                         {
                             if (eventArgs.ErrorMessage == null)
                             {
-                                if(player.IsConnected) player.SendClientMessage(Color.Green, "Race loaded !");
+                                if(player.IsConnected) player.SendClientMessage(Color.Green, "Event " + eventArgs.EventLoaded.Id + " loaded ! (Race)");
                                 eventList.Add(eventArgs.EventLoaded);
                                 if(openedEvent == null)
                                 {
@@ -213,6 +214,8 @@ namespace SampSharpGameMode1.Events
                             else
                                 if (player.IsConnected) player.SendClientMessage(Color.Red, "Cannot load the race: " + eventArgs.ErrorMessage);
                         };
+                        player.SendClientMessage(Color.Green, "Loading Race #" + id);
+                        newEvent.Load();
                         break;
                     }
             }

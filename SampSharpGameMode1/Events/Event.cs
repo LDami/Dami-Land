@@ -16,6 +16,7 @@ namespace SampSharpGameMode1.Events
     }
     public enum EventType
     {
+        Unknown,
         Race,
         Derby
     }
@@ -60,7 +61,7 @@ namespace SampSharpGameMode1.Events
         public void Open()
         {
             players.Clear();
-            Player.SendClientMessageToAll("[Event] The " + this.Type.ToString() + " " + this.Name + " will start soon, join it with " + Color.AliceBlue + "/race join");
+            Player.SendClientMessageToAll("[Event] The " + this.Type.ToString() + " " + this.Name + " will start soon, join it with " + Color.AliceBlue + "/event join");
             this.Status = EventStatus.Waiting;
         }
         public abstract void Start();

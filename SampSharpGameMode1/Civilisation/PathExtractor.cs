@@ -42,7 +42,7 @@ namespace SampSharpGameMode1.Civilisation
             startIndex += 4;
             z = (data[startIndex + 3] << 24) | (data[startIndex + 2] << 16) | (data[startIndex + 1] << 8) | (data[startIndex]);
 
-            return new Vector3(x/8, y/8, z/8);
+            return new Vector3(x / 8, y / 8, z / 8);
         }
 
         static void stoLittleEndian(short s, ref byte[] array, int off = 0)
@@ -61,7 +61,7 @@ namespace SampSharpGameMode1.Civilisation
             array[2] = (byte)(((uint)f >> 16) & 0xFF);
             array[3] = (byte)(((uint)f >> 24) & 0xFF);
         }
-        struct Header
+        public struct Header
         {
             public int nodes; // nodes = vehiclesNodes + pedNodes
             public int vehiclesNodes;
@@ -119,7 +119,8 @@ namespace SampSharpGameMode1.Civilisation
              *  14 - traffic light direction behavior
              *  15 - zero/unused
              *  16,17 - traffic light behavior
-             *  18-31 - zero/unused
+             *  18 - train crossing
+             *  19-31 - zero/unused
             */
 
             public override string ToString()
@@ -156,11 +157,20 @@ namespace SampSharpGameMode1.Civilisation
             }
         }
 
+        public enum NodeType : byte
+        {
+            Cars = 1,
+            Boats = 2,
+            Peds = 100
+        }
+
         public static List<Vector3>[] pathRoad = new List<Vector3>[10000];
+        public static Vector3[][] roads = new Vector3[50000][];
+        public static Header[] headers = new Header[64];
         public static List<PathNode>[] pathNodes = new List<PathNode>[64];
         public static List<NaviNode>[] naviNodes = new List<NaviNode>[64];
 
-
+        public static float[][] nodeBorders = new float[64][];
 
 
         public static List<Vector3> pathPoints = new List<Vector3>();
@@ -172,11 +182,10 @@ namespace SampSharpGameMode1.Civilisation
             string heighmapFile = BaseMode.Instance.Client.ServerPath + "\\scriptfiles\\SAfull.hmap";
             using (FileStream fs = File.Open(heighmapFile, FileMode.Open, FileAccess.Read))
             {
-                long mapLength = 6000 * 6000;
                 long fsLen = fs.Length;
                 dataPoints = new ushort[fsLen/2];
                 Console.Write("Loading dataPoints ...");
-
+                
                 byte[] buffer;
                 for(int i = 0; i < fsLen/2; i++)
                 {
@@ -185,6 +194,7 @@ namespace SampSharpGameMode1.Civilisation
                         fs.Read(buffer, j, 1);
                     dataPoints[i] = (ushort)GetLittleEndianInt16FromByteArray(buffer, 0);
                 }
+                
                 Console.WriteLine(" Done");
                 fs.Close();
             }
@@ -192,127 +202,144 @@ namespace SampSharpGameMode1.Civilisation
 
         public static void Extract(string path, int index)
         {
-            try
+            if(path.Length > 0 && index >= 0 && index < 64)
             {
-                string filename = path + "\\NODES" + index + ".DAT";
-                using (FileStream fs = File.Open(filename, FileMode.Open, FileAccess.Read))
+                try
                 {
-                    Header header = new Header();
-                    byte[] buffer = new byte[20];
-                    for (int i = 0; i < 20; i++)
+                    string filename = path + "\\NODES" + index + ".DAT";
+                    using (FileStream fs = File.Open(filename, FileMode.Open, FileAccess.Read))
                     {
-                        fs.Read(buffer, i, 1);
-                    }
-                    header.nodes = GetLittleEndianInt32FromByteArray(buffer, 0);
-                    header.vehiclesNodes = GetLittleEndianInt32FromByteArray(buffer, 4);
-                    header.pedNodes = GetLittleEndianInt32FromByteArray(buffer, 8);
-                    header.naviNodes = GetLittleEndianInt32FromByteArray(buffer, 12);
-                    header.links = GetLittleEndianInt32FromByteArray(buffer, 16);
-                    //Console.WriteLine("== Header == \r\n" + header.ToString());
-
-                    tmpPathPoints = new Vector3[header.naviNodes];
-
-                    PathNode tmpPathNode;
-                    pathNodes[index] = new List<PathNode>();
-
-                    for (int j = 0; j < header.nodes; j++)
-                    {
-                        buffer = new byte[28];
-                        for (int i = 0; i < 28; i++)
+                        Header header = new Header();
+                        byte[] buffer = new byte[20];
+                        for (int i = 0; i < 20; i++)
                         {
                             fs.Read(buffer, i, 1);
                         }
-                        tmpPathNode = new PathNode();
-                        tmpPathNode.position = new Vector3(GetLittleEndianInt16FromByteArray(buffer, 8) / 8, GetLittleEndianInt16FromByteArray(buffer, 10) / 8, GetLittleEndianInt16FromByteArray(buffer, 12) / 8);
-                        tmpPathNode.linkID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 16);
-                        tmpPathNode.areaID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 18);
-                        tmpPathNode.nodeID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 20);
-                        tmpPathNode.pathWidth = buffer[22];
-                        tmpPathNode.nodeType = buffer[23];
-                        tmpPathNode.flags = GetLittleEndianInt32FromByteArray(buffer, 24);
-                        pathNodes[index].Add(tmpPathNode);
-                        //Console.WriteLine("== PathNode " + j + " == \r\n" + tmpPathNode.ToString());
-                    }
+                        header.nodes = GetLittleEndianInt32FromByteArray(buffer, 0);
+                        header.vehiclesNodes = GetLittleEndianInt32FromByteArray(buffer, 4);
+                        header.pedNodes = GetLittleEndianInt32FromByteArray(buffer, 8);
+                        header.naviNodes = GetLittleEndianInt32FromByteArray(buffer, 12);
+                        header.links = GetLittleEndianInt32FromByteArray(buffer, 16);
+                        headers[index] = header;
+                        //Console.WriteLine("== Header == \r\n" + header.ToString());
 
-                    NaviNode tmpNaviNode;
-                    naviNodes[index] = new List<NaviNode>();
+                        tmpPathPoints = new Vector3[header.naviNodes];
 
-                    for (int j = 0; j < header.naviNodes; j++)
-                    {
-                        buffer = new byte[14];
-                        for (int i = 0; i < 14; i++)
+                        PathNode tmpPathNode;
+                        pathNodes[index] = new List<PathNode>();
+
+                        for (int j = 0; j < header.nodes; j++)
                         {
-                            fs.Read(buffer, i, 1);
-                            //Console.WriteLine("buffer[" + i + "] {0:X}", buffer[i]);
+                            buffer = new byte[28];
+                            for (int i = 0; i < 28; i++)
+                            {
+                                fs.Read(buffer, i, 1);
+                            }
+                            tmpPathNode = new PathNode();
+                            tmpPathNode.position = new Vector3(GetLittleEndianInt16FromByteArray(buffer, 8) / 8, GetLittleEndianInt16FromByteArray(buffer, 10) / 8, GetLittleEndianInt16FromByteArray(buffer, 12) / 8);
+                            tmpPathNode.linkID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 16);
+                            tmpPathNode.areaID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 18);
+                            tmpPathNode.nodeID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 20);
+                            tmpPathNode.pathWidth = buffer[22];
+                            tmpPathNode.nodeType = buffer[23];
+                            tmpPathNode.flags = GetLittleEndianInt32FromByteArray(buffer, 24);
+                            if ((NodeType)tmpPathNode.nodeType == NodeType.Cars)
+                                pathNodes[index].Add(tmpPathNode);
+                            //Console.WriteLine("== PathNode " + j + " == \r\n" + tmpPathNode.ToString());
                         }
 
-                        tmpNaviNode = new NaviNode();
-                        tmpNaviNode.position = new Vector2(GetLittleEndianInt16FromByteArray(buffer, 0) / 8, GetLittleEndianInt16FromByteArray(buffer, 2) / 8);
-                        tmpNaviNode.areaID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 4);
-                        tmpNaviNode.nodeID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 6);
-                        tmpNaviNode.direction = new Vector2(sbyte.Parse(buffer[8].ToString("X"), System.Globalization.NumberStyles.HexNumber), sbyte.Parse(buffer[9].ToString("X"), System.Globalization.NumberStyles.HexNumber));
-                        tmpNaviNode.flags = GetLittleEndianInt32FromByteArray(buffer, 10);
-                        naviNodes[index].Add(tmpNaviNode);
-                        //Console.WriteLine("== NaviNode " + j + " == \r\n" + tmpNaviNode.ToString());
-                        pathPoints.Add(new Vector3(tmpNaviNode.position.X, tmpNaviNode.position.Y, GetAverageZ(tmpNaviNode.position.X, tmpNaviNode.position.Y) + 20.0));
-                    }
+                        NaviNode tmpNaviNode;
+                        naviNodes[index] = new List<NaviNode>();
 
-                    Link[] links = new Link[header.links];
-                    Link tmpLink;
-
-                    for (int j = 0; j < header.links; j++)
-                    {
-                        buffer = new byte[4];
-                        for (int i = 0; i < 4; i++)
+                        for (int j = 0; j < header.naviNodes; j++)
                         {
-                            fs.Read(buffer, i, 1);
-                            //Console.WriteLine("buffer[" + i + "] {0:X}", buffer[i]);
+                            buffer = new byte[14];
+                            for (int i = 0; i < 14; i++)
+                            {
+                                fs.Read(buffer, i, 1);
+                                //Console.WriteLine("buffer[" + i + "] {0:X}", buffer[i]);
+                            }
+
+                            tmpNaviNode = new NaviNode();
+                            tmpNaviNode.position = new Vector2(GetLittleEndianInt16FromByteArray(buffer, 0) / 8, GetLittleEndianInt16FromByteArray(buffer, 2) / 8);
+                            tmpNaviNode.areaID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 4);
+                            tmpNaviNode.nodeID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 6);
+                            tmpNaviNode.direction = new Vector2(sbyte.Parse(buffer[8].ToString("X"), System.Globalization.NumberStyles.HexNumber), sbyte.Parse(buffer[9].ToString("X"), System.Globalization.NumberStyles.HexNumber));
+                            tmpNaviNode.direction = new Vector2(tmpNaviNode.direction.X / 100, tmpNaviNode.direction.Y / 100);
+                            tmpNaviNode.flags = GetLittleEndianInt32FromByteArray(buffer, 10);
+                            naviNodes[index].Add(tmpNaviNode);
+                            //Console.WriteLine("== NaviNode " + j + " == \r\n" + tmpNaviNode.ToString());
+                            pathPoints.Add(new Vector3(tmpNaviNode.position.X, tmpNaviNode.position.Y, GetAverageZ(tmpNaviNode.position.X, tmpNaviNode.position.Y)));
                         }
 
-                        tmpLink = new Link();
-                        tmpLink.areaID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 0);
-                        tmpLink.nodeID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 2);
-                        links[j] = tmpLink;
-                        //Console.WriteLine("== Link " + j + " == \r\n" + tmpLink.ToString());
-                    }
+                        Link[] links = new Link[header.links];
+                        Link tmpLink;
 
-                    for (int i = 0; i < 768; i++)
-                        fs.ReadByte();
-
-                    NaviLink[] naviLinks = new NaviLink[512];
-                    NaviLink tmpNaviLink;
-
-                    for (int j = 0; j < 512; j++)
-                    {
-                        buffer = new byte[2];
-                        for (int i = 0; i < 2; i++)
+                        for (int j = 0; j < header.links; j++)
                         {
-                            fs.Read(buffer, i, 1);
-                            //Console.WriteLine("buffer[" + i + "] {0:X}", buffer[i]);
+                            buffer = new byte[4];
+                            for (int i = 0; i < 4; i++)
+                            {
+                                fs.Read(buffer, i, 1);
+                                //Console.WriteLine("buffer[" + i + "] {0:X}", buffer[i]);
+                            }
+
+                            tmpLink = new Link();
+                            tmpLink.areaID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 0);
+                            tmpLink.nodeID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 2);
+                            links[j] = tmpLink;
+                            //Console.WriteLine("== Link " + j + " == \r\n" + tmpLink.ToString());
                         }
 
-                        tmpNaviLink = new NaviLink();
-                        UInt16 tmp = (ushort)GetLittleEndianInt16FromByteArray(buffer, 0);
+                        for (int i = 0; i < 768; i++)
+                            fs.ReadByte();
 
-                        tmpNaviLink.areaID = (ushort)Convert.ToInt16(tmp >> 6);
-                        tmpNaviLink.naviNodeID = (ushort)Convert.ToInt16(tmp & 0b0000000000111111);
-                        naviLinks[j] = tmpNaviLink;
-                        //Console.WriteLine("== NaviLink " + j + " == \r\n" + tmpNaviLink.ToString());
+                        NaviLink[] naviLinks = new NaviLink[512];
+                        NaviLink tmpNaviLink;
+
+                        for (int j = 0; j < 512; j++)
+                        {
+                            buffer = new byte[2];
+                            for (int i = 0; i < 2; i++)
+                            {
+                                fs.Read(buffer, i, 1);
+                                //Console.WriteLine("buffer[" + i + "] {0:X}", buffer[i]);
+                            }
+
+                            tmpNaviLink = new NaviLink();
+                            UInt16 tmp = (ushort)GetLittleEndianInt16FromByteArray(buffer, 0);
+
+                            tmpNaviLink.areaID = (ushort)Convert.ToInt16(tmp >> 6);
+                            tmpNaviLink.naviNodeID = (ushort)Convert.ToInt16(tmp & 0b0000000000111111);
+                            naviLinks[j] = tmpNaviLink;
+                            //Console.WriteLine("== NaviLink " + j + " == \r\n" + tmpNaviLink.ToString());
+                        }
+
+                        int row, col;
+                        row = (int)(index % 8);
+                        col = (int)(index / 8);
+
+                        nodeBorders[index] = new float[] { -3000 + (750 * row), -3000 + (750 * col) };
+
+                        Console.WriteLine("index: " + index + " nodeBorder: " + nodeBorders[index][0].ToString() + ";" + nodeBorders[index][1].ToString());
+
+                        //Console.WriteLine("PathExtractor.cs - PathExtractor.Extract:I: Path loaded from " + fs.Name);
+                        //Console.WriteLine("PathExtractor.cs - PathExtractor.Extract:I: Path points: " + tmpPathPoints.Length);
+                        fs.Close();
                     }
-
-                    //Console.WriteLine("PathExtractor.cs - PathExtractor.Extract:I: Path loaded from " + fs.Name);
-                    //Console.WriteLine("PathExtractor.cs - PathExtractor.Extract:I: Path points: " + tmpPathPoints.Length);
-                    fs.Close();
                 }
-            }
-            catch (IOException e)
-            {
-                Console.WriteLine("PathExtractor.cs - PathExtractor.Extract:E: " + e);
+                catch (IOException e)
+                {
+                    Console.WriteLine("PathExtractor.cs - PathExtractor.Extract:E: " + e);
+                }
             }
         }
 
         public static void CalculateRoads()
         {
+            int aera = 44;
+            List<PathNode> _pathNodes = pathNodes[aera];
+            List<NaviNode> _naviNodes = naviNodes[aera];
 
         }
 
