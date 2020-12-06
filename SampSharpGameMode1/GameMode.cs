@@ -12,6 +12,7 @@ namespace SampSharpGameMode1
 
         public static MySQLConnector mySQLConnector = null;
         public static EventManager eventManager = null;
+        public MySocketIO socket = null;
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
@@ -21,6 +22,8 @@ namespace SampSharpGameMode1
             Console.WriteLine("----------------------------------\n");
 
             this.AddPlayerClass(1, 1, new Vector3(1431.6393, 1519.5398, 10.5988), 0.0f);
+
+            Logger.Init();
 
             Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Connecting to MySQL Server ...");
             mySQLConnector = MySQLConnector.Instance();
@@ -42,12 +45,24 @@ namespace SampSharpGameMode1
 
             Civilisation.PathExtractor.Load();
             //Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths", 54);
-            
-            for (int i=0; i < 64; i++)
+
+            for (int i = 0; i < 64; i++)
             {
                 Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths", i);
             }
-            
+            for (int i = 0; i < 64; i++)
+            {
+                Civilisation.PathExtractor.CheckLinks(i);
+            }
+            for (int i = 0; i < 64; i++)
+            {
+                Civilisation.PathExtractor.SeparateNodes(i);
+            }
+            //Civilisation.PathExtractor.SeparateNodes(16);
+            //Civilisation.PathExtractor.SeparateNodes(54);
+            //Civilisation.PathExtractor.CheckLinks(54);
+            Civilisation.PathExtractor.ValidateNaviLink();
+
             Console.WriteLine("Total path points: " + PathExtractor.pathPoints.Count);
             /*
             if(PathExtractor.pathPoints != null)
@@ -66,7 +81,14 @@ namespace SampSharpGameMode1
                 }
             }
             */
+            
+            Console.Write("GameMode.cs - GameMode.OnInitialized:I: Connecting to socket ... ");
+            socket = new MySocketIO("1270.0.0.1", 5555);
+            if (socket.GetStatus() == MySocketIO.SocketStatus.CONNECTED)
+                Console.WriteLine("Done");
+            
             Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Gamemode ready !");
+            
         }
 
         protected override void OnExited(EventArgs e)

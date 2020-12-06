@@ -11,6 +11,7 @@ using SampSharp.GameMode.SAMP.Commands;
 using SampSharp.GameMode.World;
 using SampSharpGameMode1.Civilisation;
 using SampSharpGameMode1.Events.Races;
+using static SampSharpGameMode1.Civilisation.PathExtractor;
 
 namespace SampSharpGameMode1
 {
@@ -119,9 +120,10 @@ namespace SampSharpGameMode1
         {
             base.OnEnterVehicle(e);
         }
-
+        
         public override void OnEnterCheckpoint(EventArgs e)
         {
+            base.OnEnterCheckpoint(e);
             if (playerRace != null)
             {
                 playerRace.OnPlayerEnterCheckpoint(this);
@@ -130,15 +132,22 @@ namespace SampSharpGameMode1
 
         public override void OnEnterRaceCheckpoint(EventArgs e)
         {
+            base.OnEnterRaceCheckpoint(e);
             if (playerRace != null)
             {
                 playerRace.OnPlayerEnterCheckpoint(this);
             }
         }
-
+        
         public override void OnSpawned(SpawnEventArgs e)
         {
             base.OnSpawned(e);
+        }
+
+        public override void OnClickMap(PositionEventArgs e)
+        {
+            base.OnClickMap(e);
+            CalculateWay(this.Position, e.Position);
         }
         #endregion
 
@@ -297,17 +306,17 @@ namespace SampSharpGameMode1
         {
             for (int i = 0; i < 64; i++)
             {
-                /*
-                Console.WriteLine("position: " + position.ToString());
-                Console.WriteLine("index: " + i);
-                Console.WriteLine(((position.X > PathExtractor.nodeBorders[i][0]) ? "true" : "false") + "-" + ((position.X < PathExtractor.nodeBorders[i][0] + 750) ? "true" : "false"));
-                Console.WriteLine(((position.Y > PathExtractor.nodeBorders[i][1]) ? "true" : "false") + "-" + ((position.Y < PathExtractor.nodeBorders[i][1] + 750) ? "true" : "false"));
-                */
-
-                if (position.X > PathExtractor.nodeBorders[i][0] && position.X < PathExtractor.nodeBorders[i][0] + 750
-                    && position.Y > PathExtractor.nodeBorders[i][1] && position.Y < PathExtractor.nodeBorders[i][1] + 750)
+                try
                 {
-                    return i;
+                    if (position.X > (PathExtractor.nodeBorders[i][0] ?? 0.0f) && position.X < (PathExtractor.nodeBorders[i][0] ?? 0.0f) + 750
+                        && position.Y > (PathExtractor.nodeBorders[i][1] ?? 0.0f) && position.Y < (PathExtractor.nodeBorders[i][1] ?? 0.0f) + 750)
+                    {
+                        return i;
+                    }
+                }
+                catch(Exception)
+                {
+                    Console.WriteLine("Player.cs - Player.GetArea:E: PathExtractor.nodeBorders[" + i + "] is null");
                 }
             }
             return -1;
@@ -326,31 +335,6 @@ namespace SampSharpGameMode1
             Console.WriteLine("NodeIndex: " + viewAreaID + " ( " + PathExtractor.pathNodes[viewAreaID].Count + " nodes )");
             if (viewAreaID != -1)
             {
-                /*
-                foreach (PathExtractor.PathNode node in PathExtractor.pathNodes[nodeIndex])
-                {
-                    Vector3 point = node.position;
-                    if (nearestPoint == Vector3.Zero || nearestPoint.DistanceTo(playerPos) > point.DistanceTo(playerPos))
-                    {
-                        nearestPoint = point;
-                    }
-                    if (point.DistanceTo(playerPos) < 200)
-                    {
-                        if (!pathObjects.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
-                        {
-                            GlobalObject go = new GlobalObject(19130, point + new Vector3(0.0, 0.0, 1.0), Vector3.Zero);
-                            pathObjects.Add(go);
-                            string txt = "Node ID: " + node.nodeID + "\n" +
-                                "Area ID: " + node.areaID + "\n" +
-                                "Flags: " + node.flags;
-                            TextLabel lbl = new TextLabel(txt, Color.White, point + new Vector3(0.0, 0.0, 2.0), 200.0f);
-                            pathLabels[pathObjects.Count] = lbl;
-                            Console.WriteLine("Path node n° " + pathObjects.LastIndexOf(go) + " created: " + point.ToString());
-                        }
-                        naviNodeCount++;
-                    }
-                }
-                */
                 int idx = 0;
                 Vector3 lastNodePos = Vector3.Zero;
 
@@ -360,31 +344,35 @@ namespace SampSharpGameMode1
                 });
                 foreach (PathExtractor.PathNode node in PathExtractor.pathNodes[viewAreaID])
                 {
-                    if (idx > 0 && lastNodePos != Vector3.Zero)
+                    if (node.position.DistanceTo(playerPos) < 200)
                     {
-                        if (nearestPoint == Vector3.Zero || nearestPoint.DistanceTo(playerPos) > lastNodePos.DistanceTo(playerPos))
+                        if (idx > 0 && lastNodePos != Vector3.Zero)
                         {
-                            nearestPoint = lastNodePos;
+                            if (nearestPoint == Vector3.Zero || nearestPoint.DistanceTo(playerPos) > lastNodePos.DistanceTo(playerPos))
+                            {
+                                nearestPoint = lastNodePos;
+                            }
+                            if (!pathObjects.Exists(x => x.Position.X == node.position.X && x.Position.Y == node.position.Y))
+                            {
+                                GlobalObject go = new GlobalObject(19130, lastNodePos + new Vector3(0.0, 0.0, 1.0), Vector3.Zero);
+
+                                double angle = Math.Atan((node.position.X - lastNodePos.X) / (node.position.Y - lastNodePos.Y));
+                                double angledegree = angle * 57.295779513;
+
+                                go.Rotation = new Vector3(90.0, 0.0, -angledegree);
+                                pathObjects.Add(go);
+
+                                string txt = "ID: " + node.id + "\n" +
+                                    "Path Node ID: " + node.nodeID;
+                                TextLabel lbl = new TextLabel(txt, Color.White, lastNodePos + new Vector3(0.0, 0.0, 2.0), 200.0f);
+                                pathLabels[pathObjects.Count - 1] = lbl;
+                            }
                         }
-                        GlobalObject go = new GlobalObject(19130, lastNodePos + new Vector3(0.0, 0.0, 1.0), Vector3.Zero);
-
-                        double angle = Math.Atan((node.position.X - lastNodePos.X) / (node.position.Y - lastNodePos.Y));
-                        double angledegree = angle * 57.295779513;
-
-                        go.Rotation = new Vector3(90.0, 0.0, -angledegree);
-                        pathObjects.Add(go);
-
-                        string txt = "Path Node ID: " + (node.nodeID - 1) + "\n" +
-                            "Area ID: " + node.areaID + "\n" +
-                            "Flags: " + node.flags;
-                        TextLabel lbl = new TextLabel(txt, Color.White, lastNodePos + new Vector3(0.0, 0.0, 2.0), 200.0f);
-                        pathLabels[pathObjects.Count] = lbl;
+                        lastNodePos = node.position;
+                        idx ++;
                     }
-
-                    lastNodePos = node.position;
-                    idx++;
                 }
-                /*
+                
                 foreach (PathExtractor.NaviNode node in PathExtractor.naviNodes[viewAreaID])
                 {
                     Vector3 point = new Vector3(node.position.X, node.position.Y, PathExtractor.GetAverageZ(node.position.X, node.position.Y));
@@ -402,19 +390,14 @@ namespace SampSharpGameMode1
 
                             go.Rotation = new Vector3(90.0, 0.0, -angledegree);
                             naviObjects.Add(go);
-                            string txt = "Navi Node ID: " + node.nodeID + "\n" +
-                                "Area ID: " + node.areaID + "\n" +
-                                "Direction: " + node.direction.ToString() + "\n" +
-                                "Angle: " + angledegree + "\n" +
-                                "Flags: " + node.flags;
+                            string txt = "Navi Node ID: " + node.id;
                             TextLabel lbl = new TextLabel(txt, Color.White, point + new Vector3(0.0, 0.0, 2.0), 200.0f);
                             naviLabels[naviObjects.Count] = lbl;
-                            Console.WriteLine("Navi node n° " + naviObjects.LastIndexOf(go) + " created: " + point.ToString());
                         }
                         naviNodeCount++;
                     }
                 }
-                */
+                
 
                 if (nearestPoint == Vector3.Zero)
                     this.SendClientMessage("No path node in this area !");
@@ -427,25 +410,122 @@ namespace SampSharpGameMode1
                 }
             }
             Console.WriteLine("");
-            Console.WriteLine("Player.cs - Number of Navinodes <= 500: " + naviNodeCount);
+            Console.WriteLine("Player.cs - Number of Navinodes <= 200: " + naviNodeCount);
 
-            /*
-            foreach (PathExtractor.NaviNode node in PathExtractor.naviNodes[0].FindAll(x => x.position.DistanceTo(new Vector2(this.Position.X, this.Position.Y)) <= 100.0))
+            this.Notificate("Updated !");
+        }
+
+        void CalculateWay(Vector3 from, Vector3 to)
+        {
+            PathNode startNode, endNode;
+            List<PathNode> allPathNodes = GetPathNodes();
+            List<PathNode> allNearPathNodes = new List<PathNode>();
+
+            PathNode nearestNodeFrom = new PathNode();
+            PathNode nearestNodeTo = new PathNode();
+            PathNode lastNode = new PathNode();
+
+
+            GameMode gm = (GameMode)BaseMode.Instance;
+            bool isSocketAlive = false;
+            MySocketIO socket = gm.socket;
+            if (socket.GetStatus() == MySocketIO.SocketStatus.CONNECTED)
             {
-                Vector2 point = node.position;
-                if (!pathLabels2.Exists(x => x.Position.X == point.X && x.Position.Y == point.Y))
+                isSocketAlive = true;
+                Console.WriteLine("Player.cs - Player.CalculateWay:I: Sending datas ... ");
+            }
+
+            string data;
+            foreach (PathNode node in allPathNodes)
+            {
+                if(node.position.DistanceTo(from) < from.DistanceTo(to) || node.position.DistanceTo(to) < from.DistanceTo(to))
                 {
-                    TextLabel lbl = new TextLabel("NaviNode: " + node.nodeID + "\n" + point.ToString(), Color.White, new Vector3(point.X, point.Y, 20.0f), 100.0f);
-                    pathLabels2.Add(lbl);
+                    allNearPathNodes.Add(node);
+                    data = "{ \"id\": \"" + node.id + "\", \"posX\": " + node.position.X + ", \"posY\": " + node.position.Y + ", \"links\": [";
+                    int idx = 1;
+                    foreach(LinkInfo link in node.links)
+                    {
+                        data += "\"" + link.targetNode.id + "\"";
+                        if (idx < node.links.Count)
+                            data += ",";
+                        idx++;
+                    }
+                    data += "] }";
+                    if (socket.GetStatus() == MySocketIO.SocketStatus.CONNECTED)
+                    {
+                        isSocketAlive = true;
+                    }
+                    if (isSocketAlive)
+                    {
+                        if (socket.Write(data) == -1) isSocketAlive = false;
+                    }
                 }
             }
-            foreach (TextLabel lbl in pathLabels2.FindAll(x => x.Position.DistanceTo(this.Position) > 100.0))
+            if(isSocketAlive)
+                Console.WriteLine("Done");
+            else
+                Console.WriteLine("KO");
+            socket.Close();
+
+            foreach (PathNode node in allNearPathNodes)
             {
-                pathLabels2.Remove(lbl);
-                lbl.Dispose();
+                if (lastNode.position != Vector3.Zero)
+                {
+                    if (nearestNodeFrom.position == Vector3.Zero || nearestNodeFrom.position.DistanceTo(from) > lastNode.position.DistanceTo(from))
+                    {
+                        nearestNodeFrom = lastNode;
+                    }
+                    if (nearestNodeTo.position == Vector3.Zero || nearestNodeTo.position.DistanceTo(to) > lastNode.position.DistanceTo(to))
+                    {
+                        nearestNodeTo = lastNode;
+                    }
+                }
+                lastNode = node;
             }
-            */
-            this.Notificate("Updated !");
+
+            
+            startNode = nearestNodeFrom;
+            endNode = nearestNodeTo;
+            this.SendClientMessage("Starting node: " + startNode.id);
+            this.SendClientMessage("Ending node: " + endNode.id);
+            this.SendClientMessage("Initializing Pathfinding ...");
+            PathFinder pf = new PathFinder(allNearPathNodes, startNode, endNode);
+            this.SendClientMessage("Done.");
+            this.SendClientMessage("Pathfinding in progress ...");
+            pf.Find();
+            pf.Success += Pf_Success;
+            pf.Failure += Pf_Failure;
+            
+        }
+
+        private void Pf_Failure(object sender, EventArgs e)
+        {
+            this.SendClientMessage(Color.Red, "The pathfinding failed !");
+        }
+
+        private void Pf_Success(object sender, PathFindingDoneEventArgs e)
+        {
+            this.SendClientMessage(Color.Green, "The pathfinding succeeded !");
+            PathNode? lastNode = null;
+            foreach(PathNode node in e.path)
+            {
+                if(lastNode != null)
+                {
+                    GlobalObject go = new GlobalObject(19130, node.position + new Vector3(0.0, 0.0, 1.0), Vector3.Zero);
+
+                    double angle = Math.Atan((node.position.X - lastNode.GetValueOrDefault().position.X) / (node.position.Y - lastNode.GetValueOrDefault().position.Y));
+                    double angledegree = angle * 57.295779513;
+
+                    go.Rotation = new Vector3(90.0, 0.0, -angledegree);
+                    pathObjects.Add(go);
+
+                    string txt = "ID: " + node.id + "\n" +
+                        "Path Node ID: " + node.nodeID;
+                    TextLabel lbl = new TextLabel(txt, Color.White, node.position + new Vector3(0.0, 0.0, 2.0), 200.0f);
+                    pathLabels[pathObjects.Count - 1] = lbl;
+                }
+                lastNode = node;
+            }
         }
 
         [Command("test")]
@@ -465,6 +545,23 @@ namespace SampSharpGameMode1
             {
                 viewAreaID = area;
                 UpdatePath();
+            }
+        }
+
+        [Command("getlink")]
+        private void GetLinkCommand(int areaID, string id)
+        {
+            if (PathExtractor.pathPoints != null)
+            {
+                List<string> links = PathExtractor.GetLinkedNode(areaID, id);
+                if (links != null)
+                {
+                    this.SendClientMessage(Color.AliceBlue, "Links for path node " + id);
+                    foreach (string msg in links)
+                        this.SendClientMessage(msg);
+                }
+                else
+                    this.SendClientMessage("No links for this node");
             }
         }
 
@@ -585,10 +682,10 @@ namespace SampSharpGameMode1
                     if (area == -1) area = player.GetArea(player.Position);
                     foreach (PathExtractor.NaviNode node in PathExtractor.naviNodes[area])
                     {
-                        if (node.nodeID == index)
+                        if (node.targetNodeID == index)
                         {
                             Vector3 pos = new Vector3(node.position.X, node.position.Y, PathExtractor.GetAverageZ(node.position.X, node.position.Y) + 2.0);
-                            Console.WriteLine("Teleporting player to navi node " + node.nodeID + " in area " + node.areaID + " at position " + pos.ToString());
+                            Console.WriteLine("Teleporting player to navi node " + node.targetNodeID + " in area " + node.targetAreaID + " at position " + pos.ToString());
                             if (player.InAnyVehicle)
                                 player.Vehicle.Position = pos;
                             else
@@ -602,7 +699,7 @@ namespace SampSharpGameMode1
                 {
                     if (area == -1) area = player.GetArea(player.Position);
                     var watch = System.Diagnostics.Stopwatch.StartNew();
-                    List<PathExtractor.NaviNode> nodes = PathExtractor.naviNodes[area].FindAll(x => x.areaID == area && x.nodeID == index);
+                    List<PathExtractor.NaviNode> nodes = PathExtractor.naviNodes[area].FindAll(x => x.targetAreaID == area && x.targetNodeID == index);
                     watch.Stop();
                     Console.WriteLine("Player.cs - Execution time with .Find method: " + watch.ElapsedMilliseconds + " ms");
 
@@ -610,7 +707,7 @@ namespace SampSharpGameMode1
                     watch = System.Diagnostics.Stopwatch.StartNew();
                     foreach (PathExtractor.NaviNode node in PathExtractor.naviNodes[area])
                     {
-                        if (node.areaID == area && node.nodeID == index)
+                        if (node.targetAreaID == area && node.targetNodeID == index)
                         {
                             nodes.Add(node);
                         }
@@ -629,8 +726,8 @@ namespace SampSharpGameMode1
 
                             go.Rotation = new Vector3(90.0, 0.0, -angledegree);
                             player.naviObjects.Add(go);
-                            string txt = "Navi Node ID: " + node.nodeID + "\n" +
-                                "area ID: " + node.areaID + "\n" +
+                            string txt = "Navi Node ID: " + node.targetNodeID + "\n" +
+                                "area ID: " + node.targetAreaID + "\n" +
                                 "Direction: " + node.direction.ToString() + "\n" +
                                 "Angle: " + angledegree + "\n" +
                                 "Flags: " + node.flags;
