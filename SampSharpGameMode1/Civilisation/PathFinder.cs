@@ -230,6 +230,7 @@ namespace SampSharpGameMode1.Civilisation
                             }
                         }
                         gm.socket.Write("{\"id\": \"" + node.pathNode.id + "\", \"status\": \"closed\"}");
+                        Thread.Sleep(10);
                     }
                 }
                 if (!success)

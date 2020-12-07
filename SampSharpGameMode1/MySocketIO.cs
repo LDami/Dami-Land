@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Text;
+using System.Threading;
 
 namespace SampSharpGameMode1
 {
@@ -15,55 +13,116 @@ namespace SampSharpGameMode1
         IPEndPoint remoteEP;
         public enum SocketStatus { DISCONNECTED, CONNECTED };
         Socket socket;
-        ClientWebSocket webSocket;
+        NetworkStream ns;
 
-        System.Threading.CancellationTokenSource cts;
-        Uri uri;
         public MySocketIO(String ipaddress, int port)
         {
             try
             {
-                cts = new System.Threading.CancellationTokenSource();
-                uri = new Uri("ws://" + ipaddress + ":" + port);
-                webSocket = new ClientWebSocket();
-                webSocket.ConnectAsync(uri, cts.Token);
+                ipAdress = IPAddress.Parse(ipaddress);
+                remoteEP = new IPEndPoint(ipAdress, port);
             }
-            catch (Exception e)
+            catch (SocketException e)
             {
-                Console.WriteLine("MySocketIO.cs - MySocketIO.__MySocketIO:E: " + e);
+                Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO.__MySocketIO:E: " + e.Message);
             }
         }
 
+        protected internal void Connect()
+        {
+            Thread t = new Thread(new ThreadStart(() => {
+                socket = new Socket(ipAdress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                while (!socket.Connected)
+                {
+                    try
+                    {
+                        socket.Dispose();
+                        socket = new Socket(ipAdress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                        socket.Connect(remoteEP);
+                        ns = new NetworkStream(socket);
+                    }
+                    catch (SocketException e)
+                    {
+                        Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO.Connect:E: Can't open socket: " + e.Message);
+                    }
+                    Thread.Sleep(5000);
+                }
+                Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO.Connect:I: Socket open !");
+                this.CheckState();
+            }));
+            t.Start();
+        }
         protected internal void Reconnect()
         {
-            webSocket.CloseAsync(WebSocketCloseStatus.Empty, "", cts.Token);
-            webSocket = new ClientWebSocket();
-            webSocket.ConnectAsync(uri, cts.Token);
+            if (socket != null)
+                socket.Close();
+            this.Connect();
+        }
+
+        private void CheckState()
+        {
+            Thread t = new Thread(new ThreadStart(() => {
+                byte[] ping = ASCIIEncoding.ASCII.GetBytes("ping");
+                while (socket != null)
+                {
+                    try
+                    {
+                        //socket.Send(ping, 4, SocketFlags.None);
+                        if(ns != null)
+                        {
+                            ns.Write(ping, 0, ping.Length);
+                            ns.Flush();
+                        }
+                        else
+                            Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO.CheckState:E: Can't send ping: NetworkStream is null !");
+                    }
+                    catch(SocketException e)
+                    {
+                        Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO.CheckState:E: Can't send ping: " + e.Message);
+                    }
+                    catch (ObjectDisposedException e)
+                    {
+                        Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO:Write:E: " + e.Message);
+                    }
+                    if (!socket.Connected)
+                    {
+                        Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO.CheckState:E: Socket is not longer open, trying to reconnect ...");
+                        this.Reconnect();
+                    }
+                    Thread.Sleep(1000);
+                }
+                Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO.CheckState:W: Socket is now null");
+            }));
+            Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO.CheckState:I: Starting watchgdog");
+            t.Start();
+            Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO.CheckState:I: Watchgdog started");
         }
 
         protected internal int Close()
         {
-            if (webSocket == null)
+            if (socket == null)
                 return 0;
             try
             {
-                webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", cts.Token);
-                webSocket.Dispose();
+                Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO:Close:I: Closing Socket");
+                ns.Close();
+                socket.Close();
+                socket.Dispose();
             }
             catch(SocketException e)
             {
-                Console.WriteLine("MySocketIO.cs - MySocketIO:Close:E: " + e);
+                Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO:Close:E: " + e.Message);
             }
             return 1;
         }
 
         protected internal SocketStatus GetStatus()
         {
-            if (webSocket == null)
+            if (socket == null)
                 return SocketStatus.DISCONNECTED;
             else
             {
-                if (webSocket.State == WebSocketState.Open)
+                if (socket.Connected)
                     return SocketStatus.CONNECTED;
                 else
                     return SocketStatus.DISCONNECTED;
@@ -77,39 +136,65 @@ namespace SampSharpGameMode1
 
         protected internal int Write(String data)
         {
-            if (webSocket == null)
+            if (socket == null || ns == null)
                 return -1;
 
             byte[] dataToSend = ASCIIEncoding.ASCII.GetBytes(data);
-            var sendBuffer = new ArraySegment<byte>(dataToSend);
             try
             {
-                webSocket.SendAsync(sendBuffer, WebSocketMessageType.Text, true, cts.Token);
+                //socket.Send(dataToSend, dataToSend.Length, SocketFlags.None);
+                ns.Write(dataToSend, 0, dataToSend.Length);
+                ns.Flush();
             }
             catch (SocketException e)
             {
-                Console.WriteLine("MySocketIO.cs - MySocketIO:Write:E: " + e);
-                Console.WriteLine("MySocketIO.cs - MySocketIO:Write:I: Reconnecting ... ");
+                Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO:Write:E: " + e.Message);
+                Logger.WriteAndClose("MySocketIO.cs - MySocketIO:Write:I: Reconnecting ... ");
                 this.Reconnect();
                 if (this.GetStatus() == MySocketIO.SocketStatus.CONNECTED)
                 {
-                    Console.WriteLine("Done");
+                    Logger.WriteLineAndClose("Done");
                     try
                     {
-                        webSocket.SendAsync(sendBuffer, WebSocketMessageType.Text, true, cts.Token);
-                        Console.WriteLine("MySocketIO.cs - MySocketIO:Write:I: Data sent !");
+                        socket.Send(dataToSend, dataToSend.Length, SocketFlags.None);
+                        Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO:Write:I: Data sent !");
                     }
-                    catch(SocketException ex)
+                    catch (SocketException ex)
                     {
-                        Console.WriteLine("MySocketIO.cs - MySocketIO:Write:E: " + ex);
+                        Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO:Write:E: " + ex.Message);
                         return -1;
                     }
                 }
                 else
                 {
-                    Console.WriteLine("KO");
+                    Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO:Write: E: KO");
                     return -1;
                 }
+            }
+            catch (ObjectDisposedException e)
+            {
+                Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO:Write:E: " + e.Message);
+            }
+            return dataToSend.Length;
+        }
+        protected internal int WriteAsync(String data)
+        {
+            if (socket == null || ns == null)
+                return -1;
+
+            byte[] dataToSend = ASCIIEncoding.ASCII.GetBytes(data);
+            try
+            {
+                //socket.Send(dataToSend, dataToSend.Length, SocketFlags.None);
+                ns.WriteAsync(dataToSend, 0, dataToSend.Length);
+            }
+            catch (SocketException e)
+            {
+                Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO:Write:E: " + e.Message);
+            }
+            catch (ObjectDisposedException e)
+            {
+                Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO:Write:E: " + e.Message);
             }
             return dataToSend.Length;
         }

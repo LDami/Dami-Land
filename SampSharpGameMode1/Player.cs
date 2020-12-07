@@ -458,6 +458,7 @@ namespace SampSharpGameMode1
                     if (isSocketAlive)
                     {
                         if (socket.Write(data) == -1) isSocketAlive = false;
+                        Thread.Sleep(10);
                     }
                 }
             }
@@ -465,7 +466,6 @@ namespace SampSharpGameMode1
                 Console.WriteLine("Done");
             else
                 Console.WriteLine("KO");
-            socket.Close();
 
             foreach (PathNode node in allNearPathNodes)
             {
@@ -482,7 +482,7 @@ namespace SampSharpGameMode1
                 }
                 lastNode = node;
             }
-
+            
             
             startNode = nearestNodeFrom;
             endNode = nearestNodeTo;

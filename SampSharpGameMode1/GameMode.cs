@@ -42,7 +42,7 @@ namespace SampSharpGameMode1
             //NPC npc = new NPC();
             //npc.Create();
             //Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: NPC Created !");
-
+            
             Civilisation.PathExtractor.Load();
             //Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths", 54);
 
@@ -62,33 +62,14 @@ namespace SampSharpGameMode1
             //Civilisation.PathExtractor.SeparateNodes(54);
             //Civilisation.PathExtractor.CheckLinks(54);
             Civilisation.PathExtractor.ValidateNaviLink();
-
-            Console.WriteLine("Total path points: " + PathExtractor.pathPoints.Count);
-            /*
-            if(PathExtractor.pathPoints != null)
-            {
-                GlobalObject[] globalObject = new GlobalObject[PathExtractor.pathPoints.Length];
-                TextLabel[] textLabels = new TextLabel[PathExtractor.pathPoints.Length];
-                int idx = 0;
-                foreach(Vector3 point in PathExtractor.pathPoints)
-                {
-                    Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Creating object " + idx + "/" + PathExtractor.pathPoints.Length);
-                    Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Position: " + point.ToString());
-                    globalObject[idx] = new GlobalObject(18808, point + new Vector3(0.0f, 0.0f, 5.0f), Vector3.Zero);
-                    textLabels[idx] = new TextLabel("N°" + idx + "\n" + point.ToString(), SampSharp.GameMode.SAMP.Color.White, point + new Vector3(0, 0, 20.0), 200.0f);
-                    idx++;
-                    //globalObject[idx++] = new GlobalObject(18876, point + new Vector3(0.0f, 0.0f, 5.0f), Vector3.Zero);
-                }
-            }
-            */
             
-            Console.Write("GameMode.cs - GameMode.OnInitialized:I: Connecting to socket ... ");
-            socket = new MySocketIO("1270.0.0.1", 5555);
-            if (socket.GetStatus() == MySocketIO.SocketStatus.CONNECTED)
-                Console.WriteLine("Done");
+            Console.WriteLine("Total path points: " + PathExtractor.pathPoints.Count);
             
             Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Gamemode ready !");
-            
+
+            Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Connecting to socket ... ");
+            socket = new MySocketIO("127.0.0.1", 5555);
+            socket.Connect();
         }
 
         protected override void OnExited(EventArgs e)
