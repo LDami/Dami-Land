@@ -140,11 +140,8 @@ namespace SampSharpGameMode1.Events.Races
                 player.PutInVehicle(veh);
             }
 
-            hud = new HUD(_player);
-
             editingRace = null;
             isEditing = false;
-            editingMode = EditingMode.Checkpoints;
             checkpointIndex = 0;
 
             spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
@@ -152,6 +149,9 @@ namespace SampSharpGameMode1.Events.Races
 
         public void Create()
         {
+            hud = new HUD(player);
+            editingMode = EditingMode.Checkpoints;
+
             editingRace = new Race();
             isEditing = true;
             checkpointIndex = 0;
@@ -188,6 +188,7 @@ namespace SampSharpGameMode1.Events.Races
             editingRace = null;
             isEditing = false;
             hud.Destroy();
+            hud = null;
             moverObject.Edited -= moverObject_Edited;
             moverObject.Dispose();
             moverObject = null;
@@ -215,11 +216,12 @@ namespace SampSharpGameMode1.Events.Races
                         { "@checkpoint_pos_y", kvp.Value.Position.Y },
                         { "@checkpoint_pos_z", kvp.Value.Position.Z },
                         { "@checkpoint_size", kvp.Value.Size },
-                        { "@checkpoint_type", kvp.Value.Type }
+                        { "@checkpoint_type", kvp.Value.Type },
+                        { "@checkpoint_vehiclechange", kvp.Value.NextVehicle }
                     };
                     mySQLConnector.Execute("INSERT INTO race_checkpoints " +
-                        "(race_id, checkpoint_number, checkpoint_pos_x, checkpoint_pos_y, checkpoint_pos_z, checkpoint_size, checkpoint_type) VALUES" +
-                        "(@id, @checkpoint_number, @checkpoint_pos_x, @checkpoint_pos_y, @checkpoint_pos_z, @checkpoint_size, @checkpoint_type)", param);
+                        "(race_id, checkpoint_number, checkpoint_pos_x, checkpoint_pos_y, checkpoint_pos_z, checkpoint_size, checkpoint_type, checkpoint_vehiclechange) VALUES" +
+                        "(@id, @checkpoint_number, @checkpoint_pos_x, @checkpoint_pos_y, @checkpoint_pos_z, @checkpoint_size, @checkpoint_type, @checkpoint_vehiclechange)", param);
                 }
                 param = new Dictionary<string, object>
                 {
@@ -272,22 +274,38 @@ namespace SampSharpGameMode1.Events.Races
 
         public void PutStart(Vector3 position)
         {
-            editingMode = EditingMode.Checkpoints;
-            checkpointIndex = 0;
-            editingRace.checkpoints[0].Position = position;
-            UpdatePlayerCheckpoint();
-            hud.SetSelectedIdx("S", editingMode);
+            try
+            {
+                editingMode = EditingMode.Checkpoints;
+                checkpointIndex = 0;
+                editingRace.checkpoints[0].Position = position;
+                UpdatePlayerCheckpoint();
+                hud.SetSelectedIdx("S", editingMode);
+            }
+            catch(NullReferenceException e)
+            {
+                Console.WriteLine("RaceCreator.cs - PutStart:E: Cannot set start: " + e.Message);
+                player.SendClientMessage(Color.Red, "Error, place a checkpoint first ! (/race addcp)");
+            }
         }
         public void PutFinish(Vector3 position)
         {
-            editingMode = EditingMode.Checkpoints;
-            checkpointIndex = editingRace.checkpoints.Count -1;
-            if (editingRace.checkpoints[checkpointIndex].Type == CheckpointType.Finish || editingRace.checkpoints[checkpointIndex].Type == CheckpointType.AirFinish)
-                editingRace.checkpoints[checkpointIndex].Position = position + new Vector3(0.0, 5.0, 0.0);
-            else
-                editingRace.checkpoints.Add(editingRace.checkpoints.Count, new Checkpoint(position + new Vector3(0.0, 5.0, 0.0), CheckpointType.Finish));
-            UpdatePlayerCheckpoint();
-            hud.SetSelectedIdx("F", editingMode);
+            try
+            {
+                editingMode = EditingMode.Checkpoints;
+                checkpointIndex = editingRace.checkpoints.Count -1;
+                if (editingRace.checkpoints[checkpointIndex].Type == CheckpointType.Finish || editingRace.checkpoints[checkpointIndex].Type == CheckpointType.AirFinish)
+                    editingRace.checkpoints[checkpointIndex].Position = position + new Vector3(0.0, 5.0, 0.0);
+                else
+                    editingRace.checkpoints.Add(editingRace.checkpoints.Count, new Checkpoint(position + new Vector3(0.0, 5.0, 0.0), CheckpointType.Finish));
+                UpdatePlayerCheckpoint();
+                hud.SetSelectedIdx("F", editingMode);
+            }
+            catch (NullReferenceException e)
+            {
+                Console.WriteLine("RaceCreator.cs - PutFinish:E: Cannot set finish: " + e.Message);
+                player.SendClientMessage(Color.Red, "Error, place a checkpoint first ! (/race addcp)");
+            }
         }
         public void AddCheckpoint(Vector3 position)
         {
@@ -299,16 +317,24 @@ namespace SampSharpGameMode1.Events.Races
                 idx--;
             }
             
-            checkpointIndex++;
             editingRace.checkpoints.Add(checkpointIndex, new Checkpoint(position, CheckpointType.Normal));
+            checkpointIndex++;
             UpdatePlayerCheckpoint();
             hud.SetSelectedIdx(checkpointIndex.ToString(), editingMode);
         }
         public void MoveCurrent(Vector3 position)
         {
-            editingMode = EditingMode.Checkpoints;
-            editingRace.checkpoints[checkpointIndex].Position = position + new Vector3(0.0, 5.0, 0.0);
-            UpdatePlayerCheckpoint();
+            try
+            {
+                editingMode = EditingMode.Checkpoints;
+                editingRace.checkpoints[checkpointIndex].Position = position + new Vector3(0.0, 5.0, 0.0);
+                UpdatePlayerCheckpoint();
+            }
+            catch (NullReferenceException e)
+            {
+                Console.WriteLine("RaceCreator.cs - MoveCurrent:E: Cannot move current: " + e.Message);
+                player.SendClientMessage(Color.Red, "Error, place a checkpoint first ! (/race addcp)");
+            }
         }
         private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
         {
@@ -517,11 +543,13 @@ namespace SampSharpGameMode1.Events.Races
 
         private void Player_EnterCheckpoint(object sender, EventArgs e)
         {
+            Console.WriteLine("Entering checkpoint !");
             ShowCheckpointDialog();
         }
 
         private void Player_EnterRaceCheckpoint(object sender, EventArgs e)
         {
+            Console.WriteLine("Entering race checkpoint !");
             ShowCheckpointDialog();
         }
 
@@ -687,9 +715,9 @@ namespace SampSharpGameMode1.Events.Races
         {
             ListDialog cpEventDialog = new ListDialog("Checkpoint events", "Select", "Cancel");
             if (editingRace.checkpoints[checkpointIndex].NextVehicle == null)
-                cpEventDialog.AddItem("Vehicle event [None]");
+                cpEventDialog.AddItem("Vehicle change [None]");
             else
-                cpEventDialog.AddItem("Vehicle event [" + editingRace.checkpoints[checkpointIndex].NextVehicle.ToString() + "]");
+                cpEventDialog.AddItem("Vehicle change [" + editingRace.checkpoints[checkpointIndex].NextVehicle.ToString() + "]");
             cpEventDialog.Show(player);
             cpEventDialog.Response += CpEventDialog_Response;
         }

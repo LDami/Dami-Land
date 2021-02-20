@@ -35,6 +35,7 @@ namespace SampSharpGameMode1.Events
         public string Name { get; set; }
         public EventStatus Status { get; set; }
         public EventType Type { get; set; }
+        public EventSource Source { get; set; }
 
         public List<Player> players = new List<Player>();
 
@@ -71,6 +72,7 @@ namespace SampSharpGameMode1.Events
             if (player.IsConnected && !players.Contains(player))
             {
                 players.Add(player);
+                player.pEvent = this;
                 player.SendClientMessage("[Event] You joined the " + this.Type.ToString() + ", good luck !");
                 if(players.Count == Player.All.Count())
                 {

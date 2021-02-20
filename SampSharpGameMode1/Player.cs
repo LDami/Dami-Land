@@ -10,6 +10,7 @@ using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
 using SampSharp.GameMode.World;
 using SampSharpGameMode1.Civilisation;
+using SampSharpGameMode1.Events;
 using SampSharpGameMode1.Events.Races;
 using static SampSharpGameMode1.Civilisation.PathExtractor;
 
@@ -30,7 +31,7 @@ namespace SampSharpGameMode1
         PlayerMapping playerMapping;
         public RaceCreator playerRaceCreator;
 
-        public Race playerRace;
+        public Event pEvent;
 
         NPC npc;
         private SampSharp.GameMode.SAMP.Timer pathObjectsTimer;
@@ -56,7 +57,7 @@ namespace SampSharpGameMode1
             textdrawCreator = new TextdrawCreator(this);
             playerMapping = new PlayerMapping(this);
             playerRaceCreator = null;
-            playerRace = null;
+            pEvent = null;
 
             pathObjectsTimer = new SampSharp.GameMode.SAMP.Timer(10000, true);
             //pathObjectsTimer.Tick += PathObjectsTimer_Tick;
@@ -124,19 +125,11 @@ namespace SampSharpGameMode1
         public override void OnEnterCheckpoint(EventArgs e)
         {
             base.OnEnterCheckpoint(e);
-            if (playerRace != null)
-            {
-                playerRace.OnPlayerEnterCheckpoint(this);
-            }
         }
 
         public override void OnEnterRaceCheckpoint(EventArgs e)
         {
             base.OnEnterRaceCheckpoint(e);
-            if (playerRace != null)
-            {
-                playerRace.OnPlayerEnterCheckpoint(this);
-            }
         }
         
         public override void OnSpawned(SpawnEventArgs e)
@@ -545,6 +538,24 @@ namespace SampSharpGameMode1
             {
                 viewAreaID = area;
                 UpdatePath();
+            }
+        }
+
+        [Command("accel")]
+        private void AccelCommand(int vel)
+        {
+            if (this.InAnyVehicle)
+            {
+                this.Vehicle.SetAngularVelocity(this.Vehicle.Velocity + new Vector3(vel, 0, 0));
+            }
+        }
+        [Command("rep")]
+        private void RepCommand(int vel)
+        {
+            if (!IsInEvent() && this.InAnyVehicle)
+            {
+                this.Vehicle.Repair();
+                this.Notificate("Vehicle repaired");
             }
         }
 

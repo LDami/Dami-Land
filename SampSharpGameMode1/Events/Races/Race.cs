@@ -17,7 +17,7 @@ namespace SampSharpGameMode1.Events.Races
         public Race race { get; set; }
     }
 
-    public class Race
+    public class Race : EventSource
     {
         public const int MIN_PLAYERS_IN_RACE = 0;
         public const int MAX_PLAYERS_IN_RACE = 100;
@@ -51,13 +51,10 @@ namespace SampSharpGameMode1.Events.Races
         private bool isStarted = false;
         private bool isPreparing = false;
         public List<Player> players;
-        public List<Player> spectatingPlayers;
-        public Dictionary<Player, int> spectatingPlayersIndex = new Dictionary<Player, int>();
-        private Dictionary<Player, int> playersStartingPos = new Dictionary<Player, int>();
-        private Dictionary<Player, int> playerCheckpoint = new Dictionary<Player, int>(); // Showed checkpoint (destination for player)
-        private List<Player> playersEndingList;
-        private Dictionary<Player, TimeSpan> playerTimeSpan = new Dictionary<Player, TimeSpan>();
-        private Dictionary<Player, TimeSpan> personalRecords = new Dictionary<Player, TimeSpan>();
+        public Dictionary<Player, RacePlayer> playersData = new Dictionary<Player, RacePlayer>();
+        public List<Player> spectatingPlayers; // Contains spectating players who finished the race, and others players who spectate without racing
+        private Dictionary<Player, HUD> playersHUD = new Dictionary<Player, HUD>();
+        private Dictionary<Player, TimeSpan> playersTimeSpan = new Dictionary<Player, TimeSpan>();
         private Dictionary<string, TimeSpan> records = new Dictionary<string, TimeSpan>();
         public Player winner;
         private int virtualWorld;
@@ -65,6 +62,22 @@ namespace SampSharpGameMode1.Events.Races
         private int countdown;
         public DateTime startedTime;
         public bool IsStarted { get => isStarted; set => isStarted = value; }
+
+        public struct PlayerCheckpointData
+        {
+            public PlayerCheckpointData(Checkpoint cp, VehicleModelType model, Vector3 velocity, float angle)
+            {
+                this.Checkpoint = cp;
+                this.VehicleModel = model;
+                this.VehicleVelocity = velocity;
+                this.VehicleAngle = angle;
+            }
+            public Checkpoint Checkpoint { get; set; }
+            public VehicleModelType VehicleModel { get; set; }
+            public Vector3 VehicleVelocity { get; set; }
+            public float VehicleAngle { get; set; }
+        }
+        public Dictionary<Player, PlayerCheckpointData> playerLastCheckpointData = new Dictionary<Player, PlayerCheckpointData>();
 
         // Launcher Events
 
@@ -105,7 +118,7 @@ namespace SampSharpGameMode1.Events.Races
                     }
                     GameMode.mySQLConnector.CloseReader();
 
-                    GameMode.mySQLConnector.OpenReader("SELECT checkpoint_number, checkpoint_pos_x, checkpoint_pos_y, checkpoint_pos_z, checkpoint_size, checkpoint_type " +
+                    GameMode.mySQLConnector.OpenReader("SELECT * " +
                         "FROM race_checkpoints " +
                         "WHERE race_id=@id ORDER BY checkpoint_number", param);
                     row = GameMode.mySQLConnector.GetNextRow();
@@ -120,6 +133,10 @@ namespace SampSharpGameMode1.Events.Races
                                 (float)Convert.ToDouble(row["checkpoint_pos_y"]),
                                 (float)Convert.ToDouble(row["checkpoint_pos_z"])
                             ), (CheckpointType)Convert.ToInt32(row["checkpoint_type"]), (float)Convert.ToDouble(row["checkpoint_size"]));
+                        if (row["checkpoint_vehiclechange"].Equals("[null]"))
+                            checkpoint.NextVehicle = null;
+                        else
+                            checkpoint.NextVehicle = (VehicleModelType)Convert.ToInt32(row["checkpoint_vehiclechange"]);
                         this.checkpoints.Add(idx++, checkpoint);
                         row = GameMode.mySQLConnector.GetNextRow();
                     }
@@ -161,9 +178,6 @@ namespace SampSharpGameMode1.Events.Races
 
                     while (row.Count > 0)
                     {
-                        Player p = Player.GetPlayerByDatabaseId(Convert.ToInt32(row["player_id"]));
-                        if (p != null)
-                            personalRecords[p] = TimeSpan.Parse(row["record_duration"]);
                         records[row["name"]] = TimeSpan.Parse(row["record_duration"]);
                         row = GameMode.mySQLConnector.GetNextRow();
                     }
@@ -189,7 +203,6 @@ namespace SampSharpGameMode1.Events.Races
                 bool isAborted = false;
                 this.players = players;
                 this.spectatingPlayers = new List<Player>();
-                this.playersEndingList = new List<Player>();
                 this.virtualWorld = virtualWorld;
 
                 Random rdm = new Random();
@@ -197,10 +210,41 @@ namespace SampSharpGameMode1.Events.Races
                 int pos;
                 int tries = 0;
 
+                Dictionary<string, string> row;
                 foreach (Player p in players)
                 {
-                    spectatingPlayersIndex[p] = -1;
+                    RacePlayer playerData = new RacePlayer();
+                    playerData.spectatePlayerIndex = -1;
+                    playerData.status = RacePlayerStatus.Running;
+                    playerData.nextCheckpoint = checkpoints[1];
+
+                    // Get player record
+                    Dictionary<string, object> param = new Dictionary<string, object>
+                    {
+                        { "@race_id", this.id },
+                        { "@player_id", p.Db_Id}
+                    };
+                    GameMode.mySQLConnector.OpenReader("SELECT record_duration " +
+                        "FROM race_records WHERE race_id=@race_id AND player_id=@player_id", param);
+                    row = GameMode.mySQLConnector.GetNextRow();
+
+                    if (row.Count > 0)
+                        playerData.record = TimeSpan.Parse(row["record_duration"]);
+                    else
+                        playerData.record = TimeSpan.Zero;
+
+                    GameMode.mySQLConnector.CloseReader();
+
+                    playersData.Add(p, playerData);
+
+                    playersHUD[p] = new HUD(p, "racerecords.json");
+                    playersHUD[p].SetText("", "");
+
                     p.VirtualWorld = virtualWorld;
+
+                    p.EnterCheckpoint += (sender, eventArgs) => { OnPlayerEnterCheckpoint((Player)sender); };
+                    p.EnterRaceCheckpoint += (sender, eventArgs) => { OnPlayerEnterCheckpoint((Player)sender); };
+                    p.KeyStateChanged += Player_KeyStateChanged;
 
                     pos = rdm.Next(1, players.Count);
                     while (generatedPos.Contains(pos) && tries++ < MAX_PLAYERS_IN_RACE)
@@ -214,8 +258,6 @@ namespace SampSharpGameMode1.Events.Races
                     }
                     tries = 0;
 
-                    playersStartingPos[p] = pos;
-
                     BaseVehicle veh = BaseVehicle.Create(startingVehicle.GetValueOrDefault(VehicleModelType.Bike), this.startingSpawn[pos].Position, this.startingSpawn[pos].Rotation, 1, 1);
                     veh.VirtualWorld = virtualWorld;
                     veh.Engine = false;
@@ -223,9 +265,7 @@ namespace SampSharpGameMode1.Events.Races
                     veh.Died += OnPlayerVehicle_Died;
                     p.PutInVehicle(veh);
 
-                    playerCheckpoint[p] = 1;
                     UpdatePlayerCheckpoint(p);
-                    p.playerRace = this;
                 }
 
                 if (!isAborted)
@@ -238,6 +278,42 @@ namespace SampSharpGameMode1.Events.Races
                 else
                 {
                     //TODO: remettre les joueurs dans leurs vw et positions initiales
+                }
+            }
+        }
+
+        private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
+        {
+            Player spectator = (Player)sender;
+            if (spectatingPlayers.Contains(spectator))
+            {
+                switch (e.NewKeys)
+                {
+                    case Keys.Fire:
+                        playersData[(Player)sender].spectatePlayerIndex++;
+                        if (playersData[(Player)sender].spectatePlayerIndex >= players.Count)
+                        {
+                            playersData[(Player)sender].spectatePlayerIndex = 0;
+                        }
+                        spectator.SpectatePlayer(players[playersData[(Player)sender].spectatePlayerIndex]);
+                        spectator.Notificate(players[playersData[(Player)sender].spectatePlayerIndex].Name);
+                        break;
+                    case Keys.Aim:
+                        playersData[(Player)sender].spectatePlayerIndex--;
+                        if (playersData[(Player)sender].spectatePlayerIndex < 0)
+                        {
+                            playersData[(Player)sender].spectatePlayerIndex = players.Count;
+                        }
+                        spectator.SpectatePlayer(players[playersData[(Player)sender].spectatePlayerIndex]);
+                        spectator.Notificate(players[playersData[(Player)sender].spectatePlayerIndex].Name);
+                        break;
+                }
+            }
+            else
+            {
+                if (e.NewKeys == Keys.Yes)
+                {
+                    this.RespawnPlayerOnLastCheckpoint((Player)sender, false);
                 }
             }
         }
@@ -266,6 +342,8 @@ namespace SampSharpGameMode1.Events.Races
             if(isPreparing && countdown == 0)
             {
                 startedTime = DateTime.Now;
+                this.isPreparing = false;
+                this.isStarted = true;
                 foreach (Player p in players)
                 {
                     p.Vehicle.Engine = true;
@@ -275,18 +353,44 @@ namespace SampSharpGameMode1.Events.Races
 
         public void OnPlayerEnterCheckpoint(Player player)
         {
-            if(playerCheckpoint[player] != -1)
+            if(player.InAnyVehicle)
             {
-                if(playerCheckpoint[player] == this.checkpoints.Count - 1)
+                if(playersData[player].nextCheckpoint == this.checkpoints[this.checkpoints.Count - 1])
                 {
                     OnPlayerFinished(player, "Finished");
                 }
                 else
                 {
-                    Console.WriteLine("Race.cs - OnPlayerEnterCheckpoint:I: playerCheckpoint[" + player.Name + "] = " + playerCheckpoint[player]);
-                    player.Notificate("CP: " + (playerCheckpoint[player]).ToString() + "/" + (this.checkpoints.Count - 1).ToString());
-                    playerCheckpoint[player]++;
+                    int cpidx = playersData[player].nextCheckpoint.Idx;
+                    Console.WriteLine("Race.cs - OnPlayerEnterCheckpoint:I: playerCheckpoint[" + player.Name + "] = " + playersData[player].nextCheckpoint.ToString());
+                    player.Notificate("CP: " + cpidx + "/" + (this.checkpoints.Count - 1).ToString());
+                    playersData[player].nextCheckpoint = this.checkpoints[cpidx+1];
                     UpdatePlayerCheckpoint(player);
+
+                    playerLastCheckpointData[player] = new PlayerCheckpointData(this.checkpoints[cpidx], player.Vehicle.Model, player.Vehicle.Velocity, player.Vehicle.Angle);
+                    /*
+                    // CP Event
+                    if(this.checkpoints[cpidx].NextVehicle != null)
+                    {
+                        float vRot = player.Rotation.X;
+                        Vector3 vVel = Vector3.Zero;
+                        if(player.InAnyVehicle)
+                        {
+                            vRot = player.Vehicle.Rotation.Z;
+                            vVel = player.Vehicle.Velocity;
+                            BaseVehicle vehicle = player.Vehicle;
+                            player.RemoveFromVehicle();
+                            vehicle.Dispose();
+                        }
+
+                        BaseVehicle veh = BaseVehicle.Create(this.checkpoints[cpidx].NextVehicle.GetValueOrDefault(VehicleModelType.Ambulance), player.Position, vRot, 1, 1);
+                        veh.VirtualWorld = virtualWorld;
+                        veh.Engine = true;
+                        veh.Doors = true;
+                        veh.Died += OnPlayerVehicle_Died;
+                        player.PutInVehicle(veh);
+                        veh.Velocity = vVel;
+                    }*/
                 }
             }
         }
@@ -294,53 +398,74 @@ namespace SampSharpGameMode1.Events.Races
         private void UpdatePlayerCheckpoint(Player player)
         {
             player.DisableRaceCheckpoint();
-            if (playerCheckpoint[player] < this.checkpoints.Count - 1)
+            Checkpoint cp = playersData[player].nextCheckpoint;
+            if (cp == this.checkpoints[this.checkpoints.Count - 1]) // If it's the last checkpoint
             {
-                Checkpoint cp = this.checkpoints[playerCheckpoint[player]];
+                player.SetCheckpoint(cp.Position, cp.Size);
+            }
+            else
+            {
                 try
                 {
-                    Checkpoint nextcp = this.checkpoints[playerCheckpoint[player] + 1];
+                    Checkpoint nextcp = this.checkpoints[cp.Idx + 1];
                     player.SetRaceCheckpoint(cp.Type, cp.Position, nextcp.Position, cp.Size);
-                    if(nextcp.NextVehicle != null)
-                    {
-                        BaseVehicle newVeh = BaseVehicle.Create((VehicleModelType)nextcp.NextVehicle, player.Vehicle.Position, 0.0f, 1, 1);
-                        newVeh.VirtualWorld = virtualWorld;
-                        newVeh.Rotation = player.Vehicle.Rotation;
-                        newVeh.Velocity = player.Vehicle.Velocity;
-                        newVeh.Engine = false;
-                        newVeh.Doors = true;
-                        newVeh.Died += OnPlayerVehicle_Died;
-                        BaseVehicle lastVeh = player.Vehicle;
-                        player.PutInVehicle(newVeh);
-                        lastVeh.Dispose();
-                    }
                 }
                 catch (KeyNotFoundException e)
                 {
                     player.SetRaceCheckpoint(cp.Type, cp.Position, Vector3.Zero, cp.Size);
+                    Console.WriteLine("Race.cs - UpdatePlayerCheckpoint:E: Unable to display next checkpoint: " + e.Message);
                 }
             }
+        }
 
-            if (playerCheckpoint[player] == this.checkpoints.Count - 1) // If it's the last checkpoint
+        public void RespawnPlayerOnLastCheckpoint(Player player, bool safeRespawn)
+        {
+            if (player != null)
             {
-                Checkpoint cp = this.checkpoints[this.checkpoints.Count-1];
-                player.SetCheckpoint(cp.Position, cp.Size);
+                if (players.Contains(player) && this.isStarted && playersData[player].nextCheckpoint.Idx < this.checkpoints.Count && playersData[player].nextCheckpoint.Idx > 0)
+                {
+                    if (!player.InAnyVehicle)
+                    {
+                        BaseVehicle veh = BaseVehicle.Create(
+                            playerLastCheckpointData[player].VehicleModel,
+                            playerLastCheckpointData[player].Checkpoint.Position,
+                            playerLastCheckpointData[player].VehicleAngle,
+                            1, 1
+                        );
+                        veh.VirtualWorld = this.virtualWorld;
+                        veh.Engine = true;
+                        if (!safeRespawn) veh.Velocity = playerLastCheckpointData[player].VehicleVelocity;
+                        veh.Doors = true;
+                        veh.Died += OnPlayerVehicle_Died;
+                        player.PutInVehicle(veh);
+                    }
+                    else
+                    {
+                        BaseVehicle veh = player.Vehicle;
+                        veh.Position = playerLastCheckpointData[player].Checkpoint.Position;
+                        veh.Angle = playerLastCheckpointData[player].VehicleAngle;
+                        if (!safeRespawn) veh.Velocity = playerLastCheckpointData[player].VehicleVelocity;
+                    }
+                }
+                else
+                    Console.WriteLine("Race.cs - RespawnPlayerOnLastCheckpoint:E: player is not in race");
             }
+            else
+                Console.WriteLine("Race.cs - RespawnPlayerOnLastCheckpoint:E: player is null");
         }
 
         public void OnPlayerFinished(Player player, string reason)
         {
             if(reason.Equals("Finished"))
             {
-                if(playersEndingList.Count == 0)
+                if(playersTimeSpan.Count == 0)
                 {
                     winner = player;
                 }
-                playersEndingList.Add(player);
 
                 TimeSpan duration = DateTime.Now - startedTime;
-                playerTimeSpan[player] = duration;
-                int place = playerTimeSpan.Count;
+                playersTimeSpan[player] = duration;
+                int place = playersTimeSpan.Count;
                 string placeStr = "";
                 switch (place)
                 {
@@ -357,23 +482,22 @@ namespace SampSharpGameMode1.Events.Races
                         placeStr = place + "th";
                         break;
                 }
+
+                string finishText = placeStr + " place !~n~" + duration.ToString(@"hh\:mm\:ss\.fff");
                 bool isNewRecord = false;
-                if (personalRecords.ContainsKey(player)) // Is player has already a personal record on this race ?
+                if (playersData[player].record == TimeSpan.Zero) // No record for this race
                 {
-                    if (personalRecords[player].CompareTo(duration) > 0)
-                    {
-                        isNewRecord = true;
-                    }
+                    finishText += "~n~First record ";
+                    isNewRecord = true;
                 }
-                else
+                if (playersData[player].record.CompareTo(duration) > 0) // Better than previous record
                 {
+                    finishText += "~n~~g~New record  ! -" + playersData[player].record.Subtract(duration).ToString(@"hh\:mm\:ss\.fff");
                     isNewRecord = true;
                 }
 
-                if (personalRecords.ContainsKey(player))
-                    player.GameText(placeStr + " place !~n~" + duration.ToString(@"hh\:mm\:ss\.fff") + ((isNewRecord) ? "~n~~r~New record  ! -" + @personalRecords[player].Subtract(duration).ToString(@"hh\:mm\:ss\.fff") : ""), 5000, 4);
-                else
-                    player.GameText(placeStr + " place !~n~" + duration.ToString(@"hh\:mm\:ss\.fff") + ((isNewRecord) ? "~n~~r~New record  ! " : ""), 5000, 4);
+                player.GameText(finishText, 5000, 4);
+
 
                 if (isNewRecord)
                 {
@@ -384,18 +508,25 @@ namespace SampSharpGameMode1.Events.Races
                     param = new Dictionary<string, object>();
                     param.Add("@race_id", this.Id);
                     param.Add("@player_id", player.Db_Id);
-                    param.Add("@record_duration", duration.ToString(@"hh\:mm\:ss\.fff"));
-                    GameMode.mySQLConnector.Execute("INSERT INTO race_records (race_id, player_id, record_duration) VALUES (@race_id, @player_id, TIME_FORMAT(@record_duration, \"%H:\"))", param);
+                    param.Add("@record_duration", duration.ToString(@"hh\:mm\:ss\.ffffff"));
+                    GameMode.mySQLConnector.Execute("INSERT INTO race_records (race_id, player_id, record_duration) VALUES (@race_id, @player_id, @record_duration)", param);
                 }
             }
 
-            BaseVehicle vehicle = player.Vehicle;
-            player.RemoveFromVehicle();
-            vehicle.Dispose();
+            if(player.InAnyVehicle)
+            {
+                BaseVehicle vehicle = player.Vehicle;
+                player.RemoveFromVehicle();
+                vehicle.Dispose();
+            }
+
+            player.DisableCheckpoint();
+            player.DisableRaceCheckpoint();
 
             players.Remove(player);
-            if(players.Count == 0)
+            if(players.Count == 0) // Si on arrive dernier / si le dernier arrive
             {
+                Eject(player);
                 foreach(Player p in spectatingPlayers)
                 {
                     Eject(p);
@@ -407,39 +538,13 @@ namespace SampSharpGameMode1.Events.Races
             else
             {
                 player.ToggleSpectating(true);
-                player.SpectatePlayer(players[0]);
-                player.KeyStateChanged += Player_KeyStateChanged;
+                if(players[0].InAnyVehicle)
+                    player.SpectateVehicle(players[0].Vehicle);
+                else
+                    player.SpectatePlayer(players[0]);
                 spectatingPlayers.Add(player);
-                spectatingPlayersIndex[player] = 0;
-            }
-        }
-
-        private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
-        {
-            Player spectator = (Player)sender;
-            if(spectatingPlayers.Contains(spectator))
-            {
-                switch (e.NewKeys)
-                {
-                    case Keys.Fire:
-                        spectatingPlayersIndex[spectator]++;
-                        if (spectatingPlayersIndex[spectator] >= players.Count)
-                        {
-                            spectatingPlayersIndex[spectator] = 0;
-                        }
-                        spectator.SpectatePlayer(players[spectatingPlayersIndex[spectator]]);
-                        spectator.Notificate(players[spectatingPlayersIndex[spectator]].Name);
-                        break;
-                    case Keys.Aim:
-                        spectatingPlayersIndex[spectator]--;
-                        if (spectatingPlayersIndex[spectator] < 0)
-                        {
-                            spectatingPlayersIndex[spectator] = players.Count;
-                        }
-                        spectator.SpectatePlayer(players[spectatingPlayersIndex[spectator]]);
-                        spectator.Notificate(players[spectatingPlayersIndex[spectator]].Name);
-                        break;
-                }
+                playersData[player].status = RacePlayerStatus.Spectating;
+                playersData[player].spectatePlayerIndex = 0;
             }
         }
 

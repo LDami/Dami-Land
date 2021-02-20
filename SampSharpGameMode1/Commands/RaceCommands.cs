@@ -11,6 +11,16 @@ namespace SampSharpGameMode1.Commands
 {
     class RaceCommands
     {
+        [Command("rr")]
+        private static void RespawnCommand(Player player)
+        {
+            if(player.pEvent != null)
+            {
+                if (player.pEvent.Type == Events.EventType.Race)
+                    ((Race)player.pEvent.Source).RespawnPlayerOnLastCheckpoint(player, false);
+            }
+        }
+
         [CommandGroup("race")]
         class RaceCommandsClass
         {
@@ -19,7 +29,11 @@ namespace SampSharpGameMode1.Commands
             [Command("create")]
             private static void CreateRace(Player player)
             {
-                player.playerRaceCreator = new RaceCreator(player);
+                if(player.playerRaceCreator == null)
+                {
+                    player.playerRaceCreator = new RaceCreator(player);
+                }
+                player.playerRaceCreator.Create();
             }
 
             [Command("loadc")]

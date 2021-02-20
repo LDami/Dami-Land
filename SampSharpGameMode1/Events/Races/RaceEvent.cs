@@ -33,6 +33,7 @@ namespace SampSharpGameMode1.Events.Races
                 this.Name = e.race.Name;
                 this.Status = EventStatus.Loaded;
                 this.Type = EventType.Race;
+                this.Source = loadedRace;
                 OnLoaded(new EventLoadedEventArgs { EventLoaded = this, ErrorMessage = null });
             }
             else OnLoaded(new EventLoadedEventArgs { ErrorMessage = "This race is not playable !" });
