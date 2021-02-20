@@ -59,15 +59,24 @@ namespace SampSharpGameMode1
 
         public void HideAll()
         {
-            foreach (string tdname in textdrawList.Keys)
-                textdrawList[tdname].Hide();
+            foreach (KeyValuePair<string, Textdraw> td in textdrawList)
+                td.Value.Hide();
+        }
+        public void Destroy()
+        {
+            foreach (KeyValuePair<string, Textdraw> td in textdrawList)
+                td.Value.AutoDestroy = true;
+            this.HideAll();
         }
 
         public Boolean SetTextdrawPosition(string name, Vector2 position)
         {
             try
             {
-                textdrawList[name].Position = new Vector2(position.X, position.Y);
+                float newPosX, newPosY;
+                newPosX = (position.X >= 0) ? position.X : textdrawList[name].Position.X;
+                newPosY = (position.Y >= 0) ? position.Y : textdrawList[name].Position.Y;
+                textdrawList[name].Position = new Vector2(newPosX, newPosY);
                 return true;
             }
             catch(KeyNotFoundException e)
@@ -132,6 +141,7 @@ namespace SampSharpGameMode1
 
             if (textdrawList.ContainsKey(name))
             {
+                Console.WriteLine("Setting mode Position for td " + name);
                 this.ChangeTextdrawMode(name, EditingMode.Position);
                 return true;
             }

@@ -18,9 +18,13 @@ namespace SampSharpGameMode1
         class TextdrawHUD
         {
             TextdrawLayer layer;
+            bool isSwitched;
+            Dictionary<string, Vector2> textdrawDefaultPos = new Dictionary<string, Vector2>();
+            Dictionary<string, Vector2> textdrawDefaultSize = new Dictionary<string, Vector2>();
 
             public TextdrawHUD(Player player)
             {
+                isSwitched = false;
                 layer = new TextdrawLayer();
                 string filename = BaseMode.Instance.Client.ServerPath + "\\scriptfiles\\tdcreator.json";
                 string jsonData = "";
@@ -56,6 +60,8 @@ namespace SampSharpGameMode1
                                     layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Text);
                                     layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
                                 }
+                                textdrawDefaultPos[textdraw.Name] = new Vector2(textdraw.PosX, textdraw.PosY);
+                                textdrawDefaultSize[textdraw.Name] = new Vector2(textdraw.Width, textdraw.Height);
                             }
                             layer.SetTextdrawText("layer", "Layer: None");
                             layer.SetTextdrawText("tdselected", "TD: None");
@@ -81,6 +87,28 @@ namespace SampSharpGameMode1
             {
                 layer.HideAll();
                 layer = null;
+            }
+
+            public void Switch()
+            {
+                if(isSwitched)
+                {
+                    foreach(KeyValuePair<string, Textdraw> textdraw in layer.GetTextdrawList())
+                    {
+                        layer.SetTextdrawPosition(textdraw.Key, textdrawDefaultPos[textdraw.Key]);
+                        layer.SetTextdrawSize(textdraw.Key, textdrawDefaultSize[textdraw.Key].X, textdrawDefaultSize[textdraw.Key].Y);
+                    }
+                    isSwitched = false;
+                }
+                else
+                {
+                    foreach (KeyValuePair<string, Textdraw> textdraw in layer.GetTextdrawList())
+                    {
+                        layer.SetTextdrawPosition(textdraw.Key, new Vector2(0, -1));
+                        layer.SetTextdrawSize(textdraw.Key, 150.0f, textdrawDefaultSize[textdraw.Key].Y);
+                    }
+                    isSwitched = true;
+                }
             }
 
             public void SetSelectedTextdrawName(string name)
@@ -147,13 +175,19 @@ namespace SampSharpGameMode1
                         }
                     case Keys.No:
                         {
-                            moveSpeed -= 0.5f;
+                            if (moveSpeed <= 1.0f)
+                                moveSpeed -= 0.1f;
+                            else
+                                moveSpeed -= 0.5f;
                             player.GameText("Speed: " + moveSpeed.ToString(), 500, 3);
                             break;
                         }
                     case Keys.Yes:
                         {
-                            moveSpeed += 0.5f;
+                            if (moveSpeed <= 1.0f)
+                                moveSpeed += 0.1f;
+                            else
+                                moveSpeed += 0.5f;
                             player.GameText("Speed: " + moveSpeed.ToString(), 500, 3);
                             break;
                         }
@@ -285,7 +319,7 @@ namespace SampSharpGameMode1
         public void Close()
         {
             foreach (TextdrawLayer layer in layers)
-                layer.HideAll();
+                layer.Destroy();
             layers.Clear();
             isEditing = false;
             player.ToggleControllable(true);
@@ -324,21 +358,24 @@ namespace SampSharpGameMode1
                         }
                         jsonData = new UTF8Encoding(true).GetString(output);
                         List<textdraw> textdraws = JsonConvert.DeserializeObject<List<textdraw>>(jsonData);
+                        this.Init();
                         layers.Add(new TextdrawLayer());
                         layerIndex = layers.Count - 1;
-                        foreach(textdraw textdraw in textdraws)
+                        foreach (textdraw textdraw in textdraws)
                         {
                             if (textdraw.Type.Equals("box"))
                                 layers[layerIndex].CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Box);
                             if (textdraw.Type.Equals("text"))
+                            {
                                 layers[layerIndex].CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Text);
+                                layers[layerIndex].SetTextdrawText(textdraw.Name, textdraw.Text);
+                            }
                             if (!layers[layerIndex].SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY)))
                                 player.SendClientMessage(Color.Red, "Cannot set position for '" + textdraw.Name + "'");
                             if (!layers[layerIndex].SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height))
                                 player.SendClientMessage(Color.Red, "Cannot set size for '" + textdraw.Name + "'");
                             editingTDName = textdraw.Name;
                         }
-                        this.Init();
                         this.Select(editingTDName);
                         fs.Close();
                     }
@@ -429,13 +466,26 @@ namespace SampSharpGameMode1
 
         public void Select(string name)
         {
-            if(layers.Count > 0)
+            if (layers.Count > 0)
             {
                 if (layers[layerIndex].SelectTextdraw(name))
+                {
                     tdHUD.SetSelectedTextdrawName(name);
+                    editingTDName = name;
+                }
                 else
+                {
                     tdHUD.SetSelectedTextdrawName("None");
+                    player.SendClientMessage(Color.Red, "The following textdraw does not exists: " + name);
+                }
             }
+            else
+                player.SendClientMessage(Color.Red, "There is no layer to select");
+        }
+
+        public void HUDSwitch()
+        {
+            tdHUD.Switch();
         }
     }
 }

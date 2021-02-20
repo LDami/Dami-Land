@@ -758,6 +758,17 @@ namespace SampSharpGameMode1
                         player.textdrawCreator.Close();
                     }
                 }
+                [Command("hudswitch")]
+                private static void HUDSwitch(Player player)
+                {
+                    if (player.textdrawCreator != null)
+                    {
+                        player.textdrawCreator.HUDSwitch();
+                        player.SendClientMessage("Textdraw Creator interface has been switched");
+                    }
+                    else
+                        player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
+                }
                 [Command("add box")]
                 private static void AddBox(Player player, string name)
                 {
@@ -766,6 +777,8 @@ namespace SampSharpGameMode1
                         player.textdrawCreator.AddBox(name);
                         player.SendClientMessage("Textdraw created");
                     }
+                    else
+                        player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
                 }
                 [Command("add text")]
                 private static void AddText(Player player, string name)
@@ -775,6 +788,8 @@ namespace SampSharpGameMode1
                         player.textdrawCreator.AddText(name);
                         player.SendClientMessage("Textdraw created");
                     }
+                    else
+                        player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
                 }
                 [Command("select")]
                 private static void Select(Player player, string name)
@@ -783,6 +798,8 @@ namespace SampSharpGameMode1
                     {
                         player.textdrawCreator.Select(name);
                     }
+                    else
+                        player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
                 }
                 [Command("load")]
                 private static void Load(Player player, string name)
