@@ -71,6 +71,13 @@ namespace SampSharpGameMode1
             if (!query.StartsWith("SELECT"))
             {
                 rowsAffected = 0;
+                Console.WriteLine("MySQLConnector.cs - MySQLConnector.Execute:I: Executing query: {0}", query);
+                Console.WriteLine("With params:");
+                foreach (KeyValuePair<string, object> kvp in parameters)
+                {
+                    Console.WriteLine("\t- {0} = {1}", kvp.Key, kvp.Value);
+                }
+
                 var cmd = new MySqlCommand(query, mySqlConnection);
                 foreach (KeyValuePair<string, object> kvp in parameters)
                     cmd.Parameters.AddWithValue(kvp.Key, kvp.Value);
@@ -126,7 +133,10 @@ namespace SampSharpGameMode1
                     readRows++;
                     for (int i = 0; i < reader.FieldCount; i++)
                     {
-                        result.Add(reader.GetName(i), reader.GetString(i));
+                        if(reader.IsDBNull(i))
+                            result.Add(reader.GetName(i), "[null]");
+                        else
+                            result.Add(reader.GetName(i), reader.GetString(i));
                     }
                 }
             }
