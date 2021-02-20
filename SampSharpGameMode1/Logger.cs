@@ -17,7 +17,7 @@ namespace SampSharpGameMode1
             fileStream = File.Open(filename, FileMode.Append, FileAccess.Write);
         }
 
-        public void Write(string text, bool writeToConsole = false)
+        public void Write(string text, bool writeToConsole = true)
         {
             if (writeToConsole) Console.Write(text);
             if (fileStream != null)
@@ -28,7 +28,7 @@ namespace SampSharpGameMode1
                 fileStream.FlushAsync();
             }
         }
-        public void WriteLine(string text, bool writeToConsole = false)
+        public void WriteLine(string text, bool writeToConsole = true)
         {
             this.Write(text + "\r\n", writeToConsole);
         }
@@ -58,7 +58,7 @@ namespace SampSharpGameMode1
                 Console.WriteLine(e.Message);
             }
         }
-        public static void WriteAndClose(string text, bool writeToConsole = false)
+        public static void WriteAndClose(string text, bool writeToConsole = true)
         {
             if (writeToConsole) Console.Write(text);
             try
@@ -78,7 +78,7 @@ namespace SampSharpGameMode1
                 Console.WriteLine(e.Message);
             }
         }
-        public static void WriteLineAndClose(string text, bool writeToConsole = false)
+        public static void WriteLineAndClose(string text, bool writeToConsole = true)
         {
             Logger.WriteAndClose(text + "\r\n", writeToConsole);
         }
