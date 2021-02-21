@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace SampSharpGameMode1
+namespace SampSharpGameMode1.Display
 {
     class TextdrawLayer
     {
@@ -71,71 +71,78 @@ namespace SampSharpGameMode1
 
         public Boolean SetTextdrawPosition(string name, Vector2 position)
         {
-            try
-            {
-                float newPosX, newPosY;
-                newPosX = (position.X >= 0) ? position.X : textdrawList[name].Position.X;
-                newPosY = (position.Y >= 0) ? position.Y : textdrawList[name].Position.Y;
-                textdrawList[name].Position = new Vector2(newPosX, newPosY);
-                return true;
-            }
-            catch(KeyNotFoundException e)
-            {
-                Console.WriteLine("TextdrawLayer.cs - TextdrawLayer.SetTextdrawPosition:E: " + e.Message);
-                return false;
-            }
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFound();
+            float newPosX, newPosY;
+            newPosX = (position.X >= 0) ? position.X : textdrawList[name].Position.X;
+            newPosY = (position.Y >= 0) ? position.Y : textdrawList[name].Position.Y;
+            textdrawList[name].Position = new Vector2(newPosX, newPosY);
+            return true;
         }
         public Boolean SetTextdrawSize(string name, float width, float height)
         {
-            try
-            {
-                textdrawList[name].Width = width;
-                textdrawList[name].Height = height;
-                return true;
-            }
-            catch (KeyNotFoundException e)
-            {
-                Console.WriteLine("TextdrawLayer.cs - TextdrawLayer.SetTextdrawSize:E: " + e.Message);
-                return false;
-            }
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFound();
+            textdrawList[name].Width = width;
+            textdrawList[name].Height = height;
+            return true;
         }
         public void Move(string name, Vector2 offset)
         {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFound();
             textdrawList[name].Position = new Vector2(textdrawList[name].Position.X + offset.X, textdrawList[name].Position.Y + offset.Y);
         }
 
         public void Resize(string name, Vector2 offset)
         {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFound();
             textdrawList[name].Width += offset.X;
             textdrawList[name].Height += offset.Y;
         }
 
         public void SetTextdrawText(string name, string text)
         {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFound();
             textdrawList[name].text = text;
             this.ChangeTextdrawMode(name, textdrawEditMode[name]);
         }
 
         public void SetTextdrawColor(string name, Color color)
         {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFound();
             textdrawList[name].Color = color;
         }
         public Color GetTextdrawColor(string name)
         {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFound();
             return textdrawList[name].Color;
         }
 
         public void SetTextdrawBackColor(string name, Color color)
         {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFound();
             textdrawList[name].BackColor = color;
+            textdrawList[name].Hide();
+            textdrawList[name].Show();
         }
         public Color GetTextdrawBackColor(string name)
         {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFound();
             return textdrawList[name].BackColor;
         }
 
         public bool SelectTextdraw(string name)
         {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFound();
+
             foreach (string tdname in textdrawList.Keys)
                 this.ChangeTextdrawMode(tdname, EditingMode.Unselected);
 
@@ -150,6 +157,8 @@ namespace SampSharpGameMode1
 
         public void SwitchTextdrawMode(string name)
         {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFound();
             switch (textdrawEditMode[name])
             {
                 case EditingMode.Position:
@@ -169,6 +178,8 @@ namespace SampSharpGameMode1
 
         public void ChangeTextdrawMode(string name, EditingMode mode)
         {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFound();
             switch (mode)
             {
                 case EditingMode.Unselected:
@@ -195,6 +206,8 @@ namespace SampSharpGameMode1
 
         public EditingMode GetEditingMode(string name)
         {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFound();
             return textdrawEditMode[name];
         }
 

@@ -10,6 +10,7 @@ using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
 using SampSharp.GameMode.World;
 using SampSharpGameMode1.Civilisation;
+using SampSharpGameMode1.Display;
 using SampSharpGameMode1.Events;
 using SampSharpGameMode1.Events.Races;
 using static SampSharpGameMode1.Civilisation.PathExtractor;

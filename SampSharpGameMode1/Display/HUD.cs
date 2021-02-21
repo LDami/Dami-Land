@@ -1,11 +1,12 @@
 ﻿using Newtonsoft.Json;
 using SampSharp.GameMode;
+using SampSharp.GameMode.SAMP;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace SampSharpGameMode1
+namespace SampSharpGameMode1.Display
 {
     public class HUD
     {
@@ -66,6 +67,14 @@ namespace SampSharpGameMode1
         }
 
         /// <summary>
+        /// Hide all textdraw of this HUD layer
+        /// </summary>
+        public void Hide()
+        {
+            layer.HideAll();
+        }
+
+        /// <summary>
         /// Set text to a Textdraw element
         /// </summary>
         /// <param name="element">The textdraw name</param>
@@ -73,6 +82,16 @@ namespace SampSharpGameMode1
         public void SetText(string element, string value)
         {
             layer.SetTextdrawText(element, value);
+        }
+
+        /// <summary>
+        /// Set color to a Textdraw element
+        /// </summary>
+        /// <param name="element">The textdraw name</param>
+        /// <param name="color">The color to set</param>
+        public void SetColor(string element, Color color)
+        {
+            layer.SetTextdrawColor(element, color);
         }
     }
 }

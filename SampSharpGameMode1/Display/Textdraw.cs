@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace SampSharpGameMode1
+namespace SampSharpGameMode1.Display
 {
     struct textdraw
     {

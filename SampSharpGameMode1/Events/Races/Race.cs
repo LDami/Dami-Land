@@ -2,6 +2,7 @@
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
+using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -53,7 +54,8 @@ namespace SampSharpGameMode1.Events.Races
         public List<Player> players;
         public Dictionary<Player, RacePlayer> playersData = new Dictionary<Player, RacePlayer>();
         public List<Player> spectatingPlayers; // Contains spectating players who finished the race, and others players who spectate without racing
-        private Dictionary<Player, HUD> playersHUD = new Dictionary<Player, HUD>();
+        private Dictionary<Player, HUD> playersRecordsHUD = new Dictionary<Player, HUD>();
+        private Dictionary<Player, HUD> playersLiveInfoHUD = new Dictionary<Player, HUD>();
         private Dictionary<Player, TimeSpan> playersTimeSpan = new Dictionary<Player, TimeSpan>();
         private Dictionary<string, TimeSpan> records = new Dictionary<string, TimeSpan>();
         public Player winner;
@@ -133,10 +135,20 @@ namespace SampSharpGameMode1.Events.Races
                                 (float)Convert.ToDouble(row["checkpoint_pos_y"]),
                                 (float)Convert.ToDouble(row["checkpoint_pos_z"])
                             ), (CheckpointType)Convert.ToInt32(row["checkpoint_type"]), (float)Convert.ToDouble(row["checkpoint_size"]));
+
                         if (row["checkpoint_vehiclechange"].Equals("[null]"))
                             checkpoint.NextVehicle = null;
                         else
                             checkpoint.NextVehicle = (VehicleModelType)Convert.ToInt32(row["checkpoint_vehiclechange"]);
+
+                        if (row["checkpoint_nitro"].Equals("[null]"))
+                            checkpoint.NextNitro = Checkpoint.NitroEvent.None;
+                        else if (row["checkpoint_nitro"].Equals(0))
+                            checkpoint.NextNitro = Checkpoint.NitroEvent.Remove;
+                        else if (row["checkpoint_nitro"].Equals(1))
+                            checkpoint.NextNitro = Checkpoint.NitroEvent.Give;
+
+                        checkpoint.Idx = idx;
                         this.checkpoints.Add(idx++, checkpoint);
                         row = GameMode.mySQLConnector.GetNextRow();
                     }
@@ -173,7 +185,7 @@ namespace SampSharpGameMode1.Events.Races
 
                     GameMode.mySQLConnector.OpenReader("SELECT player_id, record_duration, name " +
                         "FROM race_records INNER JOIN users ON race_records.player_id = users.id " +
-                        "WHERE race_id=@id ORDER BY record_duration", param);
+                        "WHERE race_id=@id ORDER BY record_duration LIMIT 5", param);
                     row = GameMode.mySQLConnector.GetNextRow();
 
                     while (row.Count > 0)
@@ -237,8 +249,10 @@ namespace SampSharpGameMode1.Events.Races
 
                     playersData.Add(p, playerData);
 
-                    playersHUD[p] = new HUD(p, "racerecords.json");
-                    playersHUD[p].SetText("", "");
+                    playersRecordsHUD[p] = new HUD(p, "racerecords.json");
+                    int recordIdx = 1;
+                    foreach(KeyValuePair<string, TimeSpan> record in records)
+                        playersRecordsHUD[p].SetText("localRecord" + (recordIdx++) + "Label", "~W~" + record.Key + "~G~" + record.Value.ToString(@"hh\:mm\:ss\.fff"));
 
                     p.VirtualWorld = virtualWorld;
 
@@ -362,13 +376,13 @@ namespace SampSharpGameMode1.Events.Races
                 else
                 {
                     int cpidx = playersData[player].nextCheckpoint.Idx;
-                    Console.WriteLine("Race.cs - OnPlayerEnterCheckpoint:I: playerCheckpoint[" + player.Name + "] = " + playersData[player].nextCheckpoint.ToString());
+                    Console.WriteLine("Race.cs - OnPlayerEnterCheckpoint:I: playerCheckpoint[" + player.Name + "].Idx = " + playersData[player].nextCheckpoint.Idx);
                     player.Notificate("CP: " + cpidx + "/" + (this.checkpoints.Count - 1).ToString());
                     playersData[player].nextCheckpoint = this.checkpoints[cpidx+1];
                     UpdatePlayerCheckpoint(player);
 
                     playerLastCheckpointData[player] = new PlayerCheckpointData(this.checkpoints[cpidx], player.Vehicle.Model, player.Vehicle.Velocity, player.Vehicle.Angle);
-                    /*
+                    
                     // CP Event
                     if(this.checkpoints[cpidx].NextVehicle != null)
                     {
@@ -390,7 +404,7 @@ namespace SampSharpGameMode1.Events.Races
                         veh.Died += OnPlayerVehicle_Died;
                         player.PutInVehicle(veh);
                         veh.Velocity = vVel;
-                    }*/
+                    }
                 }
             }
         }
@@ -550,6 +564,7 @@ namespace SampSharpGameMode1.Events.Races
 
         public void Eject(Player player)
         {
+            playersRecordsHUD[player].Hide();
             player.ToggleSpectating(false);
             player.VirtualWorld = 0;
             player.Spawn();

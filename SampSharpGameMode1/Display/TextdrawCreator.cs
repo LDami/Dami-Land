@@ -10,7 +10,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace SampSharpGameMode1
+namespace SampSharpGameMode1.Display
 {
     class TextdrawCreator
     {

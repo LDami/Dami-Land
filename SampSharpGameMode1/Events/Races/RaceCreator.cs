@@ -4,6 +4,7 @@ using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
+using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -217,11 +218,12 @@ namespace SampSharpGameMode1.Events.Races
                         { "@checkpoint_pos_z", kvp.Value.Position.Z },
                         { "@checkpoint_size", kvp.Value.Size },
                         { "@checkpoint_type", kvp.Value.Type },
-                        { "@checkpoint_vehiclechange", kvp.Value.NextVehicle }
+                        { "@checkpoint_vehiclechange", kvp.Value.NextVehicle },
+                        { "@checkpoint_nitro", kvp.Value.NextNitro }
                     };
                     mySQLConnector.Execute("INSERT INTO race_checkpoints " +
-                        "(race_id, checkpoint_number, checkpoint_pos_x, checkpoint_pos_y, checkpoint_pos_z, checkpoint_size, checkpoint_type, checkpoint_vehiclechange) VALUES" +
-                        "(@id, @checkpoint_number, @checkpoint_pos_x, @checkpoint_pos_y, @checkpoint_pos_z, @checkpoint_size, @checkpoint_type, @checkpoint_vehiclechange)", param);
+                        "(race_id, checkpoint_number, checkpoint_pos_x, checkpoint_pos_y, checkpoint_pos_z, checkpoint_size, checkpoint_type, checkpoint_vehiclechange, checkpoint_nitro) VALUES" +
+                        "(@id, @checkpoint_number, @checkpoint_pos_x, @checkpoint_pos_y, @checkpoint_pos_z, @checkpoint_size, @checkpoint_type, @checkpoint_vehiclechange, @checkpoint_nitro)", param);
                 }
                 param = new Dictionary<string, object>
                 {
@@ -717,7 +719,21 @@ namespace SampSharpGameMode1.Events.Races
             if (editingRace.checkpoints[checkpointIndex].NextVehicle == null)
                 cpEventDialog.AddItem("Vehicle change [None]");
             else
-                cpEventDialog.AddItem("Vehicle change [" + editingRace.checkpoints[checkpointIndex].NextVehicle.ToString() + "]");
+                cpEventDialog.AddItem("Vehicle change [~G~" + editingRace.checkpoints[checkpointIndex].NextVehicle.ToString() + "]");
+            switch (editingRace.checkpoints[checkpointIndex].NextNitro)
+            {
+                case Checkpoint.NitroEvent.None:
+                    cpEventDialog.AddItem("Set Nitro [Unchanged]");
+                    break;
+                case Checkpoint.NitroEvent.Give:
+                    cpEventDialog.AddItem("Set Nitro [~G~Give]");
+                    break;
+                case Checkpoint.NitroEvent.Remove:
+                    cpEventDialog.AddItem("Set Nitro [~R~Remove]");
+                    break;
+                default:
+                    break;
+            }
             cpEventDialog.Show(player);
             cpEventDialog.Response += CpEventDialog_Response;
         }
