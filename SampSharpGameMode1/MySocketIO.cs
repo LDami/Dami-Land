@@ -48,7 +48,7 @@ namespace SampSharpGameMode1
                     Thread.Sleep(5000);
                 }
                 Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO.Connect:I: Socket open !");
-                this.CheckState();
+                //this.CheckState();
             }));
             t.Start();
         }
@@ -72,6 +72,7 @@ namespace SampSharpGameMode1
                         {
                             ns.Write(ping, 0, ping.Length);
                             ns.Flush();
+                            Thread.Sleep(30);
                         }
                         else
                             Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO.CheckState:E: Can't send ping: NetworkStream is null !");
@@ -145,6 +146,7 @@ namespace SampSharpGameMode1
                 //socket.Send(dataToSend, dataToSend.Length, SocketFlags.None);
                 ns.Write(dataToSend, 0, dataToSend.Length);
                 ns.Flush();
+                Thread.Sleep(30);
             }
             catch (SocketException e)
             {
