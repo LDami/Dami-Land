@@ -452,7 +452,6 @@ namespace SampSharpGameMode1
                     if (isSocketAlive)
                     {
                         if (socket.Write(data) == -1) isSocketAlive = false;
-                        Thread.Sleep(10);
                     }
                 }
             }
@@ -499,7 +498,7 @@ namespace SampSharpGameMode1
 
         private void Pf_Success(object sender, PathFindingDoneEventArgs e)
         {
-            this.SendClientMessage(Color.Green, "The pathfinding succeeded !");
+            this.SendClientMessage(Color.Green, "The pathfinding succeeded in " + e.duration.ToString(@"hh\:mm\:ss\.fff"));
             PathNode? lastNode = null;
             foreach(PathNode node in e.path)
             {
