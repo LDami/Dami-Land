@@ -139,7 +139,7 @@ namespace SampSharpGameMode1.Civilisation
                     List<Node> neighbors = GetNeighbors(current);
                     Node tmpNeighbor;
 
-                    gm.socket.Write("{\"id\": \"" + current.pathNode.id + "\", \"status\": \"current\"}");
+                    //gm.socket.Write("{\"id\": \"" + current.pathNode.id + "\", \"status\": \"current\"}");
 
                     Console.WriteLine("Neighbors = ");
                     for(int i = 0; i <= neighbors.Count-1; i++)
@@ -157,7 +157,7 @@ namespace SampSharpGameMode1.Civilisation
                             tmpNeighbor.h = GetHeuristic(tmpNeighbor, end);
                             tmpNeighbor.f = tmpNeighbor.g + tmpNeighbor.h;
                             openList.Add(tmpNeighbor);
-                            gm.socket.Write("{\"id\": \"" + tmpNeighbor.pathNode.id + "\", \"status\": \"open\"}");
+                            //gm.socket.Write("{\"id\": \"" + tmpNeighbor.pathNode.id + "\", \"status\": \"open\"}");
                         }
                         else
                         {
@@ -171,11 +171,10 @@ namespace SampSharpGameMode1.Civilisation
                         }
                     }
                     closedList.Add(current);
-                    gm.socket.Write("step");
                     int v;
                     //while((v = Console.Read()) != 0x61)
                     //{ }
-                    gm.socket.Write("{\"id\": \"" + current.pathNode.id + "\", \"status\": \"closed\"}");
+                    //gm.socket.Write("{\"id\": \"" + current.pathNode.id + "\", \"status\": \"closed\"}");
                 }
                 if (!success)
                     OnFailure(new EventArgs());
@@ -197,7 +196,7 @@ namespace SampSharpGameMode1.Civilisation
             args.path = finalPath.ToArray();
             args.duration = DateTime.Now - startDT;
             OnSuccess(args);
-
+            /*
             GameMode gm = (GameMode)BaseMode.Instance;
             Console.WriteLine("Path nodes count: " + finalPath.Count);
             int count = finalPath.Count;
@@ -205,6 +204,7 @@ namespace SampSharpGameMode1.Civilisation
             {
                 gm.socket.Write("{\"id\": \"" + finalPath.Pop().id + "\", \"status\": \"finalpath\"}");
             }
+            */
         }
     }
 }

@@ -10,13 +10,6 @@ namespace SampSharpGameMode1.Civilisation
     public class PathExtractor
     {
         //https://gta.fandom.com/wiki/Paths_%28GTA_SA%29
-        static void itoLittleEndian(int i, ref byte[] array, int off = 0)
-        {
-            array[0 + off] = (byte)(i & 0x000000FF);
-            array[1 + off] = (byte)((i & 0x0000FF00) >> 8);
-            array[2 + off] = (byte)((i & 0x00FF0000) >> 16);
-            array[3 + off] = (byte)((i & 0xFF000000) >> 24);
-        }
 
         static int GetLittleEndianInt32FromByteArray(byte[] data, int startIndex)
         {
