@@ -32,9 +32,12 @@ namespace SampSharpGameMode1
         PlayerMapping playerMapping;
         public RaceCreator playerRaceCreator;
 
+        private HUD vehicleHUD;
+
         public Event pEvent;
 
         NPC npc;
+        VehicleAI vehicleAI;
         private SampSharp.GameMode.SAMP.Timer pathObjectsTimer;
         private List<GlobalObject> pathObjects = new List<GlobalObject>();
         private List<GlobalObject> naviObjects = new List<GlobalObject>();
@@ -48,25 +51,29 @@ namespace SampSharpGameMode1
         {
             base.OnConnected(e);
 
+            Console.WriteLine("Players.cs - Player.OnConnected:I: New player connected: [" + this.Id + "] " + this.Name);
+
             //this.SetSpawnInfo(0, 0, new Vector3(1431.6393, 1519.5398, 10.5988), 0.0f);
             
+            if(!this.IsNPC)
+            {
+                isConnected = false;
 
-            isConnected = false;
+                mySQLConnector = MySQLConnector.Instance();
 
-            mySQLConnector = MySQLConnector.Instance();
+                textdrawCreator = new TextdrawCreator(this);
+                playerMapping = new PlayerMapping(this);
+                playerRaceCreator = null;
+                pEvent = null;
 
-            textdrawCreator = new TextdrawCreator(this);
-            playerMapping = new PlayerMapping(this);
-            playerRaceCreator = null;
-            pEvent = null;
+                pathObjectsTimer = new SampSharp.GameMode.SAMP.Timer(10000, true);
+                //pathObjectsTimer.Tick += PathObjectsTimer_Tick;
 
-            pathObjectsTimer = new SampSharp.GameMode.SAMP.Timer(10000, true);
-            //pathObjectsTimer.Tick += PathObjectsTimer_Tick;
-
-            if (this.IsRegistered())
-                ShowLoginForm();
-            else
-                ShowSignupForm();
+                if (this.IsRegistered())
+                    ShowLoginForm();
+                else
+                    ShowSignupForm();
+            }
         }
 
         private void PathObjectsTimer_Tick(object sender, EventArgs e)
@@ -84,22 +91,29 @@ namespace SampSharpGameMode1
         {
             base.OnDisconnected(e);
 
-            isConnected = false;
+            if(!this.IsNPC)
+            {
+                isConnected = false;
 
-            mySQLConnector = null;
-            playerMapping = null;
-            playerRaceCreator = null;
+                mySQLConnector = null;
+                playerMapping = null;
+                playerRaceCreator = null;
 
-            pathObjectsTimer.IsRunning = false;
-            pathObjectsTimer.Dispose();
-            pathObjectsTimer = null;
+                pathObjectsTimer.IsRunning = false;
+                pathObjectsTimer.Dispose();
+                pathObjectsTimer = null;
 
-            pathObjects = new List<GlobalObject>();
-            naviObjects = new List<GlobalObject>();
-            pathLabels = new TextLabel[1000];
-            naviLabels = new TextLabel[1000];
+                pathObjects = new List<GlobalObject>();
+                naviObjects = new List<GlobalObject>();
+                pathLabels = new TextLabel[1000];
+                naviLabels = new TextLabel[1000];
+                if (npc != null) npc.PlayerInstance.Dispose();
+            }
 
-            if (npc != null) npc.Dispose();
+            if(this.vehicleAI != null)
+            {
+                this.vehicleAI.Kick();
+            }
         }
 
         public override void OnRequestClass(RequestClassEventArgs e)
@@ -117,12 +131,27 @@ namespace SampSharpGameMode1
                 playerMapping.Update();
             //if (playerRaceCreator != null)
             //    playerRaceCreator.Update();
+            if(this.InAnyVehicle && vehicleHUD != null)
+            {
+                double vel = Math.Sqrt(this.Vehicle.Velocity.LengthSquared) * 181.5;
+                vehicleHUD.SetText("speed", vel.ToString(@"N3"));
+            }
+
         }
         public override void OnEnterVehicle(EnterVehicleEventArgs e)
         {
             base.OnEnterVehicle(e);
+            vehicleHUD = new HUD(this, "speedometer.json");
+            vehicleHUD.SetText("speed", "0");
         }
-        
+        public override void OnExitVehicle(PlayerVehicleEventArgs e)
+        {
+            base.OnExitVehicle(e);
+            if(vehicleHUD != null)
+                vehicleHUD.Hide();
+            vehicleHUD = null;
+        }
+
         public override void OnEnterCheckpoint(EventArgs e)
         {
             base.OnEnterCheckpoint(e);
@@ -420,6 +449,7 @@ namespace SampSharpGameMode1
             PathNode lastNode = new PathNode();
 
 
+            /*
             GameMode gm = (GameMode)BaseMode.Instance;
             bool isSocketAlive = false;
             MySocketIO socket = gm.socket;
@@ -428,7 +458,6 @@ namespace SampSharpGameMode1
                 isSocketAlive = true;
                 Console.WriteLine("Player.cs - Player.CalculateWay:I: Sending datas ... ");
             }
-
             string data;
             foreach (PathNode node in allPathNodes)
             {
@@ -459,7 +488,14 @@ namespace SampSharpGameMode1
                 Console.WriteLine("Done");
             else
                 Console.WriteLine("KO");
-
+            */
+            foreach (PathNode node in allPathNodes)
+            {
+                if (node.position.DistanceTo(from) < from.DistanceTo(to) || node.position.DistanceTo(to) < from.DistanceTo(to))
+                {
+                    allNearPathNodes.Add(node);
+                }
+            }
             foreach (PathNode node in allNearPathNodes)
             {
                 if (lastNode.position != Vector3.Zero)
@@ -549,6 +585,60 @@ namespace SampSharpGameMode1
                 this.Vehicle.SetAngularVelocity(this.Vehicle.Velocity + new Vector3(vel, 0, 0));
             }
         }
+
+        [Command("create-ai")]
+        private void CreateAICommand()
+        {
+            vehicleAI = new VehicleAI(VehicleModelType.Infernus, this.Position + new Vector3(5.0, 0.0, 0.0), 0.0f);
+        }
+        [Command("followme")]
+        private void FollowMeCommand()
+        {
+            if (vehicleAI != null)
+                vehicleAI.SetDestination(this.Position + new Vector3(0.0, 5.0, 0.0), 0.5);
+            else
+                Console.WriteLine("vehicleAI is null !");
+        }
+        [Command("start")]
+        private void StartAICommand()
+        {
+            if (vehicleAI != null)
+                vehicleAI.StartVehicle();
+            else
+                Console.WriteLine("vehicleAI is null !");
+        }
+        [Command("stop")]
+        private void StopAICommand()
+        {
+            if (vehicleAI != null)
+                vehicleAI.StopVehicle();
+            else
+                Console.WriteLine("vehicleAI is null !");
+        }
+        [Command("sethp")]
+        private void KillAICommand(int health)
+        {
+            if (vehicleAI != null)
+                vehicleAI.SetNPCHealth(health);
+            else
+                Console.WriteLine("vehicleAI is null !");
+        }
+        [Command("put")]
+        private void PutCommand(Player player, int vID)
+        {
+            Console.WriteLine("Player.cs - Player.PutCommand:I: Player: " + player.Name);
+            Console.WriteLine("Player.cs - Player.PutCommand:I: Player state: " + player.State);
+            BaseVehicle vehicle = BaseVehicle.FindOrCreate(vID);
+            Console.WriteLine("Player.cs - Player.PutCommand:I: Vehicle ID: " + vehicle.Id);
+            player.PutInVehicle(vehicle);
+        }
+
+        [Command("ak47")]
+        private void AK47ommand()
+        {
+            this.GiveWeapon(Weapon.AK47, 500);
+        }
+
         [Command("rep")]
         private void RepCommand(int vel)
         {
@@ -830,7 +920,7 @@ namespace SampSharpGameMode1
                 }
 
             }
-
+            /*
             [CommandGroup("npc")]
             class NPCCommandClass
             {
@@ -849,6 +939,7 @@ namespace SampSharpGameMode1
                     player.SendClientMessage("NPC connected");
                 }
             }
+            */
         }
 
     }

@@ -20,6 +20,8 @@ namespace SampSharpGameMode1.Commands
             Random rndColor = new Random();
             BaseVehicle v = BaseVehicle.Create(model, new Vector3(this.Position.X + 5.0, this.Position.Y, this.Position.Z), 0.0f, rndColor.Next(0, 255), rndColor.Next(0, 255));
             this.PutInVehicle(v, 0);
+            SampSharp.GameMode.Events.EnterVehicleEventArgs e = new SampSharp.GameMode.Events.EnterVehicleEventArgs(this, v, false);
+            this.OnEnterVehicle(e);
         }
 
 
