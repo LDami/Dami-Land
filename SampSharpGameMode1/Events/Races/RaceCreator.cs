@@ -150,7 +150,6 @@ namespace SampSharpGameMode1.Events.Races
 
         public void Create()
         {
-            hud = new HUD(player);
             editingMode = EditingMode.Checkpoints;
 
             editingRace = new Race();
@@ -161,6 +160,7 @@ namespace SampSharpGameMode1.Events.Races
 
         public void Load(int id)
         {
+            hud = new HUD(player);
             if (id > 0)
             {
                 Race loadingRace = new Race();
@@ -188,14 +188,21 @@ namespace SampSharpGameMode1.Events.Races
         {
             editingRace = null;
             isEditing = false;
-            hud.Destroy();
+            if(hud != null)
+                hud.Destroy();
             hud = null;
-            moverObject.Edited -= moverObject_Edited;
-            moverObject.Dispose();
+            if(moverObject != null)
+            {
+                moverObject.Edited -= moverObject_Edited;
+                moverObject.Dispose();
+            }
             moverObject = null;
             //TODO: cancel edit ?
-            player.DisableCheckpoint();
-            player.DisableRaceCheckpoint();
+            if(player != null)
+            {
+                player.DisableCheckpoint();
+                player.DisableRaceCheckpoint();
+            }
         }
 
         public Boolean Save()
@@ -675,6 +682,31 @@ namespace SampSharpGameMode1.Events.Races
             }
         }
 
+        private void ShowCheckpointEventDialog()
+        {
+            ListDialog cpEventDialog = new ListDialog("Checkpoint events", "Select", "Cancel");
+            if (editingRace.checkpoints[checkpointIndex].NextVehicle == null)
+                cpEventDialog.AddItem("Vehicle change [None]");
+            else
+                cpEventDialog.AddItem("Vehicle change [" + Color.Green + editingRace.checkpoints[checkpointIndex].NextVehicle.ToString() + Color.White + "]");
+            switch (editingRace.checkpoints[checkpointIndex].NextNitro)
+            {
+                case Checkpoint.NitroEvent.None:
+                    cpEventDialog.AddItem("Set Nitro [Unchanged]");
+                    break;
+                case Checkpoint.NitroEvent.Give:
+                    cpEventDialog.AddItem("Set Nitro [" + Color.Green + "Give" + Color.White + "]");
+                    break;
+                case Checkpoint.NitroEvent.Remove:
+                    cpEventDialog.AddItem("Set Nitro [" + Color.Green + "Remove" + Color.White + "]");
+                    break;
+                default:
+                    break;
+            }
+            cpEventDialog.Show(player);
+            cpEventDialog.Response += CpEventDialog_Response;
+        }
+
         private void CpEventDialog_Response(object sender, SampSharp.GameMode.Events.DialogResponseEventArgs e)
         {
             if (e.Player.Equals(player))
@@ -692,7 +724,30 @@ namespace SampSharpGameMode1.Events.Races
                                 {
                                     if (eventArgs.DialogButton == DialogButton.Left)
                                     {
-                                        editingRace.checkpoints[checkpointIndex].NextVehicle = Utils.GetVehicleModelType(eventArgs.InputText);
+                                        cp.NextVehicle = Utils.GetVehicleModelType(eventArgs.InputText);
+                                        player.Notificate("Updated");
+                                        ShowCheckpointEventDialog();
+                                    }
+                                    else
+                                    {
+                                        player.Notificate("Cancelled");
+                                        ShowCheckpointEventDialog();
+                                    }
+                                };
+                                break;
+                            }
+                        case 1: // Nitro event
+                            {
+                                ListDialog cpNitroEventDialog = new ListDialog("Nitro event", "Update", "Cancel");
+                                cpNitroEventDialog.AddItem(((cp.NextNitro == Checkpoint.NitroEvent.None) ? "> " : "") + "[Unchanged]");
+                                cpNitroEventDialog.AddItem(((cp.NextNitro == Checkpoint.NitroEvent.Give) ? "> " : "") + "[Give]");
+                                cpNitroEventDialog.AddItem(((cp.NextNitro == Checkpoint.NitroEvent.Remove) ? "> " : "") + "[Remove]");
+                                cpNitroEventDialog.Show(player);
+                                cpNitroEventDialog.Response += (sender, eventArgs) =>
+                                {
+                                    if (eventArgs.DialogButton == DialogButton.Left)
+                                    {
+                                        cp.NextNitro = (Checkpoint.NitroEvent)eventArgs.ListItem;
                                         player.Notificate("Updated");
                                         ShowCheckpointEventDialog();
                                     }
@@ -711,31 +766,6 @@ namespace SampSharpGameMode1.Events.Races
                     ShowCheckpointDialog();
                 }
             }
-        }
-
-        private void ShowCheckpointEventDialog()
-        {
-            ListDialog cpEventDialog = new ListDialog("Checkpoint events", "Select", "Cancel");
-            if (editingRace.checkpoints[checkpointIndex].NextVehicle == null)
-                cpEventDialog.AddItem("Vehicle change [None]");
-            else
-                cpEventDialog.AddItem("Vehicle change [~G~" + editingRace.checkpoints[checkpointIndex].NextVehicle.ToString() + "]");
-            switch (editingRace.checkpoints[checkpointIndex].NextNitro)
-            {
-                case Checkpoint.NitroEvent.None:
-                    cpEventDialog.AddItem("Set Nitro [Unchanged]");
-                    break;
-                case Checkpoint.NitroEvent.Give:
-                    cpEventDialog.AddItem("Set Nitro [~G~Give]");
-                    break;
-                case Checkpoint.NitroEvent.Remove:
-                    cpEventDialog.AddItem("Set Nitro [~R~Remove]");
-                    break;
-                default:
-                    break;
-            }
-            cpEventDialog.Show(player);
-            cpEventDialog.Response += CpEventDialog_Response;
         }
 
         public void UpdatePlayerCheckpoint()

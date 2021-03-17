@@ -91,6 +91,11 @@ namespace SampSharpGameMode1.Events.Races
             Player.SendClientMessageToAll("Race \"" + e.race.Name + "\" is finished, the winner is " + e.race.winner.Name + " !");
         }
 
+        public void OnPlayerVehicleDied(object sender, SampSharp.GameMode.Events.PlayerEventArgs e)
+        {
+            OnPlayerFinished((Player)e.Player, "Vehicle destroyed");
+        }
+
         public void Load(int id)
         {
             if (GameMode.mySQLConnector != null)
@@ -143,10 +148,8 @@ namespace SampSharpGameMode1.Events.Races
 
                         if (row["checkpoint_nitro"].Equals("[null]"))
                             checkpoint.NextNitro = Checkpoint.NitroEvent.None;
-                        else if (row["checkpoint_nitro"].Equals(0))
-                            checkpoint.NextNitro = Checkpoint.NitroEvent.Remove;
-                        else if (row["checkpoint_nitro"].Equals(1))
-                            checkpoint.NextNitro = Checkpoint.NitroEvent.Give;
+                        else 
+                            checkpoint.NextNitro = (Checkpoint.NitroEvent)Convert.ToInt32(row["checkpoint_nitro"]);
 
                         checkpoint.Idx = idx;
                         this.checkpoints.Add(idx++, checkpoint);
@@ -276,7 +279,7 @@ namespace SampSharpGameMode1.Events.Races
                     veh.VirtualWorld = virtualWorld;
                     veh.Engine = false;
                     veh.Doors = true;
-                    veh.Died += OnPlayerVehicle_Died;
+                    veh.Died += OnPlayerVehicleDied;
                     p.PutInVehicle(veh);
 
                     UpdatePlayerCheckpoint(p);
@@ -332,16 +335,14 @@ namespace SampSharpGameMode1.Events.Races
             }
         }
 
-        private void OnPlayerVehicle_Died(object sender, SampSharp.GameMode.Events.PlayerEventArgs e)
-        {
-            OnPlayerFinished((Player)e.Player, "Vehicle destroyed");
-        }
-
         private void CountdownTimer_Tick(object sender, EventArgs e)
         {
             countdown--;
             foreach (Player p in players)
+            {
                 p.GameText(countdown.ToString(), 1000, 6);
+                p.PlaySound((countdown > 0) ? 1056 : 1057);
+            }
             if(countdown == 0)
             {
                 countdownTimer.IsRepeating = false;
@@ -382,29 +383,8 @@ namespace SampSharpGameMode1.Events.Races
                     UpdatePlayerCheckpoint(player);
 
                     playerLastCheckpointData[player] = new PlayerCheckpointData(this.checkpoints[cpidx], player.Vehicle.Model, player.Vehicle.Velocity, player.Vehicle.Angle);
-                    
-                    // CP Event
-                    if(this.checkpoints[cpidx].NextVehicle != null)
-                    {
-                        float vRot = player.Rotation.X;
-                        Vector3 vVel = Vector3.Zero;
-                        if(player.InAnyVehicle)
-                        {
-                            vRot = player.Vehicle.Rotation.Z;
-                            vVel = player.Vehicle.Velocity;
-                            BaseVehicle vehicle = player.Vehicle;
-                            player.RemoveFromVehicle();
-                            vehicle.Dispose();
-                        }
 
-                        BaseVehicle veh = BaseVehicle.Create(this.checkpoints[cpidx].NextVehicle.GetValueOrDefault(VehicleModelType.Ambulance), player.Position, vRot, 1, 1);
-                        veh.VirtualWorld = virtualWorld;
-                        veh.Engine = true;
-                        veh.Doors = true;
-                        veh.Died += OnPlayerVehicle_Died;
-                        player.PutInVehicle(veh);
-                        veh.Velocity = vVel;
-                    }
+                    this.checkpoints[cpidx].ExecuteEvents(player);
                 }
             }
         }
@@ -450,7 +430,7 @@ namespace SampSharpGameMode1.Events.Races
                         veh.Engine = true;
                         if (!safeRespawn) veh.Velocity = playerLastCheckpointData[player].VehicleVelocity;
                         veh.Doors = true;
-                        veh.Died += OnPlayerVehicle_Died;
+                        veh.Died += OnPlayerVehicleDied;
                         player.PutInVehicle(veh);
                     }
                     else
@@ -485,12 +465,16 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     case 1:
                         placeStr = "1st";
+                        player.GiveMoney(1000);
+                        player.PlaySound(5448);
                         break;
                     case 2:
                         placeStr = "2nd";
+                        player.GiveMoney(750);
                         break;
                     case 3:
                         placeStr = "3rd";
+                        player.GiveMoney(500);
                         break;
                     default:
                         placeStr = place + "th";
@@ -507,6 +491,7 @@ namespace SampSharpGameMode1.Events.Races
                 if (playersData[player].record.CompareTo(duration) > 0) // Better than previous record
                 {
                     finishText += "~n~~g~New record  ! -" + playersData[player].record.Subtract(duration).ToString(@"hh\:mm\:ss\.fff");
+                    player.GiveMoney(200);
                     isNewRecord = true;
                 }
 

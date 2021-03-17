@@ -42,6 +42,7 @@ namespace SampSharpGameMode1.Commands
                 if (player.playerRaceCreator == null)
                     player.playerRaceCreator = new RaceCreator(player);
 
+                player.playerRaceCreator.Unload();
                 player.playerRaceCreator.Load(id);
             }
 

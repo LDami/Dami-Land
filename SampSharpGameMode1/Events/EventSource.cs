@@ -6,6 +6,15 @@ namespace SampSharpGameMode1.Events
 {
     public interface EventSource
     {
+        #region Callbacks
+        /// <summary>
+        ///     Called when the player's vehicle is destroyed during the event
+        /// </summary>
+        /// <param name="sender">Vehicle that exploded</param>
+        /// <param name="e">Event argument</param>
+        public void OnPlayerVehicleDied(object sender, SampSharp.GameMode.Events.PlayerEventArgs e);
+        #endregion
+        #region Methods
         /// <summary>
         ///     Load the event's data on memory
         /// </summary>
@@ -29,7 +38,8 @@ namespace SampSharpGameMode1.Events
         /// <summary>
         ///     Teleport the player out of the event (event finished, kicked out, ...)
         /// </summary>
-        /// <param name="player">The Player to eject</param>
+        /// <param name="player">Player to eject</param>
         public void Eject(Player player);
+        #endregion
     }
 }
