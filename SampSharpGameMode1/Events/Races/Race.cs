@@ -12,6 +12,7 @@ namespace SampSharpGameMode1.Events.Races
     public class RaceLoadedEventArgs : EventArgs
     {
         public Race race { get; set; }
+        public bool success { get; set; }
     }
     public class RaceEventArgs : EventArgs
     {
@@ -23,18 +24,13 @@ namespace SampSharpGameMode1.Events.Races
         public const int MIN_PLAYERS_IN_RACE = 0;
         public const int MAX_PLAYERS_IN_RACE = 100;
 
-        private int id;
-        private string name;
-        private int laps;
         public Dictionary<int, Checkpoint> checkpoints = new Dictionary<int, Checkpoint>();
         public Vector3R[] startingSpawn;
-        private VehicleModelType? startingVehicle;
 
-
-        public int Id { get => id; private set => id = value; }
-        public string Name { get => name; set => name = value; }
-        public int Laps { get => laps; set => laps = value; }
-        public VehicleModelType? StartingVehicle { get => startingVehicle; set => startingVehicle = value; }
+        public int Id { get; private set; }
+        public string Name { get; set; }
+        public int Laps { get; set; }
+        public VehicleModelType? StartingVehicle { get; set; }
 
         // Common Events
 
@@ -102,6 +98,7 @@ namespace SampSharpGameMode1.Events.Races
             {
                 Thread t = new Thread(() =>
                 {
+                    bool errorFlag = false;
                     Dictionary<string, string> row;
                     Dictionary<string, object> param = new Dictionary<string, object>
                     {
@@ -123,83 +120,97 @@ namespace SampSharpGameMode1.Events.Races
                             this.StartingVehicle = null;
                         }
                     }
+                    else
+                        errorFlag = true;
                     GameMode.mySQLConnector.CloseReader();
 
-                    GameMode.mySQLConnector.OpenReader("SELECT * " +
-                        "FROM race_checkpoints " +
-                        "WHERE race_id=@id ORDER BY checkpoint_number", param);
-                    row = GameMode.mySQLConnector.GetNextRow();
-
-                    this.checkpoints.Clear();
-                    Checkpoint checkpoint;
-                    int idx = 0;
-                    while (row.Count > 0)
+                    if(!errorFlag)
                     {
-                        checkpoint = new Checkpoint(new Vector3(
-                                (float)Convert.ToDouble(row["checkpoint_pos_x"]),
-                                (float)Convert.ToDouble(row["checkpoint_pos_y"]),
-                                (float)Convert.ToDouble(row["checkpoint_pos_z"])
-                            ), (CheckpointType)Convert.ToInt32(row["checkpoint_type"]), (float)Convert.ToDouble(row["checkpoint_size"]));
-
-                        if (row["checkpoint_vehiclechange"].Equals("[null]"))
-                            checkpoint.NextVehicle = null;
-                        else
-                            checkpoint.NextVehicle = (VehicleModelType)Convert.ToInt32(row["checkpoint_vehiclechange"]);
-
-                        if (row["checkpoint_nitro"].Equals("[null]"))
-                            checkpoint.NextNitro = Checkpoint.NitroEvent.None;
-                        else 
-                            checkpoint.NextNitro = (Checkpoint.NitroEvent)Convert.ToInt32(row["checkpoint_nitro"]);
-
-                        checkpoint.Idx = idx;
-                        this.checkpoints.Add(idx++, checkpoint);
+                        GameMode.mySQLConnector.OpenReader("SELECT * " +
+                            "FROM race_checkpoints " +
+                            "WHERE race_id=@id ORDER BY checkpoint_number", param);
                         row = GameMode.mySQLConnector.GetNextRow();
-                    }
-                    GameMode.mySQLConnector.CloseReader();
+                        if (row.Count == 0) errorFlag = true;
 
-                    GameMode.mySQLConnector.OpenReader("SELECT spawn_index, spawnpos_x, spawnpos_y, spawnpos_z, spawnpos_rot " +
-                        "FROM race_spawnpos " +
-                        "WHERE race_id=@id ORDER BY spawn_index", param);
-                    row = GameMode.mySQLConnector.GetNextRow();
-
-                    this.startingSpawn = new Vector3R[MAX_PLAYERS_IN_RACE];
-                    Vector3R pos;
-                    idx = 0;
-                    while (row.Count > 0)
-                    {
-                        pos = new Vector3R(new Vector3(
-                                    (float)Convert.ToDouble(row["spawnpos_x"]),
-                                    (float)Convert.ToDouble(row["spawnpos_y"]),
-                                    (float)Convert.ToDouble(row["spawnpos_z"])
-                                ),
-                                (float)Convert.ToDouble(row["spawnpos_rot"])
-                            );
-                        this.startingSpawn[idx++] = pos;
-                        row = GameMode.mySQLConnector.GetNextRow();
-                    }
-                    for (int i = 0; i < this.startingSpawn.Length; i++)
-                    {
-                        if (this.startingSpawn[i].Position == Vector3.Zero)
+                        this.checkpoints.Clear();
+                        Checkpoint checkpoint;
+                        int idx = 0;
+                        while (row.Count > 0)
                         {
-                            this.startingSpawn[i].Position = this.checkpoints[0].Position;
+                            checkpoint = new Checkpoint(new Vector3(
+                                    (float)Convert.ToDouble(row["checkpoint_pos_x"]),
+                                    (float)Convert.ToDouble(row["checkpoint_pos_y"]),
+                                    (float)Convert.ToDouble(row["checkpoint_pos_z"])
+                                ), (CheckpointType)Convert.ToInt32(row["checkpoint_type"]), (float)Convert.ToDouble(row["checkpoint_size"]));
+
+                            if (row["checkpoint_vehiclechange"].Equals("[null]"))
+                                checkpoint.NextVehicle = null;
+                            else
+                                checkpoint.NextVehicle = (VehicleModelType)Convert.ToInt32(row["checkpoint_vehiclechange"]);
+
+                            if (row["checkpoint_nitro"].Equals("[null]"))
+                                checkpoint.NextNitro = Checkpoint.NitroEvent.None;
+                            else
+                                checkpoint.NextNitro = (Checkpoint.NitroEvent)Convert.ToInt32(row["checkpoint_nitro"]);
+
+                            checkpoint.Idx = idx;
+                            this.checkpoints.Add(idx++, checkpoint);
+                            row = GameMode.mySQLConnector.GetNextRow();
                         }
+                        GameMode.mySQLConnector.CloseReader();
                     }
-                    GameMode.mySQLConnector.CloseReader();
 
-                    GameMode.mySQLConnector.OpenReader("SELECT player_id, record_duration, name " +
-                        "FROM race_records INNER JOIN users ON race_records.player_id = users.id " +
-                        "WHERE race_id=@id ORDER BY record_duration LIMIT 5", param);
-                    row = GameMode.mySQLConnector.GetNextRow();
-
-                    while (row.Count > 0)
+                    if(!errorFlag)
                     {
-                        records[row["name"]] = TimeSpan.Parse(row["record_duration"]);
+                        GameMode.mySQLConnector.OpenReader("SELECT spawn_index, spawnpos_x, spawnpos_y, spawnpos_z, spawnpos_rot " +
+                            "FROM race_spawnpos " +
+                            "WHERE race_id=@id ORDER BY spawn_index", param);
                         row = GameMode.mySQLConnector.GetNextRow();
+                        if (row.Count == 0) errorFlag = true;
+
+                        this.startingSpawn = new Vector3R[MAX_PLAYERS_IN_RACE];
+                        Vector3R pos;
+                        int idx = 0;
+                        while (row.Count > 0)
+                        {
+                            pos = new Vector3R(new Vector3(
+                                        (float)Convert.ToDouble(row["spawnpos_x"]),
+                                        (float)Convert.ToDouble(row["spawnpos_y"]),
+                                        (float)Convert.ToDouble(row["spawnpos_z"])
+                                    ),
+                                    (float)Convert.ToDouble(row["spawnpos_rot"])
+                                );
+                            this.startingSpawn[idx++] = pos;
+                            row = GameMode.mySQLConnector.GetNextRow();
+                        }
+                        for (int i = 0; i < this.startingSpawn.Length; i++)
+                        {
+                            if (this.startingSpawn[i].Position == Vector3.Zero)
+                            {
+                                this.startingSpawn[i].Position = this.checkpoints[0].Position;
+                            }
+                        }
+                        GameMode.mySQLConnector.CloseReader();
                     }
-                    GameMode.mySQLConnector.CloseReader();
+
+                    if(!errorFlag)
+                    {
+                        GameMode.mySQLConnector.OpenReader("SELECT player_id, record_duration, name " +
+                            "FROM race_records INNER JOIN users ON race_records.player_id = users.id " +
+                            "WHERE race_id=@id ORDER BY record_duration LIMIT 5", param);
+                        row = GameMode.mySQLConnector.GetNextRow();
+
+                        while (row.Count > 0)
+                        {
+                            records[row["name"]] = TimeSpan.Parse(row["record_duration"]);
+                            row = GameMode.mySQLConnector.GetNextRow();
+                        }
+                        GameMode.mySQLConnector.CloseReader();
+                    }
 
                     RaceLoadedEventArgs args = new RaceLoadedEventArgs();
                     args.race = this;
+                    args.success = !errorFlag;
                     OnLoaded(args);
                 });
                 t.Start();
@@ -208,7 +219,7 @@ namespace SampSharpGameMode1.Events.Races
 
         public Boolean IsPlayable()
         {
-            return (checkpoints.Count > 0 && startingVehicle != null) ? true : false;
+            return (checkpoints.Count > 0 && StartingVehicle != null) ? true : false;
         }
 
         public void Prepare(List<Player> players, int virtualWorld)
@@ -236,7 +247,7 @@ namespace SampSharpGameMode1.Events.Races
                     // Get player record
                     Dictionary<string, object> param = new Dictionary<string, object>
                     {
-                        { "@race_id", this.id },
+                        { "@race_id", this.Id },
                         { "@player_id", p.Db_Id}
                     };
                     GameMode.mySQLConnector.OpenReader("SELECT record_duration " +
@@ -275,7 +286,7 @@ namespace SampSharpGameMode1.Events.Races
                     }
                     tries = 0;
 
-                    BaseVehicle veh = BaseVehicle.Create(startingVehicle.GetValueOrDefault(VehicleModelType.Bike), this.startingSpawn[pos].Position, this.startingSpawn[pos].Rotation, 1, 1);
+                    BaseVehicle veh = BaseVehicle.Create(StartingVehicle.GetValueOrDefault(VehicleModelType.Bike), this.startingSpawn[pos].Position, this.startingSpawn[pos].Rotation, 1, 1);
                     veh.VirtualWorld = virtualWorld;
                     veh.Engine = false;
                     veh.Doors = true;
