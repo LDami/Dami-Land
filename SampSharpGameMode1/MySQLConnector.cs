@@ -66,7 +66,7 @@ namespace SampSharpGameMode1
 
         private int rowsAffected;
         public int RowsAffected { get => rowsAffected; private set => rowsAffected = value; }
-        public void Execute(string query, Dictionary<string, object> parameters)
+        public long Execute(string query, Dictionary<string, object> parameters)
         {
             if (!query.StartsWith("SELECT"))
             {
@@ -83,7 +83,10 @@ namespace SampSharpGameMode1
                     cmd.Parameters.AddWithValue(kvp.Key, kvp.Value);
 
                 rowsAffected = cmd.ExecuteNonQuery();
+                return cmd.LastInsertedId;
             }
+            else
+                return -1;
         }
 
         private MySqlDataReader reader = null;
