@@ -38,15 +38,13 @@ namespace SampSharpGameMode1.Events.Races
 
         protected virtual void OnLoaded(RaceLoadedEventArgs e)
         {
-            EventHandler<RaceLoadedEventArgs> handler = Loaded;
-            if (handler != null)
-                handler(this, e);
+            Loaded?.Invoke(this, e);
         }
 
         // Launcher only
 
-        private bool isStarted = false;
         private bool isPreparing = false;
+        public bool isStarted = false;
         public List<Player> players;
         public Dictionary<Player, RacePlayer> playersData = new Dictionary<Player, RacePlayer>();
         public List<Player> spectatingPlayers; // Contains spectating players who finished the race, and others players who spectate without racing
@@ -59,7 +57,6 @@ namespace SampSharpGameMode1.Events.Races
         private SampSharp.GameMode.SAMP.Timer countdownTimer;
         private int countdown;
         public DateTime startedTime;
-        public bool IsStarted { get => isStarted; set => isStarted = value; }
 
         public struct PlayerCheckpointData
         {
@@ -272,7 +269,7 @@ namespace SampSharpGameMode1.Events.Races
 
                     p.EnterCheckpoint += (sender, eventArgs) => { OnPlayerEnterCheckpoint((Player)sender); };
                     p.EnterRaceCheckpoint += (sender, eventArgs) => { OnPlayerEnterCheckpoint((Player)sender); };
-                    p.KeyStateChanged += Player_KeyStateChanged;
+                    p.KeyStateChanged += OnPlayerKeyStateChanged;
 
                     pos = rdm.Next(1, players.Count);
                     while (generatedPos.Contains(pos) && tries++ < MAX_PLAYERS_IN_RACE)
@@ -310,7 +307,7 @@ namespace SampSharpGameMode1.Events.Races
             }
         }
 
-        private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
+        private void OnPlayerKeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
         {
             Player spectator = (Player)sender;
             if (spectatingPlayers.Contains(spectator))
