@@ -30,13 +30,14 @@ namespace SampSharpGameMode1
 
         TextdrawCreator textdrawCreator;
         PlayerMapping playerMapping;
-        public RaceCreator playerRaceCreator;
+        public EventCreator eventCreator;
+        public CameraController cameraController;
 
         private HUD vehicleHUD;
 
         public Event pEvent;
 
-        NPC npc;
+        //NPC npc;
         VehicleAI vehicleAI;
         private SampSharp.GameMode.SAMP.Timer pathObjectsTimer;
         private List<GlobalObject> pathObjects = new List<GlobalObject>();
@@ -63,7 +64,8 @@ namespace SampSharpGameMode1
 
                 textdrawCreator = new TextdrawCreator(this);
                 playerMapping = new PlayerMapping(this);
-                playerRaceCreator = null;
+                cameraController = new CameraController(this);
+                eventCreator = null;
                 pEvent = null;
 
                 pathObjectsTimer = new SampSharp.GameMode.SAMP.Timer(10000, true);
@@ -97,7 +99,7 @@ namespace SampSharpGameMode1
 
                 mySQLConnector = null;
                 playerMapping = null;
-                playerRaceCreator = null;
+                eventCreator = null;
 
                 pathObjectsTimer.IsRunning = false;
                 pathObjectsTimer.Dispose();
