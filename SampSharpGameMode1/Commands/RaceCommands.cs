@@ -3,6 +3,7 @@ using SampSharp.GameMode.Display;
 using SampSharp.GameMode.Events;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
+using SampSharpGameMode1.Events;
 using SampSharpGameMode1.Events.Races;
 using System;
 using System.Collections.Generic;
@@ -29,33 +30,33 @@ namespace SampSharpGameMode1.Commands
             [Command("create")]
             private static void CreateRace(Player player)
             {
-                if(player.playerRaceCreator == null)
+                if(player.eventCreator == null)
                 {
-                    player.playerRaceCreator = new RaceCreator(player);
+                    player.eventCreator = new RaceCreator(player);
                 }
-                player.playerRaceCreator.Create();
+                player.eventCreator.Create();
             }
 
             [Command("loadc")]
             private static void LoadRaceCreator(Player player, int id)
             {
-                if (player.playerRaceCreator == null)
-                    player.playerRaceCreator = new RaceCreator(player);
+                if (player.eventCreator == null)
+                    player.eventCreator = new RaceCreator(player);
 
-                player.playerRaceCreator.Unload();
-                player.playerRaceCreator.Load(id);
+                player.eventCreator.Unload();
+                player.eventCreator.Load(id);
             }
 
             [Command("save")]
             private static void SaveRace(Player player)
             {
-                if (player.playerRaceCreator != null)
+                if (player.eventCreator != null)
                 {
-                    if (player.playerRaceCreator.isEditing)
+                    if ((player.eventCreator as RaceCreator).editingRace != null)
                     {
-                        if (player.playerRaceCreator.editingRace.Name.Length > 0) // Si on édite une course déjà existante
+                        if (!(player.eventCreator as RaceCreator).isNew) // Si on édite une course déjà existante
                         {
-                            if (player.playerRaceCreator.Save())
+                            if (player.eventCreator.Save())
                                 player.SendClientMessage(Color.Green, "Race saved");
                             else
                                 player.SendClientMessage(Color.Red, "Error saving race");
@@ -81,7 +82,7 @@ namespace SampSharpGameMode1.Commands
                 {
                     if (e.InputText.Length > 0)
                     {
-                        if (player.playerRaceCreator.Save(e.InputText))
+                        if (player.eventCreator.Save(e.InputText))
                             player.SendClientMessage(Color.Green, "Race saved");
                         else
                             player.SendClientMessage(Color.Red, "Error saving race");
@@ -98,49 +99,49 @@ namespace SampSharpGameMode1.Commands
             [Command("exit")]
             private static void Exit(Player player)
             {
-                if (player.playerRaceCreator != null)
+                if (player.eventCreator != null)
                 {
-                    player.playerRaceCreator.Unload();
+                    player.eventCreator.Unload();
                 }
             }
 
             [Command("set start")]
             private static void SetStart(Player player)
             {
-                if (player.playerRaceCreator != null)
+                if (player.eventCreator != null && player.eventCreator is EventCreator)
                 {
-                    player.playerRaceCreator.PutStart(player.Position);
+                    (player.eventCreator as RaceCreator).PutStart(player.Position);
                 }
             }
             [Command("set current")]
             private static void MoveCurrent(Player player)
             {
-                if (player.playerRaceCreator != null)
+                if (player.eventCreator != null && player.eventCreator is EventCreator)
                 {
-                    player.playerRaceCreator.MoveCurrent(player.Position);
+                    (player.eventCreator as RaceCreator).MoveCurrent(player.Position);
                 }
             }
             [Command("set finish")]
             private static void SetFinish(Player player)
             {
-                if (player.playerRaceCreator != null)
+                if (player.eventCreator != null && player.eventCreator is EventCreator)
                 {
-                    player.playerRaceCreator.PutFinish(player.Position);
+                    (player.eventCreator as RaceCreator).PutFinish(player.Position);
                 }
             }
             [Command("addcp")]
             private static void AddCP(Player player)
             {
-                if (player.playerRaceCreator != null)
+                if (player.eventCreator != null && player.eventCreator is EventCreator)
                 {
-                    player.playerRaceCreator.AddCheckpoint(player.Position);
+                    (player.eventCreator as RaceCreator).AddCheckpoint(player.Position);
                 }
             }
 
             [Command("find")]
             private static void FindRace(Player player, string name)
             {
-                Dictionary<string, string> result = RaceCreator.FindRace(name);
+                Dictionary<string, string> result = RaceCreator.Find(name);
                 if (result.Count == 0)
                     player.SendClientMessage("No race found !");
                 else
@@ -155,7 +156,7 @@ namespace SampSharpGameMode1.Commands
             [Command("info")]
             private static void GetInfo(Player player, int id)
             {
-                Dictionary<string, string> result = RaceCreator.GetRaceInfo(id);
+                Dictionary<string, string> result = RaceCreator.GetInfo(id);
                 if (result.Count == 0)
                     player.SendClientMessage("No race found !");
                 else
