@@ -195,7 +195,7 @@ namespace SampSharpGameMode1.Civilisation
 
         public static void Load()
         {
-            string heightmapFile = BaseMode.Instance.Client.ServerPath + "\\scriptfiles\\SAfull.hmap";
+            string heightmapFile = Directory.GetCurrentDirectory() + "\\scriptfiles\\SAfull.hmap";
             using (FileStream fs = File.Open(heightmapFile, FileMode.Open, FileAccess.Read))
             {
                 long fsLen = fs.Length;

@@ -8,7 +8,8 @@ namespace SampSharpGameMode1
 {
     class Logger
     {
-        private static string filename = BaseMode.Instance.Client.ServerPath + "\\scriptfiles\\gamemode.log";
+        private static string filename = Directory.GetCurrentDirectory() + "\\scriptfiles\\gamemode.log";
+        //private static string filename = BaseMode.Instance.Client.ServerPath + "..\\..\\scriptfiles\\gamemode.log";
 
         FileStream fileStream = null;
 
@@ -49,7 +50,7 @@ namespace SampSharpGameMode1
             {
                 if (File.Exists(filename))
                     File.Delete(filename);
-                Logger.WriteLineAndClose("Logger.cs - Logger.Init:I: Logger initialized at " + DateTime.Now.ToString());
+                Logger.WriteLineAndClose("Logger.cs - Logger.Init:I: Logger initialized at " + DateTime.Now.ToString(), false);
                 Console.WriteLine("Logger.cs - Logger.Init:I: Logger initialized");
             }
             catch (IOException e)

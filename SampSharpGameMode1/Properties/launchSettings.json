@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "SampSharpGameMode1": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Serveur SA-MP CSharp\\samp-server.exe",
+      "workingDirectory": "C:\\Serveur SA-MP CSharp"
+    }
+  }
+}
