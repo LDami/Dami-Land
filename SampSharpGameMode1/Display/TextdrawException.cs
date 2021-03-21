@@ -4,9 +4,9 @@ using System.Text;
 
 namespace SampSharpGameMode1.Display
 {
-    public class TextdrawNameNotFound : Exception
+    public class TextdrawNameNotFoundException : Exception
     {
-        public TextdrawNameNotFound() :
+        public TextdrawNameNotFoundException() :
             base("The given Textdraw name has not been found.")
         { }
     }
