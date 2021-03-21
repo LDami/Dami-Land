@@ -5,6 +5,8 @@ using SampSharp.GameMode.Display;
 using SampSharp.GameMode.Events;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
+using SampSharp.Streamer;
+using SampSharp.Streamer.World;
 using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
@@ -13,7 +15,7 @@ using System.Text;
 
 namespace SampSharpGameMode1.Events.Derbys
 {
-    public class DerbyCreator
+	public class DerbyCreator : EventCreator
     {
         class HUD
         {
@@ -21,7 +23,7 @@ namespace SampSharpGameMode1.Events.Derbys
             public HUD(Player player)
             {
                 layer = new TextdrawLayer();
-                string filename = BaseMode.Instance.Client.ServerPath + "\\scriptfiles\\derbycreator.json";
+                string filename = Directory.GetCurrentDirectory() + "\\scriptfiles\\derbycreator.json";
                 string jsonData = "";
                 if (File.Exists(filename))
                 {
@@ -56,14 +58,20 @@ namespace SampSharpGameMode1.Events.Derbys
                                     layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
                                 }
                             }
-                            layer.SetTextdrawText("Derbynamelabel", "Derby Name:");
-                            layer.SetTextdrawText("Derbyname", "None");
+                            layer.SetTextdrawText("derbynamelabel", "Derby Name:");
+                            layer.SetTextdrawText("derbyname", "None");
+                            layer.SetTextdrawText("selectedidx", "Spawn nbr:");
                             layer.SetTextdrawText("editingmode", "Mode: None");
                             layer.UnselectAllTextdraw();
                             fs.Close();
                         }
                     }
                     catch (IOException e)
+                    {
+                        Console.WriteLine("DerbyCreator.cs - DerbyCreator.HUD._:E: Cannot load Derby Creator HUD:");
+                        Console.WriteLine(e.Message);
+                    }
+                    catch(TextdrawNameNotFoundException e)
                     {
                         Console.WriteLine("DerbyCreator.cs - DerbyCreator.HUD._:E: Cannot load Derby Creator HUD:");
                         Console.WriteLine(e.Message);
@@ -76,9 +84,12 @@ namespace SampSharpGameMode1.Events.Derbys
             }
             public void SetDerbyName(string name)
             {
-                layer.SetTextdrawText("Derbyname", name);
+                layer.SetTextdrawText("derbyname", name);
             }
-
+            public void SetSelectedIdx(int idx)
+            {
+                layer.SetTextdrawText("selectedidx", idx.ToString());
+            }
             public void SetEditingMode(EditingMode editingMode)
             {
                 layer.SetTextdrawText("editingmode", editingMode.ToString());
@@ -93,6 +104,9 @@ namespace SampSharpGameMode1.Events.Derbys
 
         public Derby editingDerby = null;
         EditingMode editingMode;
+        public bool isNew;
+
+        private Dictionary<int, DynamicTextLabel> labels;
 
         PlayerObject moverObject;
         const int moverObjectModelID = 19133;
@@ -141,6 +155,14 @@ namespace SampSharpGameMode1.Events.Derbys
                         ShowDerbyDialog();
                         break;
                     }
+                case Keys.No:
+                    {
+                        Streamer streamer = new Streamer();
+                        DynamicObject obj = streamer.GetPlayerCameraTargetObject(player);
+                        obj.Edited += OnMapObjectEdited;
+                        obj.Edit(player);
+                        break;
+                    }
             }
         }
 
@@ -161,12 +183,17 @@ namespace SampSharpGameMode1.Events.Derbys
 
         public void Create()
         {
+            hud = new HUD(player);
             hud.SetDerbyName("Unsaved");
             editingMode = EditingMode.Mapping;
             hud.SetEditingMode(editingMode);
 
             editingDerby = new Derby();
             editingDerby.StartingVehicle = VehicleModelType.Infernus;
+            editingDerby.SpawnPoints = new List<Vector3R>();
+            editingDerby.MapObjects = new List<DynamicObject>();
+            isNew = true;
+            labels = new Dictionary<int, DynamicTextLabel>();
         }
         public void Load(int id)
         {
@@ -186,10 +213,21 @@ namespace SampSharpGameMode1.Events.Derbys
             hud.SetDerbyName(editingDerby.Name);
             editingMode = EditingMode.Mapping;
             hud.SetEditingMode(editingMode);
+            isNew = false;
+            labels = new Dictionary<int, DynamicTextLabel>();
+            foreach(DynamicObject obj in editingDerby.MapObjects)
+			{
+                labels.Add(obj.Id, new DynamicTextLabel("ID: " + obj.Id, Color.White, obj.Position, 100.0f));
+            }
             player.SendClientMessage(Color.Green, "Derby #" + editingDerby.Id + " loaded successfully in creation mode");
         }
         public void Unload()
         {
+            if(editingDerby != null)
+            {
+                foreach (DynamicObject obj in editingDerby.MapObjects)
+                    obj.Dispose();
+            }
             editingDerby = null;
             if (hud != null)
                 hud.Destroy();
@@ -210,21 +248,43 @@ namespace SampSharpGameMode1.Events.Derbys
                 {
                     { "@id", editingDerby.Id }
                 };
-                mySQLConnector.Execute("DELETE FROM derby_spawnpos WHERE race_id=@id", param);
-                for (int i = 0; i < editingDerby.StartingSpawn.Count; i++)
+                mySQLConnector.Execute("DELETE FROM derby_spawn WHERE derby_id=@id", param);
+                for (int i = 0; i < editingDerby.SpawnPoints.Count; i++)
                 {
                     param = new Dictionary<string, object>
                     {
                         { "@id", editingDerby.Id },
-                        { "@spawn_index",  i },
-                        { "@spawn_pos_x",  editingDerby.StartingSpawn[i].Position.X },
-                        { "@spawn_pos_y",  editingDerby.StartingSpawn[i].Position.Y },
-                        { "@spawn_pos_z",  editingDerby.StartingSpawn[i].Position.Z },
-                        { "@spawn_rot",  editingDerby.StartingSpawn[i].Rotation },
+                        { "@spawn_pos_x",  editingDerby.SpawnPoints[i].Position.X },
+                        { "@spawn_pos_y",  editingDerby.SpawnPoints[i].Position.Y },
+                        { "@spawn_pos_z",  editingDerby.SpawnPoints[i].Position.Z },
+                        { "@spawn_rot",  editingDerby.SpawnPoints[i].Rotation },
                     };
-                    mySQLConnector.Execute("INSERT INTO derby_spawnpos " +
-                        "(derby_id, spawn_index, spawnpos_x, spawnpos_y, spawnpos_z, spawnpos_rot) VALUES " +
-                        "(@id, @spawn_index, @spawn_pos_x, @spawn_pos_y, @spawn_pos_z, @spawn_rot)", param);
+                    mySQLConnector.Execute("INSERT INTO derby_spawn " +
+                        "(derby_id, spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot) VALUES " +
+                        "(@id, @spawn_pos_x, @spawn_pos_y, @spawn_pos_z, @spawn_rot)", param);
+                };
+
+                param = new Dictionary<string, object>
+                {
+                    { "@id", editingDerby.Id }
+                };
+                mySQLConnector.Execute("DELETE FROM derby_mapobjects WHERE derby_id=@id", param);
+                for (int i = 0; i < editingDerby.MapObjects.Count; i++)
+                {
+                    param = new Dictionary<string, object>
+                    {
+                        { "@id", editingDerby.Id },
+                        { "@mapobject_model",  editingDerby.MapObjects[i].ModelId },
+                        { "@mapobject_pos_x",  editingDerby.MapObjects[i].Position.X },
+                        { "@mapobject_pos_y",  editingDerby.MapObjects[i].Position.Y },
+                        { "@mapobject_pos_z",  editingDerby.MapObjects[i].Position.Z },
+                        { "@mapobject_rot_x",  editingDerby.MapObjects[i].Rotation.X },
+                        { "@mapobject_rot_y",  editingDerby.MapObjects[i].Rotation.Y },
+                        { "@mapobject_rot_z",  editingDerby.MapObjects[i].Rotation.Z },
+                    };
+                    mySQLConnector.Execute("INSERT INTO derby_mapobjects " +
+                        "(derby_id, mapobject_model, mapobject_pos_x, mapobject_pos_y, mapobject_pos_z, mapobject_rot_x, mapobject_rot_y, mapobject_rot_z) VALUES " +
+                        "(@id, @mapobject_model, @mapobject_pos_x, @mapobject_pos_y, @mapobject_pos_z, @mapobject_rot_x, @mapobject_rot_y, @mapobject_rot_z)", param);
 
                 }
                 return (mySQLConnector.RowsAffected > 0);
@@ -242,7 +302,7 @@ namespace SampSharpGameMode1.Events.Derbys
                     { "@derby_creator", player.Name },
                     { "@derby_startvehicle", editingDerby.StartingVehicle }
                 };
-                mySQLConnector.Execute("INSERT INTO derbys " +
+                editingDerby.Id = (int)mySQLConnector.Execute("INSERT INTO derbys " +
                     "(derby_name, derby_creator, derby_startvehicle) VALUES" +
                     "(@derby_name, @derby_creator, @derby_startvehicle)", param);
                 if (mySQLConnector.RowsAffected > 0)
@@ -254,8 +314,18 @@ namespace SampSharpGameMode1.Events.Derbys
             }
             return false;
         }
-        #region Dialogs
-        private void ShowDerbyDialog()
+
+        public void AddObject(int modelid)
+		{
+            DynamicObject obj = new DynamicObject(modelid, player.Position + new Vector3(10.0, 0.0, 0.0), Vector3.Zero);
+            editingDerby.MapObjects.Add(obj);
+            obj.Edited += OnMapObjectEdited;
+            obj.ShowForPlayer(player);
+            obj.Edit(player);
+        }
+
+		#region Dialogs
+		private void ShowDerbyDialog()
         {
             ListDialog derbyDialog = new ListDialog("Derby options", "Select", "Cancel");
             derbyDialog.AddItem("Select starting vehicle [" + editingDerby.StartingVehicle + "]");
@@ -295,7 +365,7 @@ namespace SampSharpGameMode1.Events.Derbys
                             }
                         case 1: // Edit derby name
                             {
-                                InputDialog raceNameDialog = new InputDialog("Derby name", "Enter the derby name:", false, "Edit", "Cancel");
+                                InputDialog raceNameDialog = new InputDialog("Derby's name", "Enter the derby's name:", false, "Edit", "Cancel");
                                 raceNameDialog.Show(player);
                                 raceNameDialog.Response += (sender, eventArgs) =>
                                 {
@@ -318,11 +388,38 @@ namespace SampSharpGameMode1.Events.Derbys
             }
         }
         #endregion
+        private void OnMapObjectEdited(object sender, SampSharp.Streamer.Events.PlayerEditEventArgs e)
+        {
+            DynamicObject obj = (sender as DynamicObject);
+            if (labels.ContainsKey(obj.Id))
+			{
+                labels[obj.Id].Position = e.Position;
+                labels[obj.Id].Text = "ID: " + obj.Id;
+            }
+            else
+			{
+                labels.Add(obj.Id, new DynamicTextLabel("ID: " + obj.Id, Color.White, e.Position, 100.0f));
+			}
+        }
         private void moverObject_Edited(object sender, EditPlayerObjectEventArgs e)
         {
             throw new NotImplementedException();
         }
-        public static Dictionary<string, string> GetDerbyInfo(int id)
+
+        public static Dictionary<string, string> Find(string str)
+        {
+            MySQLConnector mySQLConnector = MySQLConnector.Instance();
+            mySQLConnector = MySQLConnector.Instance();
+            Dictionary<string, object> param = new Dictionary<string, object>
+                {
+                    { "@name", str }
+                };
+            mySQLConnector.OpenReader("SELECT derby_id, derby_name FROM derbys WHERE derby_name LIKE @name", param);
+            Dictionary<string, string> results = mySQLConnector.GetNextRow();
+            mySQLConnector.CloseReader();
+            return results;
+        }
+        public static Dictionary<string, string> GetInfo(int id)
         {
             // id, name, creator, type, number of spawn points
             Dictionary<string, string> results = new Dictionary<string, string>();

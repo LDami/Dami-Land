@@ -25,12 +25,13 @@ namespace SampSharpGameMode1.Events.Races
         public const int MAX_PLAYERS_IN_RACE = 100;
 
         public Dictionary<int, Checkpoint> checkpoints = new Dictionary<int, Checkpoint>();
-        public Vector3R[] startingSpawn;
 
-        public int Id { get; private set; }
+        public int Id { get; set; }
         public string Name { get; set; }
         public int Laps { get; set; }
         public VehicleModelType? StartingVehicle { get; set; }
+        public List<Vector3R> SpawnPoints { get; set; }
+        public bool IsLoaded { get; private set; }
 
         // Common Events
 
@@ -159,33 +160,27 @@ namespace SampSharpGameMode1.Events.Races
 
                     if(!errorFlag)
                     {
-                        GameMode.mySQLConnector.OpenReader("SELECT spawn_index, spawnpos_x, spawnpos_y, spawnpos_z, spawnpos_rot " +
-                            "FROM race_spawnpos " +
+                        GameMode.mySQLConnector.OpenReader("SELECT spawn_index, spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot " +
+                            "FROM race_spawn " +
                             "WHERE race_id=@id ORDER BY spawn_index", param);
                         row = GameMode.mySQLConnector.GetNextRow();
                         if (row.Count == 0) errorFlag = true;
 
-                        this.startingSpawn = new Vector3R[MAX_PLAYERS_IN_RACE];
+                        this.SpawnPoints = new List<Vector3R>();
                         Vector3R pos;
                         int idx = 0;
                         while (row.Count > 0)
                         {
                             pos = new Vector3R(new Vector3(
-                                        (float)Convert.ToDouble(row["spawnpos_x"]),
-                                        (float)Convert.ToDouble(row["spawnpos_y"]),
-                                        (float)Convert.ToDouble(row["spawnpos_z"])
+                                        (float)Convert.ToDouble(row["spawn_pos_x"]),
+                                        (float)Convert.ToDouble(row["spawn_pos_y"]),
+                                        (float)Convert.ToDouble(row["spawn_pos_z"])
                                     ),
-                                    (float)Convert.ToDouble(row["spawnpos_rot"])
+                                    (float)Convert.ToDouble(row["spawn_rot"])
                                 );
-                            this.startingSpawn[idx++] = pos;
+                            if(pos.Position != Vector3.Zero)
+                                this.SpawnPoints.Add(pos);
                             row = GameMode.mySQLConnector.GetNextRow();
-                        }
-                        for (int i = 0; i < this.startingSpawn.Length; i++)
-                        {
-                            if (this.startingSpawn[i].Position == Vector3.Zero)
-                            {
-                                this.startingSpawn[i].Position = this.checkpoints[0].Position;
-                            }
                         }
                         GameMode.mySQLConnector.CloseReader();
                     }
@@ -272,7 +267,7 @@ namespace SampSharpGameMode1.Events.Races
                     p.KeyStateChanged += OnPlayerKeyStateChanged;
 
                     pos = rdm.Next(1, players.Count);
-                    while (generatedPos.Contains(pos) && tries++ < MAX_PLAYERS_IN_RACE)
+                    while (generatedPos.Contains(pos) && tries++ < MAX_PLAYERS_IN_RACE && pos >= this.SpawnPoints.Count)
                         pos = rdm.Next(1, players.Count);
 
                     if (tries >= MAX_PLAYERS_IN_RACE)
@@ -283,7 +278,7 @@ namespace SampSharpGameMode1.Events.Races
                     }
                     tries = 0;
 
-                    BaseVehicle veh = BaseVehicle.Create(StartingVehicle.GetValueOrDefault(VehicleModelType.Bike), this.startingSpawn[pos].Position, this.startingSpawn[pos].Rotation, 1, 1);
+                    BaseVehicle veh = BaseVehicle.Create(StartingVehicle.GetValueOrDefault(VehicleModelType.Bike), this.SpawnPoints[pos].Position, this.SpawnPoints[pos].Rotation, 1, 1);
                     veh.VirtualWorld = virtualWorld;
                     veh.Engine = false;
                     veh.Doors = true;

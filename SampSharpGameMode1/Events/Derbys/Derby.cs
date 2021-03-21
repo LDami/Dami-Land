@@ -2,6 +2,7 @@
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Events;
 using SampSharp.GameMode.World;
+using SampSharp.Streamer.World;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -21,10 +22,11 @@ namespace SampSharpGameMode1.Events.Derbys
     {
         public const int MIN_PLAYERS_IN_DERBY = 0;
         public const int MAX_PLAYERS_IN_DERBY = 100;
-        public int Id { get; private set; }
+        public int Id { get; set; }
         public string Name { get; set; }
         public VehicleModelType? StartingVehicle { get; set; }
-        public List<Vector3R> StartingSpawn { get; set; }
+        public List<Vector3R> SpawnPoints { get; set; }
+        public List<DynamicObject> MapObjects { get; set; }
         public bool IsLoaded { get; private set; }
 
 
@@ -106,38 +108,74 @@ namespace SampSharpGameMode1.Events.Derbys
 
                     if (!errorFlag)
                     {
-                        GameMode.mySQLConnector.OpenReader("SELECT spawn_index, spawnpos_x, spawnpos_y, spawnpos_z, spawnpos_rot " +
-                            "FROM derby_spawnpos " +
+                        GameMode.mySQLConnector.OpenReader("SELECT spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot " +
+                            "FROM derby_spawn " +
                             "WHERE derby_id=@id", param);
                         row = GameMode.mySQLConnector.GetNextRow();
                         if (row.Count == 0) errorFlag = true;
 
-                        this.StartingSpawn = new List<Vector3R>();
+                        this.SpawnPoints = new List<Vector3R>();
 
                         Vector3R pos;
                         while (row.Count > 0)
                         {
                             pos = new Vector3R(new Vector3(
-                                        (float)Convert.ToDouble(row["spawnpos_x"]),
-                                        (float)Convert.ToDouble(row["spawnpos_y"]),
-                                        (float)Convert.ToDouble(row["spawnpos_z"])
+                                        (float)Convert.ToDouble(row["spawn_pos_x"]),
+                                        (float)Convert.ToDouble(row["spawn_pos_y"]),
+                                        (float)Convert.ToDouble(row["spawn_pos_z"])
                                     ),
-                                    (float)Convert.ToDouble(row["spawnpos_rot"])
+                                    (float)Convert.ToDouble(row["spawn_rot"])
                                 );
-                            this.StartingSpawn.Add(pos);
+                            this.SpawnPoints.Add(pos);
                             row = GameMode.mySQLConnector.GetNextRow();
                         }
-                        for (int i = 0; i < this.StartingSpawn.Count; i++)
+                        for (int i = 0; i < this.SpawnPoints.Count; i++)
                         {
-                            if (this.StartingSpawn[i].Position == Vector3.Zero)
+                            if (this.SpawnPoints[i].Position == Vector3.Zero)
                             {
-                                this.StartingSpawn.RemoveAt(i);
+                                this.SpawnPoints.RemoveAt(i);
                             }
                         }
-                        if (this.StartingSpawn.Count == 0)
+                        if (this.SpawnPoints.Count == 0)
                             errorFlag = true;
                         GameMode.mySQLConnector.CloseReader();
                     }
+
+                    if (!errorFlag)
+                    {
+                        GameMode.mySQLConnector.OpenReader(
+                            "SELECT mapobject_model, mapobject_pos_x, mapobject_pos_y, mapobject_pos_z, mapobject_rot_x, mapobject_rot_y, mapobject_rot_z " +
+                            "FROM derby_mapobjects " +
+                            "WHERE derby_id=@id", param);
+                        row = GameMode.mySQLConnector.GetNextRow();
+
+                        this.MapObjects = new List<DynamicObject>();
+
+                        int modelid = -1;
+                        Vector3 pos;
+                        Vector3 rot;
+                        while (row.Count > 0)
+                        {
+                            modelid = Convert.ToInt32(row["mapobject_model"]);
+                            pos = new Vector3(
+                                        (float)Convert.ToDouble(row["mapobject_pos_x"]),
+                                        (float)Convert.ToDouble(row["mapobject_pos_y"]),
+                                        (float)Convert.ToDouble(row["mapobject_pos_z"])
+                                );
+                            rot = new Vector3(
+                                        (float)Convert.ToDouble(row["mapobject_rot_x"]),
+                                        (float)Convert.ToDouble(row["mapobject_rot_y"]),
+                                        (float)Convert.ToDouble(row["mapobject_rot_z"])
+                                );
+                            this.MapObjects.Add(new DynamicObject(modelid, pos, rot));
+                            row = GameMode.mySQLConnector.GetNextRow();
+                        }
+                        GameMode.mySQLConnector.CloseReader();
+                    }
+                    DerbyLoadedEventArgs args = new DerbyLoadedEventArgs();
+                    args.derby = this;
+                    args.success = !errorFlag;
+                    OnLoaded(args);
                 });
                 t.Start();
             }
@@ -174,10 +212,10 @@ namespace SampSharpGameMode1.Events.Derbys
                     p.KeyStateChanged += OnPlayerKeyStateChanged;
 
                     pos = rdm.Next(1, players.Count);
-                    while (generatedPos.Contains(pos) && tries++ < this.StartingSpawn.Count)
+                    while (generatedPos.Contains(pos) && tries++ < this.SpawnPoints.Count)
                         pos = rdm.Next(1, players.Count);
 
-                    if (tries >= this.StartingSpawn.Count)
+                    if (tries >= this.SpawnPoints.Count)
                     {
                         Player.SendClientMessageToAll("Error during position randomization for the race. Race aborted");
                         isAborted = true;
@@ -185,7 +223,7 @@ namespace SampSharpGameMode1.Events.Derbys
                     }
                     tries = 0;
 
-                    BaseVehicle veh = BaseVehicle.Create(StartingVehicle.GetValueOrDefault(VehicleModelType.Bike), this.StartingSpawn[pos].Position, this.StartingSpawn[pos].Rotation, 1, 1);
+                    BaseVehicle veh = BaseVehicle.Create(StartingVehicle.GetValueOrDefault(VehicleModelType.Bike), this.SpawnPoints[pos].Position, this.SpawnPoints[pos].Rotation, 1, 1);
                     veh.VirtualWorld = virtualWorld;
                     veh.Engine = false;
                     veh.Doors = true;
