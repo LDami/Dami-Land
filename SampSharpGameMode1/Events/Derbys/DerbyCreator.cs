@@ -334,7 +334,7 @@ namespace SampSharpGameMode1.Events.Derbys
         }
 
         public void AddObject(int modelid)
-		{
+        {
             DynamicObject obj = new DynamicObject(modelid, player.Position + new Vector3(10.0, 0.0, 0.0), Vector3.Zero);
             editingDerby.MapObjects.Add(obj);
             obj.Edited += OnMapObjectEdited;
@@ -343,8 +343,23 @@ namespace SampSharpGameMode1.Events.Derbys
             lastSelectedObjectId = obj.Id;
         }
 
-		#region Dialogs
-		private void ShowDerbyDialog()
+        public void DeleteObject(int objectid)
+        {
+            DynamicObject obj = editingDerby.MapObjects.Find(obj => obj.Id == objectid);
+            if (obj == null)
+                player.SendClientMessage($"The Object ID {objectid} does not exists");
+            else
+			{
+                editingDerby.MapObjects.Remove(obj);
+                labels[obj.Id].Dispose();
+                labels.Remove(obj.Id);
+                obj.Dispose();
+                player.SendClientMessage($"Object ID {objectid} deleted");
+            }
+        }
+
+        #region Dialogs
+        private void ShowDerbyDialog()
         {
             ListDialog derbyDialog = new ListDialog("Derby options", "Select", "Cancel");
             derbyDialog.AddItem("Select starting vehicle [" + editingDerby.StartingVehicle + "]");

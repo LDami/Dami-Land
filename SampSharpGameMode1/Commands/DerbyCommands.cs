@@ -104,6 +104,15 @@ namespace SampSharpGameMode1.Commands
                 }
             }
 
+            [Command("delo")]
+            private static void DeleteObject(Player player, int objectid)
+            {
+                if (player.eventCreator != null)
+                {
+                    (player.eventCreator as DerbyCreator).DeleteObject(objectid);
+                }
+            }
+
 
             [Command("find")]
             private static void FindRace(Player player, string name)
