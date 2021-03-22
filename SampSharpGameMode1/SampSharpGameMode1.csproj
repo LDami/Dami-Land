@@ -9,7 +9,6 @@
   <ItemGroup>
     <PackageReference Include="MySql.Data" Version="8.0.19" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="SampSharp.Streamer" Version="0.9.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,6 +17,9 @@
     </Reference>
     <Reference Include="SampSharp.GameMode">
       <HintPath>..\..\..\..\Documents\Dev\SampSharp\bin\Release\netstandard2.1\SampSharp.GameMode.dll</HintPath>
+    </Reference>
+    <Reference Include="SampSharp.Streamer">
+      <HintPath>..\..\..\..\Documents\Dev\SampSharp-streamer\src\SampSharp.Streamer\bin\Debug\netstandard2.1\SampSharp.Streamer.dll</HintPath>
     </Reference>
   </ItemGroup>
 

@@ -106,6 +106,7 @@ namespace SampSharpGameMode1.Events.Derbys
         EditingMode editingMode;
         public bool isNew;
 
+        private int lastSelectedObjectId;
         private Dictionary<int, DynamicTextLabel> labels;
 
         PlayerObject moverObject;
@@ -159,8 +160,15 @@ namespace SampSharpGameMode1.Events.Derbys
                     {
                         Streamer streamer = new Streamer();
                         DynamicObject obj = streamer.GetPlayerCameraTargetObject(player);
-                        obj.Edited += OnMapObjectEdited;
-                        obj.Edit(player);
+                        if (obj != null)
+                        {
+                            if(lastSelectedObjectId != -1)
+                                labels[lastSelectedObjectId].Color = Color.White;
+                            labels[obj.Id].Color = Color.Red;
+                            obj.Edited += OnMapObjectEdited;
+                            obj.Edit(player);
+                            lastSelectedObjectId = obj.Id;
+                        }
                         break;
                     }
             }
@@ -171,6 +179,7 @@ namespace SampSharpGameMode1.Events.Derbys
         public DerbyCreator(Player _player)
         {
             player = _player;
+            player.EnablePlayerCameraTarget(true);
             player.KeyStateChanged += OnPlayerKeyStateChanged;
             if (!player.InAnyVehicle)
             {
@@ -193,6 +202,7 @@ namespace SampSharpGameMode1.Events.Derbys
             editingDerby.SpawnPoints = new List<Vector3R>();
             editingDerby.MapObjects = new List<DynamicObject>();
             isNew = true;
+            lastSelectedObjectId = -1;
             labels = new Dictionary<int, DynamicTextLabel>();
         }
         public void Load(int id)
@@ -214,6 +224,7 @@ namespace SampSharpGameMode1.Events.Derbys
             editingMode = EditingMode.Mapping;
             hud.SetEditingMode(editingMode);
             isNew = false;
+            lastSelectedObjectId = -1;
             labels = new Dictionary<int, DynamicTextLabel>();
             foreach(DynamicObject obj in editingDerby.MapObjects)
 			{
@@ -229,6 +240,12 @@ namespace SampSharpGameMode1.Events.Derbys
                     obj.Dispose();
             }
             editingDerby = null;
+            if(labels != null)
+			{
+                foreach (DynamicTextLabel label in labels.Values)
+                    label.Dispose();
+			}
+            labels = null;
             if (hud != null)
                 hud.Destroy();
             hud = null;
@@ -240,7 +257,8 @@ namespace SampSharpGameMode1.Events.Derbys
             moverObject = null;
             //TODO: cancel edit ?
         }
-        public Boolean Save()
+
+		public Boolean Save()
         {
             if (editingDerby != null)
             {
@@ -322,6 +340,7 @@ namespace SampSharpGameMode1.Events.Derbys
             obj.Edited += OnMapObjectEdited;
             obj.ShowForPlayer(player);
             obj.Edit(player);
+            lastSelectedObjectId = obj.Id;
         }
 
 		#region Dialogs
@@ -395,12 +414,15 @@ namespace SampSharpGameMode1.Events.Derbys
 			{
                 labels[obj.Id].Position = e.Position;
                 labels[obj.Id].Text = "ID: " + obj.Id;
+                labels[obj.Id].Color = Color.White;
             }
             else
 			{
                 labels.Add(obj.Id, new DynamicTextLabel("ID: " + obj.Id, Color.White, e.Position, 100.0f));
-			}
+            }
+            lastSelectedObjectId = -1;
         }
+
         private void moverObject_Edited(object sender, EditPlayerObjectEventArgs e)
         {
             throw new NotImplementedException();
