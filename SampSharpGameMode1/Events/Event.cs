@@ -36,6 +36,7 @@ namespace SampSharpGameMode1.Events
         public EventStatus Status { get; set; }
         public EventType Type { get; set; }
         public EventSource Source { get; set; }
+        public int VirtualWorld { get; set; }
 
         public List<Player> players = new List<Player>();
 
