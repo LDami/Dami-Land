@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <Platforms>AnyCPU;x86</Platforms>
+    <AppConfig>App.$(Configuration).config</AppConfig>
   </PropertyGroup>
 
   <ItemGroup>
