@@ -42,7 +42,7 @@ namespace SampSharpGameMode1.Physics
 			{
 				throw new NativeNotImplementedException();
 			}
-
+			/*
 			[NativeMethod(Function = "CA_RayCastLineExtraID")]
 			public virtual int RayCastLineExtraID(int type, float StartX, float StartY, float StartZ, float EndX, float EndY, float EndZ, out float x, out float y, out float z)
 			{
@@ -54,6 +54,7 @@ namespace SampSharpGameMode1.Physics
 			{
 				throw new NativeNotImplementedException();
 			}
+			*/
 
 			[NativeMethod(Function = "CA_RayCastLineAngle")]
 			public virtual int RayCastLineAngle(float StartX, float StartY, float StartZ, float EndX, float EndY, float EndZ, out float x, out float y, out float z, out float rx, out float ry, out float rz)
@@ -126,7 +127,7 @@ namespace SampSharpGameMode1.Physics
 			{
 				throw new NativeNotImplementedException();
 			}
-
+			
 		}
 	}
 }
