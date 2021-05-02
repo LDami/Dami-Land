@@ -21,17 +21,17 @@ namespace SampSharpGameMode1.Events.Derbys
 
 		const int MaxAirSupportRdmRange = 10;
 		const int ProtectiveSphereRange = 15;
-		const float MissileSpeed = 50.0f;
+		const float MissileSpeed = 25.0f;
 		const float MissileRange = 250.0f;
 
-		private Player Player {get;set; }
+		private BasePlayer Player {get;set; }
 		private AvailableEvents Event { get; set; }
 		private bool EventConsumed { get; set; }
 
 		private DynamicObject marker;
 		private DynamicObject protectiveSphere;
 
-		public DerbyPickupRandomEvent(Player player, int eventid = -1)
+		public DerbyPickupRandomEvent(BasePlayer player, int eventid = -1)
 		{
 			this.Player = player;
 			Array events = Enum.GetValues(typeof(AvailableEvents));
@@ -215,9 +215,7 @@ namespace SampSharpGameMode1.Events.Derbys
 									{
 										smoke.Dispose();
 									};
-									SampSharp.Streamer.Streamer st = new SampSharp.Streamer.Streamer();
-									st.
-									Physics.CollisionManager.ExplodeOnCollision(missile, dest);
+									Physics.CollisionManager.ExplodeOnCollision(missile, dest, this.Player);
 									sparks.Dispose();
 								}
 							});

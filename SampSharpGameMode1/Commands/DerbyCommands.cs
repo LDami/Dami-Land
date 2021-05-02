@@ -95,6 +95,7 @@ namespace SampSharpGameMode1.Commands
                 }
             }
 
+            // MapObjects
             [Command("addo")]
             private static void AddObject(Player player, int modelid)
             {
@@ -110,6 +111,25 @@ namespace SampSharpGameMode1.Commands
                 if (player.eventCreator != null)
                 {
                     (player.eventCreator as DerbyCreator).DeleteObject(objectid);
+                }
+            }
+
+            // Pickups
+            [Command("addp")]
+            private static void AddPickup(Player player, int modelid)
+            {
+                if (player.eventCreator != null)
+                {
+                    (player.eventCreator as DerbyCreator).AddPickup(modelid);
+                }
+            }
+
+            [Command("delp")]
+            private static void DeletePickup(Player player)
+            {
+                if (player.eventCreator != null)
+                {
+                    (player.eventCreator as DerbyCreator).DeletePickup(player.Position);
                 }
             }
 

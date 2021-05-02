@@ -201,6 +201,7 @@ namespace SampSharpGameMode1.Events.Derbys
             editingDerby.StartingVehicle = VehicleModelType.Infernus;
             editingDerby.SpawnPoints = new List<Vector3R>();
             editingDerby.MapObjects = new List<DynamicObject>();
+            editingDerby.Pickups = new List<DerbyPickup>();
             isNew = true;
             lastSelectedObjectId = -1;
             labels = new Dictionary<int, DynamicTextLabel>();
@@ -211,6 +212,7 @@ namespace SampSharpGameMode1.Events.Derbys
             if (id > 0)
             {
                 Derby loadingDerby = new Derby();
+                loadingDerby.IsCreatorMode = true;
                 loadingDerby.Loaded += LoadingDerby_Loaded;
                 loadingDerby.Load(id);
             }
@@ -305,6 +307,22 @@ namespace SampSharpGameMode1.Events.Derbys
                         "(@id, @mapobject_model, @mapobject_pos_x, @mapobject_pos_y, @mapobject_pos_z, @mapobject_rot_x, @mapobject_rot_y, @mapobject_rot_z)", param);
 
                 }
+                mySQLConnector.Execute("DELETE FROM derby_pickups WHERE derby_id=@id", param);
+                for (int i = 0; i < editingDerby.Pickups.Count; i++)
+                {
+                    param = new Dictionary<string, object>
+                    {
+                        { "@id", editingDerby.Id },
+                        { "@pickup_event",  editingDerby.Pickups[i].Event },
+                        { "@pickup_model",  editingDerby.Pickups[i].ModelId },
+                        { "@pickup_pos_x",  editingDerby.Pickups[i].Position.X },
+                        { "@pickup_pos_y",  editingDerby.Pickups[i].Position.Y },
+                        { "@pickup_pos_z",  editingDerby.Pickups[i].Position.Z },
+                    };
+                    mySQLConnector.Execute("INSERT INTO derby_pickups " +
+                        "(derby_id, pickup_event, pickup_model, pickup_pos_x, pickup_pos_y, pickup_pos_z) VALUES " +
+                        "(@id, @pickup_event, @pickup_model, @pickup_pos_x, @pickup_pos_y, @pickup_pos_z)", param);
+                }
                 return (mySQLConnector.RowsAffected > 0);
             }
             return false;
@@ -357,6 +375,17 @@ namespace SampSharpGameMode1.Events.Derbys
                 player.SendClientMessage($"Object ID {objectid} deleted");
             }
         }
+
+        public void AddPickup(int modelid)
+		{
+            DerbyPickup pickup = new DerbyPickup(modelid, player.Position, player.VirtualWorld, DerbyPickup.PickupEvent.None, false);
+            editingDerby.Pickups.Add(pickup);
+		}
+
+        public void DeletePickup(Vector3 position)
+		{
+            player.SendClientMessage("Function not implemented yet");
+		}
 
         #region Dialogs
         private void ShowDerbyDialog()

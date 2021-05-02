@@ -3,6 +3,7 @@ using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Events;
 using SampSharp.GameMode.World;
 using SampSharp.Streamer.World;
+using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -27,7 +28,9 @@ namespace SampSharpGameMode1.Events.Derbys
         public VehicleModelType? StartingVehicle { get; set; }
         public List<Vector3R> SpawnPoints { get; set; }
         public List<DynamicObject> MapObjects { get; set; }
+        public List<DerbyPickup> Pickups { get; set; }
         public bool IsLoaded { get; private set; }
+        public bool IsCreatorMode { get; set; }
 
 
         private bool isPreparing = false;
@@ -35,6 +38,7 @@ namespace SampSharpGameMode1.Events.Derbys
         public List<Player> players;
         public Dictionary<Player, DerbyPlayer> playersData = new Dictionary<Player, DerbyPlayer>();
         public List<Player> spectatingPlayers; // Contains spectating players who looses the derby, and others players who spectate without joining
+        private Dictionary<Player, HUD> playersLiveInfoHUD = new Dictionary<Player, HUD>();
         public Player winner;
         private int virtualWorld;
         private SampSharp.GameMode.SAMP.Timer countdownTimer;
@@ -105,7 +109,6 @@ namespace SampSharpGameMode1.Events.Derbys
                     else
                         errorFlag = true;
 
-
                     if (!errorFlag)
                     {
                         GameMode.mySQLConnector.OpenReader("SELECT spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot " +
@@ -172,6 +175,34 @@ namespace SampSharpGameMode1.Events.Derbys
                         }
                         GameMode.mySQLConnector.CloseReader();
                     }
+
+                    if (!errorFlag)
+                    {
+                        GameMode.mySQLConnector.OpenReader(
+                            "SELECT pickup_id, pickup_pos_x, pickup_pos_y, pickup_pos_z " +
+                            "FROM derby_pickups " +
+                            "WHERE derby_id=@id", param);
+                        row = GameMode.mySQLConnector.GetNextRow();
+
+                        this.Pickups = new List<DerbyPickup>();
+
+                        int type = -1;
+                        int modelid = -1;
+                        Vector3 pos;
+                        while (row.Count > 0)
+                        {
+                            type = Convert.ToInt32(row["pickup_event"]);
+                            modelid = Convert.ToInt32(row["pickup_model"]);
+                            pos = new Vector3(
+                                        (float)Convert.ToDouble(row["pickup_pos_x"]),
+                                        (float)Convert.ToDouble(row["pickup_pos_y"]),
+                                        (float)Convert.ToDouble(row["pickup_pos_z"])
+                                );
+                            this.Pickups.Add(new DerbyPickup(modelid, pos, virtualWorld, (DerbyPickup.PickupEvent)type, !IsCreatorMode));
+                            row = GameMode.mySQLConnector.GetNextRow();
+                        }
+                        GameMode.mySQLConnector.CloseReader();
+                    }
                     DerbyLoadedEventArgs args = new DerbyLoadedEventArgs();
                     args.derby = this;
                     args.success = !errorFlag;
@@ -206,6 +237,11 @@ namespace SampSharpGameMode1.Events.Derbys
                     playerData.status = DerbyPlayerStatus.Running;
 
                     playersData.Add(p, playerData);
+
+                    playersLiveInfoHUD[p] = new HUD(p, "derbyhud.json");
+                    playersLiveInfoHUD[p].Hide("iconrockets");
+                    playersLiveInfoHUD[p].Hide("remainingrockets");
+                    playersLiveInfoHUD[p].SetText("remainingplayers", "Remaining players: " + players.Count + "/" + players.Count);
 
                     p.VirtualWorld = virtualWorld;
 
