@@ -16,6 +16,8 @@ namespace SampSharpGameMode1.Display
         public float Width;
         public float Height;
         public string Text;
+        public int Font;
+        public int Alignment;
         public Color Color;
         public Color BackColor;
         public string Type;
@@ -27,6 +29,8 @@ namespace SampSharpGameMode1.Display
         public float width = 0.0f;
         public float height = 0.0f;
         public string text = "";
+        public int font = 1;
+        public int alignment;
         public Color Color = Color.SkyBlue;
         public Color backColor = Color.SkyBlue;
         public string type; // Utilisé uniquement pour la sauvegarde

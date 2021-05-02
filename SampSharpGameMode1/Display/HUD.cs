@@ -47,11 +47,15 @@ namespace SampSharpGameMode1.Display
                                 layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Box);
                                 layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
                                 layer.SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height);
+                                layer.SetTextdrawColor(textdraw.Name, textdraw.Color);
+                                layer.SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
                             }
                             if (textdraw.Type.Equals("text"))
                             {
                                 layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Text);
                                 layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
+                                layer.SetTextdrawColor(textdraw.Name, textdraw.Color);
+                                layer.SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
                             }
                         }
                         layer.UnselectAllTextdraw();
@@ -67,11 +71,27 @@ namespace SampSharpGameMode1.Display
         }
 
         /// <summary>
-        /// Hide all textdraw of this HUD layer
+        /// Show all textdraw of this HUD layer or only the <paramref name="element"/> textdraw
+        /// <param name="element">The textdraw name. All textdraws if empty</param>
         /// </summary>
-        public void Hide()
+        public void Show(string element = "")
         {
-            layer.HideAll();
+            if (element == "")
+                layer.ShowAll();
+            else
+                layer.Show(element);
+        }
+
+        /// <summary>
+        /// Hide all textdraw of this HUD layer or only the <paramref name="element"/> textdraw
+        /// <param name="element">The textdraw name. All textdraws if empty</param>
+        /// </summary>
+        public void Hide(string element = "")
+        {
+            if (element == "")
+                layer.HideAll();
+            else
+                layer.Hide(element);
         }
 
         /// <summary>
