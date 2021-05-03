@@ -128,7 +128,7 @@ namespace SampSharpGameMode1.Events
             {
                 case EventType.Race:
                     {
-                        InputDialog createEventNameDialog = new InputDialog("Race name", "Type the race name you are looking for, or empty for random", false, "Search", "Cancel");
+                        InputDialog createEventNameDialog = new InputDialog("Race name", "Type the race name you are looking for, or empty for random. You can also search by creator name", false, "Search", "Cancel");
                         createEventNameDialog.Show(player);
                         createEventNameDialog.Response += (sender, eventArgs) =>
                         {
@@ -154,7 +154,7 @@ namespace SampSharpGameMode1.Events
                 {
                     { "@name", str }
                 };
-            GameMode.mySQLConnector.OpenReader("SELECT race_id, race_name FROM races WHERE race_name LIKE @name", param);
+            GameMode.mySQLConnector.OpenReader("SELECT race_id, race_name, race_creator FROM races WHERE race_name LIKE @name OR race_creator LIKE @name", param);
             row = GameMode.mySQLConnector.GetNextRow();
             if(row.Count == 0)
             {
@@ -169,7 +169,7 @@ namespace SampSharpGameMode1.Events
                 while (row.Count > 0)
                 {
                     foundRaces.Add(Convert.ToInt32(row["race_id"]));
-                    eventSearchDialog.AddItem(row["race_id"] + "_" + row["race_name"]);
+                    eventSearchDialog.AddItem(row["race_id"] + "_" + Display.ColorPalette.Primary.Main + row["race_name"] + Display.ColorPalette.Primary.Lighten + " by " + Display.ColorPalette.Primary.Main + row["race_creator"]);
                     row = GameMode.mySQLConnector.GetNextRow();
                 }
                 eventSearchDialog.Show(player);
