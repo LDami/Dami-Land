@@ -107,10 +107,11 @@ namespace SampSharpGameMode1.Events.Derbys
         public bool isNew;
 
         private int lastSelectedObjectId;
+        private DerbyPickup? lastPickedUpPickup;
         private Dictionary<int, DynamicTextLabel> labels;
 
         PlayerObject moverObject;
-        const int moverObjectModelID = 19133;
+        const int moverObjectModelID = 3082;
         Vector3 moverObjectOffset = new Vector3(0.0f, 0.0f, 1.0f);
 
         BaseVehicle[] spawnVehicles;
@@ -173,42 +174,38 @@ namespace SampSharpGameMode1.Events.Derbys
                     }
             }
         }
-
+        private void OnPlayerPickUpPickup(object pickup, PlayerEventArgs e)
+		{
+            Logger.WriteLineAndClose("player pickup");
+            DerbyPickup pickedUp = editingDerby.Pickups.Find(x => x.pickup.Id == ((DynamicPickup)pickup).Id);
+            lastPickedUpPickup = pickedUp;
+            ShowPickupDialog(pickedUp);
+		}
         #endregion
 
         public DerbyCreator(Player _player)
         {
             player = _player;
-            player.EnablePlayerCameraTarget(true);
-            player.KeyStateChanged += OnPlayerKeyStateChanged;
-            if (!player.InAnyVehicle)
-            {
-                BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, player.Position + new Vector3(0.0, 5.0, 0.0), 0.0f, 1, 1);
-                player.PutInVehicle(veh);
-            }
             editingDerby = null;
             spawnVehicles = new BaseVehicle[Derby.MAX_PLAYERS_IN_DERBY];
         }
 
         public void Create()
         {
-            hud = new HUD(player);
-            hud.SetDerbyName("Unsaved");
-            editingMode = EditingMode.Mapping;
-            hud.SetEditingMode(editingMode);
-
             editingDerby = new Derby();
+            editingDerby.IsCreatorMode = true;
             editingDerby.StartingVehicle = VehicleModelType.Infernus;
             editingDerby.SpawnPoints = new List<Vector3R>();
             editingDerby.MapObjects = new List<DynamicObject>();
             editingDerby.Pickups = new List<DerbyPickup>();
             isNew = true;
             lastSelectedObjectId = -1;
+            lastPickedUpPickup = null;
             labels = new Dictionary<int, DynamicTextLabel>();
+            this.SetPlayerInEditor();
         }
         public void Load(int id)
         {
-            hud = new HUD(player);
             if (id > 0)
             {
                 Derby loadingDerby = new Derby();
@@ -221,25 +218,53 @@ namespace SampSharpGameMode1.Events.Derbys
 
         private void LoadingDerby_Loaded(object sender, DerbyLoadedEventArgs e)
         {
-            editingDerby = e.derby;
-            hud.SetDerbyName(editingDerby.Name);
+            if (e.success)
+            {
+                isNew = false;
+                lastSelectedObjectId = -1;
+                lastPickedUpPickup = null;
+                labels = new Dictionary<int, DynamicTextLabel>();
+                editingDerby = e.derby;
+                foreach (DynamicObject obj in editingDerby.MapObjects)
+                {
+                    labels.Add(obj.Id, new DynamicTextLabel("ID: " + obj.Id, Color.White, obj.Position, 100.0f));
+                }
+                foreach (DerbyPickup pickup in editingDerby.Pickups)
+                    pickup.pickup.PickedUp += OnPlayerPickUpPickup;
+                player.SendClientMessage(Color.Green, "Derby #" + editingDerby.Id + " loaded successfully in creation mode");
+                this.SetPlayerInEditor();
+            }
+            else
+                player.SendClientMessage(Color.Red, "Unable to load the derby");
+        }
+        private void SetPlayerInEditor()
+        {
+            player.EnablePlayerCameraTarget(true);
+            player.KeyStateChanged += OnPlayerKeyStateChanged;
+            if (!player.InAnyVehicle)
+            {
+                BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, player.Position + new Vector3(0.0, 5.0, 0.0), 0.0f, 1, 1);
+                player.PutInVehicle(veh);
+            }
+
+            hud = new HUD(player);
+            hud.SetDerbyName(editingDerby.Name ?? "Untitled");
             editingMode = EditingMode.Mapping;
             hud.SetEditingMode(editingMode);
-            isNew = false;
-            lastSelectedObjectId = -1;
-            labels = new Dictionary<int, DynamicTextLabel>();
-            foreach(DynamicObject obj in editingDerby.MapObjects)
-			{
-                labels.Add(obj.Id, new DynamicTextLabel("ID: " + obj.Id, Color.White, obj.Position, 100.0f));
-            }
-            player.SendClientMessage(Color.Green, "Derby #" + editingDerby.Id + " loaded successfully in creation mode");
         }
-        public void Unload()
+
+		public void Unload()
         {
             if(editingDerby != null)
             {
                 foreach (DynamicObject obj in editingDerby.MapObjects)
                     obj.Dispose();
+                editingDerby.MapObjects.Clear();
+                editingDerby.MapObjects = null;
+                foreach (DerbyPickup pickup in editingDerby.Pickups)
+                    pickup.pickup.Dispose();
+                editingDerby.Pickups.Clear();
+                editingDerby.Pickups = null;
             }
             editingDerby = null;
             if(labels != null)
@@ -378,7 +403,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
         public void AddPickup(int modelid)
 		{
-            DerbyPickup pickup = new DerbyPickup(modelid, player.Position, player.VirtualWorld, DerbyPickup.PickupEvent.None, false);
+            DerbyPickup pickup = new DerbyPickup(modelid, player.Position, player.VirtualWorld, DerbyPickup.PickupEvent.None);
             editingDerby.Pickups.Add(pickup);
 		}
 
@@ -450,8 +475,56 @@ namespace SampSharpGameMode1.Events.Derbys
                 }
             }
         }
-        #endregion
-        private void OnMapObjectEdited(object sender, SampSharp.Streamer.Events.PlayerEditEventArgs e)
+
+        private void ShowPickupDialog(DerbyPickup pickup)
+		{
+            ListDialog pickupDialog = new ListDialog("Pickup options", "Select", "Cancel");
+            pickupDialog.AddItem("Edit pickup position");
+            pickupDialog.AddItem("Edit pickup model [" + pickup.ModelId + "]");
+            pickupDialog.AddItem("Edit event");
+			pickupDialog.Response += PickupDialog_Response;
+            pickupDialog.Show(player);
+        }
+
+        private void PickupDialog_Response(object sender, DialogResponseEventArgs e)
+        {
+            if (e.Player.Equals(player) && lastPickedUpPickup.ModelId != 0)
+            {
+                if (e.DialogButton == DialogButton.Left)
+                {
+                    switch (e.ListItem)
+                    {
+                        case 0: // Edit position
+                            {
+                                if (moverObject == null)
+                                {
+                                    moverObject = new PlayerObject(
+                                        player,
+                                        moverObjectModelID,
+                                        lastPickedUpPickup.Position + moverObjectOffset,
+                                        new Vector3(0.0, 0.0, 0.0));
+
+                                    moverObject.Edit();
+                                    moverObject.Edited += moverObject_Edited;
+                                }
+                                else
+                                {
+                                    moverObject.Position = lastPickedUpPickup.Position;
+                                    moverObject.Edit();
+                                }
+                                player.ToggleControllable(false);
+                                player.cameraController.SetFree();
+                                player.cameraController.SetPosition(new Vector3(moverObject.Position.X + 10.0, moverObject.Position.Y + 10.0, moverObject.Position.Z + 10.0));
+                                player.cameraController.SetTarget(moverObject.Position, true);
+                                player.Vehicle.Position = new Vector3(lastPickedUpPickup.Position.X + 10.0, lastPickedUpPickup.Position.Y + 10.0, lastPickedUpPickup.Position.Z + 12.0);
+                                break;
+                            }
+                    }
+                }
+            }
+        }
+		#endregion
+		private void OnMapObjectEdited(object sender, SampSharp.Streamer.Events.PlayerEditEventArgs e)
         {
             DynamicObject obj = (sender as DynamicObject);
             if (labels.ContainsKey(obj.Id))
@@ -469,7 +542,24 @@ namespace SampSharpGameMode1.Events.Derbys
 
         private void moverObject_Edited(object sender, EditPlayerObjectEventArgs e)
         {
-            throw new NotImplementedException();
+            if (e.EditObjectResponse == EditObjectResponse.Final)
+            {
+                player.SendClientMessage("debug: object final");
+                player.cameraController.SetBehindPlayer();
+                player.ToggleControllable(true);
+            }
+            else if (e.EditObjectResponse == EditObjectResponse.Update)
+            {
+                player.SendClientMessage("debug: object update");
+                player.cameraController.MoveTo(new Vector3(e.Position.X + 10.0, e.Position.Y + 10.0, e.Position.Z + 10.0));
+                player.cameraController.MoveToTarget(e.Position);
+            }
+            if(lastPickedUpPickup is DerbyPickup pickup)
+			{
+                pickup.Position = e.Object.Position;
+			}
+            if(e.EditObjectResponse == EditObjectResponse.Final || e.EditObjectResponse == EditObjectResponse.Cancel)
+                lastPickedUpPickup = null;
         }
 
         public static Dictionary<string, string> Find(string str)

@@ -47,16 +47,10 @@ namespace SampSharpGameMode1.Events.Derbys
 
         #region DerbyEvents
         public event EventHandler<DerbyLoadedEventArgs> Loaded;
-        public event EventHandler<DerbyLoadedEventArgs> LoadFailed;
         protected virtual void OnLoaded(DerbyLoadedEventArgs e)
         {
-            if (e.success)
-                Loaded?.Invoke(this, e);
-            else
-            {
-                IsLoaded = false;
-                LoadFailed?.Invoke(this, e);
-            }
+            Loaded?.Invoke(this, e);
+            IsLoaded = e.success;
         }
 
         public event EventHandler<DerbyEventArgs> Finished;
@@ -84,6 +78,7 @@ namespace SampSharpGameMode1.Events.Derbys
             {
                 Thread t = new Thread(() =>
                 {
+                    IsLoaded = false;
                     bool errorFlag = false;
                     Dictionary<string, string> row;
                     Dictionary<string, object> param = new Dictionary<string, object>
@@ -104,11 +99,13 @@ namespace SampSharpGameMode1.Events.Derbys
                         {
                             this.StartingVehicle = null;
                         }
-                        GameMode.mySQLConnector.CloseReader();
                     }
                     else
+					{
+                        Logger.WriteLineAndClose($"Derby.cs - Derby.Load:E: Trying to load derby #{id} but it does not exists");
                         errorFlag = true;
-
+                    }
+                    GameMode.mySQLConnector.CloseReader();
                     if (!errorFlag)
                     {
                         GameMode.mySQLConnector.OpenReader("SELECT spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot " +
@@ -140,7 +137,10 @@ namespace SampSharpGameMode1.Events.Derbys
                             }
                         }
                         if (this.SpawnPoints.Count == 0)
+						{
+                            Logger.WriteLineAndClose($"Derby.cs - Derby.Load:E: Trying to load derby #{id} but it does not have spawn points");
                             errorFlag = true;
+                        }
                         GameMode.mySQLConnector.CloseReader();
                     }
 
@@ -179,7 +179,7 @@ namespace SampSharpGameMode1.Events.Derbys
                     if (!errorFlag)
                     {
                         GameMode.mySQLConnector.OpenReader(
-                            "SELECT pickup_id, pickup_pos_x, pickup_pos_y, pickup_pos_z " +
+                            "SELECT pickup_id, pickup_event, pickup_model, pickup_pos_x, pickup_pos_y, pickup_pos_z " +
                             "FROM derby_pickups " +
                             "WHERE derby_id=@id", param);
                         row = GameMode.mySQLConnector.GetNextRow();
@@ -198,7 +198,7 @@ namespace SampSharpGameMode1.Events.Derbys
                                         (float)Convert.ToDouble(row["pickup_pos_y"]),
                                         (float)Convert.ToDouble(row["pickup_pos_z"])
                                 );
-                            this.Pickups.Add(new DerbyPickup(modelid, pos, virtualWorld, (DerbyPickup.PickupEvent)type, !IsCreatorMode));
+                            this.Pickups.Add(new DerbyPickup(modelid, pos, virtualWorld, (DerbyPickup.PickupEvent)type));
                             row = GameMode.mySQLConnector.GetNextRow();
                         }
                         GameMode.mySQLConnector.CloseReader();
