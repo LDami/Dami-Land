@@ -168,27 +168,32 @@ namespace SampSharpGameMode1.Events.Races
 
         private void LoadingRace_Loaded(object sender, RaceLoadedEventArgs e)
         {
-            hud.SetRaceName(e.race.Name);
-            hud.SetSelectedIdx("S", editingMode);
-            hud.SetTotalCP(e.race.checkpoints.Count - 1);
-
-            dynamicCheckpoints = new Dictionary<int, DynamicRaceCheckpoint>();
-            Vector3 nextPos = Vector3.Zero;
-            foreach(KeyValuePair<int, Checkpoint> kvp in e.race.checkpoints)
+            if(e.success)
             {
-                if (e.race.checkpoints.ContainsKey(kvp.Key + 1))
-                    nextPos = e.race.checkpoints[kvp.Key + 1].Position;
-                else
-                    nextPos = Vector3.Zero;
-                dynamicCheckpoints.Add(kvp.Key, new DynamicRaceCheckpoint(kvp.Value.Type, kvp.Value.Position, nextPos, kvp.Value.Size));
-            }
+                hud.SetRaceName(e.race.Name);
+                hud.SetSelectedIdx("S", editingMode);
+                hud.SetTotalCP(e.race.checkpoints.Count - 1);
 
-            checkpointIndex = 0;
-            editingRace = e.race;
-            UpdatePlayerCheckpoint();
-            editingMode = EditingMode.Checkpoints;
-            isNew = false;
-            player.SendClientMessage(Color.Green, "Race #" + e.race.Id + " loaded successfully in creation mode");
+                dynamicCheckpoints = new Dictionary<int, DynamicRaceCheckpoint>();
+                Vector3 nextPos = Vector3.Zero;
+                foreach (KeyValuePair<int, Checkpoint> kvp in e.race.checkpoints)
+                {
+                    if (e.race.checkpoints.ContainsKey(kvp.Key + 1))
+                        nextPos = e.race.checkpoints[kvp.Key + 1].Position;
+                    else
+                        nextPos = Vector3.Zero;
+                    dynamicCheckpoints.Add(kvp.Key, new DynamicRaceCheckpoint(kvp.Value.Type, kvp.Value.Position, nextPos, kvp.Value.Size));
+                }
+
+                checkpointIndex = 0;
+                editingRace = e.race;
+                UpdatePlayerCheckpoint();
+                editingMode = EditingMode.Checkpoints;
+                isNew = false;
+                player.SendClientMessage(Color.Green, "Race #" + e.race.Id + " loaded successfully in creation mode");
+            }
+            else
+                player.SendClientMessage(Color.Red, "Unable to load the race");
         }
 
         public void Unload()
