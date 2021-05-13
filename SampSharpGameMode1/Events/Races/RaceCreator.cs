@@ -125,75 +125,63 @@ namespace SampSharpGameMode1.Events.Races
         public RaceCreator(Player _player)
         {
             player = _player;
-            player.KeyStateChanged += Player_KeyStateChanged;
-            player.EnterCheckpoint += Player_EnterCheckpoint;
-            player.EnterRaceCheckpoint += Player_EnterRaceCheckpoint;
-
-            if(!player.InAnyVehicle)
-            {
-                BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, player.Position + new Vector3(0.0, 5.0, 0.0), 0.0f, 1, 1);
-                player.PutInVehicle(veh);
-            }
-
             editingRace = null;
             checkpointIndex = 0;
-
             spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
         }
 
         public void Create()
         {
-            hud = new HUD(player);
-            editingMode = EditingMode.Checkpoints;
-
             editingRace = new Race();
             editingRace.SpawnPoints = new List<Vector3R>();
-            dynamicCheckpoints = new Dictionary<int, DynamicRaceCheckpoint>();
             checkpointIndex = 0;
             editingRace.StartingVehicle = VehicleModelType.Infernus;
             isNew = true;
+            this.SetPlayerInEditor();
         }
 
         public void Load(int id)
         {
-            hud = new HUD(player);
             if (id > 0)
             {
                 Race loadingRace = new Race();
                 loadingRace.Loaded += LoadingRace_Loaded;
                 loadingRace.Load(id);
             }
-            else player.SendClientMessage(Color.Red, "Error loading race #" + id);
+            else player.SendClientMessage(Color.Red, "Error loading race #" + id + " (invalid ID)");
         }
 
         private void LoadingRace_Loaded(object sender, RaceLoadedEventArgs e)
         {
             if(e.success)
             {
-                hud.SetRaceName(e.race.Name);
-                hud.SetSelectedIdx("S", editingMode);
-                hud.SetTotalCP(e.race.checkpoints.Count - 1);
-
-                dynamicCheckpoints = new Dictionary<int, DynamicRaceCheckpoint>();
-                Vector3 nextPos = Vector3.Zero;
-                foreach (KeyValuePair<int, Checkpoint> kvp in e.race.checkpoints)
-                {
-                    if (e.race.checkpoints.ContainsKey(kvp.Key + 1))
-                        nextPos = e.race.checkpoints[kvp.Key + 1].Position;
-                    else
-                        nextPos = Vector3.Zero;
-                    dynamicCheckpoints.Add(kvp.Key, new DynamicRaceCheckpoint(kvp.Value.Type, kvp.Value.Position, nextPos, kvp.Value.Size));
-                }
-
+                isNew = false;
                 checkpointIndex = 0;
                 editingRace = e.race;
                 UpdatePlayerCheckpoint();
-                editingMode = EditingMode.Checkpoints;
-                isNew = false;
                 player.SendClientMessage(Color.Green, "Race #" + e.race.Id + " loaded successfully in creation mode");
+                this.SetPlayerInEditor();
             }
             else
-                player.SendClientMessage(Color.Red, "Unable to load the race");
+                player.SendClientMessage(Color.Red, "Error loading race (missing mandatory datas)");
+        }
+        private void SetPlayerInEditor()
+        {
+            player.EnablePlayerCameraTarget(true);
+            player.KeyStateChanged += Player_KeyStateChanged;
+            player.EnterCheckpoint += Player_EnterCheckpoint;
+            player.EnterRaceCheckpoint += Player_EnterRaceCheckpoint;
+            if (!player.InAnyVehicle)
+            {
+                BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, player.Position + new Vector3(0.0, 5.0, 0.0), 0.0f, 1, 1);
+                player.PutInVehicle(veh);
+            }
+
+            hud = new HUD(player);
+            hud.SetRaceName(editingRace.Name);
+            editingMode = EditingMode.Checkpoints;
+            hud.SetSelectedIdx("S", editingMode);
+            hud.SetTotalCP(editingRace.checkpoints.Count - 1);
         }
 
         public void Unload()

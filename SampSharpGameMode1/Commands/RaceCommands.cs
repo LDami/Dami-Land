@@ -30,8 +30,9 @@ namespace SampSharpGameMode1.Commands
             [Command("create")]
             private static void CreateRace(Player player)
             {
-                if(player.eventCreator == null)
+                if(!(player.eventCreator is RaceCreator))
                 {
+                    player.eventCreator?.Unload();
                     player.eventCreator = new RaceCreator(player);
                 }
                 player.eventCreator.Create();
@@ -40,17 +41,21 @@ namespace SampSharpGameMode1.Commands
             [Command("loadc")]
             private static void LoadRaceCreator(Player player, int id)
             {
-                if (player.eventCreator == null)
+                if (!(player.eventCreator is RaceCreator))
+				{
+                    player.eventCreator?.Unload();
                     player.eventCreator = new RaceCreator(player);
+                }
+                else
+                    player.eventCreator.Unload();
 
-                player.eventCreator.Unload();
                 player.eventCreator.Load(id);
             }
 
             [Command("save")]
             private static void SaveRace(Player player)
             {
-                if (player.eventCreator != null)
+                if (player.eventCreator is RaceCreator)
                 {
                     if ((player.eventCreator as RaceCreator).editingRace != null)
                     {
@@ -108,7 +113,7 @@ namespace SampSharpGameMode1.Commands
             [Command("set start")]
             private static void SetStart(Player player)
             {
-                if (player.eventCreator != null && player.eventCreator is EventCreator)
+                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
                 {
                     (player.eventCreator as RaceCreator).PutStart(player.Position);
                 }
@@ -116,7 +121,7 @@ namespace SampSharpGameMode1.Commands
             [Command("set current")]
             private static void MoveCurrent(Player player)
             {
-                if (player.eventCreator != null && player.eventCreator is EventCreator)
+                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
                 {
                     (player.eventCreator as RaceCreator).MoveCurrent(player.Position);
                 }
@@ -124,7 +129,7 @@ namespace SampSharpGameMode1.Commands
             [Command("set finish")]
             private static void SetFinish(Player player)
             {
-                if (player.eventCreator != null && player.eventCreator is EventCreator)
+                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
                 {
                     (player.eventCreator as RaceCreator).PutFinish(player.Position);
                 }
@@ -132,7 +137,7 @@ namespace SampSharpGameMode1.Commands
             [Command("addcp")]
             private static void AddCP(Player player)
             {
-                if (player.eventCreator != null && player.eventCreator is EventCreator)
+                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
                 {
                     (player.eventCreator as RaceCreator).AddCheckpoint(player.Position);
                 }

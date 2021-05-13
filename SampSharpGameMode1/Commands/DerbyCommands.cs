@@ -20,7 +20,7 @@ namespace SampSharpGameMode1.Commands
             [Command("create")]
             private static void CreateDerby(Player player)
             {
-                if (player.eventCreator == null)
+                if (!(player.eventCreator is DerbyCreator))
                 {
                     player.eventCreator = new DerbyCreator(player);
                 }
@@ -30,8 +30,13 @@ namespace SampSharpGameMode1.Commands
             [Command("loadc")]
             private static void LoadDerbyCreator(Player player, int id)
             {
-                if (player.eventCreator == null)
+                if (!(player.eventCreator is DerbyCreator))
+                {
+                    player.eventCreator?.Unload();
                     player.eventCreator = new DerbyCreator(player);
+                }
+                else
+                    player.eventCreator.Unload();
 
                 player.eventCreator.Unload();
                 player.eventCreator.Load(id);
@@ -40,7 +45,7 @@ namespace SampSharpGameMode1.Commands
             [Command("save")]
             private static void SaveRace(Player player)
             {
-                if (player.eventCreator != null)
+                if (player.eventCreator is DerbyCreator)
                 {
                     if ((player.eventCreator as DerbyCreator).editingDerby != null)
                     {
@@ -99,7 +104,7 @@ namespace SampSharpGameMode1.Commands
             [Command("addo")]
             private static void AddObject(Player player, int modelid)
             {
-                if (player.eventCreator != null)
+                if (player.eventCreator is DerbyCreator)
                 {
                     (player.eventCreator as DerbyCreator).AddObject(modelid);
                 }
@@ -108,7 +113,7 @@ namespace SampSharpGameMode1.Commands
             [Command("delo")]
             private static void DeleteObject(Player player, int objectid)
             {
-                if (player.eventCreator != null)
+                if (player.eventCreator is DerbyCreator)
                 {
                     (player.eventCreator as DerbyCreator).DeleteObject(objectid);
                 }
@@ -118,7 +123,7 @@ namespace SampSharpGameMode1.Commands
             [Command("addp")]
             private static void AddPickup(Player player, int modelid)
             {
-                if (player.eventCreator != null)
+                if (player.eventCreator is DerbyCreator)
                 {
                     (player.eventCreator as DerbyCreator).AddPickup(modelid);
                 }
@@ -127,7 +132,7 @@ namespace SampSharpGameMode1.Commands
             [Command("delp")]
             private static void DeletePickup(Player player)
             {
-                if (player.eventCreator != null)
+                if (player.eventCreator is DerbyCreator)
                 {
                     (player.eventCreator as DerbyCreator).DeletePickup(player.Position);
                 }

@@ -213,7 +213,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 loadingDerby.Loaded += LoadingDerby_Loaded;
                 loadingDerby.Load(id);
             }
-            else player.SendClientMessage(Color.Red, "Error loading Derby #" + id);
+            else player.SendClientMessage(Color.Red, "Error loading Derby #" + id + " (invalid ID)");
         }
 
         private void LoadingDerby_Loaded(object sender, DerbyLoadedEventArgs e)
@@ -235,7 +235,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 this.SetPlayerInEditor();
             }
             else
-                player.SendClientMessage(Color.Red, "Unable to load the derby");
+                player.SendClientMessage(Color.Red, "Error loading derby (missing mandatory datas)");
         }
         private void SetPlayerInEditor()
         {
@@ -544,13 +544,15 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             if (e.EditObjectResponse == EditObjectResponse.Final)
             {
-                player.SendClientMessage("debug: object final");
+                //player.SendClientMessage("debug: object final");
                 player.cameraController.SetBehindPlayer();
                 player.ToggleControllable(true);
+                lastPickedUpPickup.Respawn();
+                moverObject.Dispose();
             }
             else if (e.EditObjectResponse == EditObjectResponse.Update)
             {
-                player.SendClientMessage("debug: object update");
+                //player.SendClientMessage("debug: object update");
                 player.cameraController.MoveTo(new Vector3(e.Position.X + 10.0, e.Position.Y + 10.0, e.Position.Z + 10.0));
                 player.cameraController.MoveToTarget(e.Position);
             }

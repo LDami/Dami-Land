@@ -40,6 +40,7 @@ namespace SampSharpGameMode1.Events.Races
         protected virtual void OnLoaded(RaceLoadedEventArgs e)
         {
             Loaded?.Invoke(this, e);
+            IsLoaded = e.success;
         }
 
         // Launcher only
@@ -168,7 +169,6 @@ namespace SampSharpGameMode1.Events.Races
 
                         this.SpawnPoints = new List<Vector3R>();
                         Vector3R pos;
-                        int idx = 0;
                         while (row.Count > 0)
                         {
                             pos = new Vector3R(new Vector3(
