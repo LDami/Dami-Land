@@ -22,7 +22,7 @@ namespace SampSharpGameMode1.Events.Races
     public class Race : EventSource
     {
         public const int MIN_PLAYERS_IN_RACE = 0;
-        public const int MAX_PLAYERS_IN_RACE = 100;
+        public const int MAX_PLAYERS_IN_RACE = 20;
 
         public Dictionary<int, Checkpoint> checkpoints = new Dictionary<int, Checkpoint>();
 

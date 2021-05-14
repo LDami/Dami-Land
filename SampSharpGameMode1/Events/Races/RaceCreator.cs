@@ -4,6 +4,7 @@ using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
+using SampSharp.Streamer;
 using SampSharp.Streamer.World;
 using SampSharpGameMode1.Display;
 using System;
@@ -112,7 +113,7 @@ namespace SampSharpGameMode1.Events.Races
         public Race editingRace = null;
         EditingMode editingMode;
         public bool isNew;
-        Dictionary<int, DynamicRaceCheckpoint> dynamicCheckpoints;
+        DynamicRaceCheckpoint shownCheckpoint;
         int checkpointIndex;
         int spawnIndex;
 
@@ -190,11 +191,11 @@ namespace SampSharpGameMode1.Events.Races
             if(hud != null)
                 hud.Destroy();
             hud = null;
-            foreach(DynamicRaceCheckpoint cp in dynamicCheckpoints.Values)
+            if(shownCheckpoint != null)
 			{
-                cp.Dispose();
+                if(!shownCheckpoint.IsDisposed)
+                    shownCheckpoint.Dispose();
 			}
-            dynamicCheckpoints.Clear();
             if(moverObject != null)
             {
                 moverObject.Edited -= moverObject_Edited;
@@ -853,35 +854,25 @@ namespace SampSharpGameMode1.Events.Races
             if (editingRace.checkpoints.ContainsKey(checkpointIndex + 1))
                 nextCp = editingRace.checkpoints[checkpointIndex + 1];
 
-            Vector3 nextPos = Vector3.Zero;
-            if (dynamicCheckpoints.ContainsKey(checkpointIndex + 1))
-                nextPos = dynamicCheckpoints[checkpointIndex + 1].Position;
+            Vector3 nextPos = (nextCp != null) ? nextCp.Position : Vector3.Zero;
 
-            if (!dynamicCheckpoints.ContainsKey(checkpointIndex))
-                dynamicCheckpoints.Add(checkpointIndex, new DynamicRaceCheckpoint(cp.Type, cp.Position, nextPos, cp.Size));
+            if (shownCheckpoint == null)
+                shownCheckpoint = new DynamicRaceCheckpoint(cp.Type, cp.Position, nextPos, cp.Size, 500.0f);
             else
             {
-                dynamicCheckpoints[checkpointIndex].Position = cp.Position;
-                dynamicCheckpoints[checkpointIndex].NextPosition = nextPos;
-                dynamicCheckpoints[checkpointIndex].Size = cp.Size;
+                shownCheckpoint.Position = cp.Position;
+                shownCheckpoint.NextPosition = nextPos;
+                shownCheckpoint.Size = cp.Size;
             }
-            /*
-            if (checkpointIndex == 0 || nextCp == null || (cp.Type == CheckpointType.Finish || cp.Type == CheckpointType.AirFinish))
-                player.SetCheckpoint(cp.Position, (float)cp.Size);
-            else
-            {
-                player.SetRaceCheckpoint(cp.Type, cp.Position, nextCp.Position, (float)cp.Size);
-            }
-            */
-            if(moverObject == null)
+            shownCheckpoint.ShowForPlayer(player);
+            Streamer.Update(player);
+            if (moverObject == null)
             {
                 moverObject = new PlayerObject(
                     player,
                     moverObjectModelID,
                     cp.Position + moverObjectOffset,
                     new Vector3(0.0, 0.0, 0.0));
-
-                //moverObject.Edit();
                 moverObject.Edited += moverObject_Edited;
             }
             else
