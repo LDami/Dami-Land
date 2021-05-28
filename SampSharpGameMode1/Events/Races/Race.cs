@@ -11,8 +11,9 @@ namespace SampSharpGameMode1.Events.Races
 {
     public class RaceLoadedEventArgs : EventArgs
     {
-        public Race race { get; set; }
         public bool success { get; set; }
+        public Race race { get; set; }
+        public int availableSlots { get; set; }
     }
     public class RaceEventArgs : EventArgs
     {
@@ -159,7 +160,8 @@ namespace SampSharpGameMode1.Events.Races
                         GameMode.mySQLConnector.CloseReader();
                     }
 
-                    if(!errorFlag)
+                    int availableSlots = 0;
+                    if (!errorFlag)
                     {
                         GameMode.mySQLConnector.OpenReader("SELECT spawn_index, spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot " +
                             "FROM race_spawn " +
@@ -179,7 +181,10 @@ namespace SampSharpGameMode1.Events.Races
                                     (float)Convert.ToDouble(row["spawn_rot"])
                                 );
                             if(pos.Position != Vector3.Zero)
+                            {
                                 this.SpawnPoints.Add(pos);
+                                availableSlots++;
+                            }
                             row = GameMode.mySQLConnector.GetNextRow();
                         }
                         GameMode.mySQLConnector.CloseReader();
@@ -201,8 +206,9 @@ namespace SampSharpGameMode1.Events.Races
                     }
 
                     RaceLoadedEventArgs args = new RaceLoadedEventArgs();
-                    args.race = this;
                     args.success = !errorFlag;
+                    args.race = this;
+                    args.availableSlots = availableSlots;
                     OnLoaded(args);
                 });
                 t.Start();
@@ -211,15 +217,15 @@ namespace SampSharpGameMode1.Events.Races
 
         public Boolean IsPlayable()
         {
-            return (checkpoints.Count > 0 && StartingVehicle != null) ? true : false;
+            return (checkpoints.Count > 0 && StartingVehicle != null && SpawnPoints.Count > Race.MIN_PLAYERS_IN_RACE) ? true : false;
         }
 
-        public void Prepare(List<Player> players, int virtualWorld)
+        public void Prepare(List<EventSlot> slots, int virtualWorld)
         {
             if(IsPlayable())
             {
                 bool isAborted = false;
-                this.players = players;
+                this.players = new List<Player>();
                 this.spectatingPlayers = new List<Player>();
                 this.virtualWorld = virtualWorld;
 
@@ -229,7 +235,7 @@ namespace SampSharpGameMode1.Events.Races
                 int tries = 0;
 
                 Dictionary<string, string> row;
-                foreach (Player p in players)
+                foreach (EventSlot slot in slots)
                 {
                     RacePlayer playerData = new RacePlayer();
                     playerData.spectatePlayerIndex = -1;
@@ -240,7 +246,7 @@ namespace SampSharpGameMode1.Events.Races
                     Dictionary<string, object> param = new Dictionary<string, object>
                     {
                         { "@race_id", this.Id },
-                        { "@player_id", p.Db_Id}
+                        { "@player_id", slot.Player.Db_Id}
                     };
                     GameMode.mySQLConnector.OpenReader("SELECT record_duration " +
                         "FROM race_records WHERE race_id=@race_id AND player_id=@player_id", param);
@@ -253,22 +259,22 @@ namespace SampSharpGameMode1.Events.Races
 
                     GameMode.mySQLConnector.CloseReader();
 
-                    playersData.Add(p, playerData);
+                    playersData.Add(slot.Player, playerData);
 
-                    playersRecordsHUD[p] = new HUD(p, "racerecords.json");
+                    playersRecordsHUD[slot.Player] = new HUD(slot.Player, "racerecords.json");
                     int recordIdx = 1;
                     foreach(KeyValuePair<string, TimeSpan> record in records)
-                        playersRecordsHUD[p].SetText("localRecord" + (recordIdx++) + "Label", "~W~" + record.Key + "~G~" + record.Value.ToString(@"hh\:mm\:ss\.fff"));
+                        playersRecordsHUD[slot.Player].SetText("localRecord" + (recordIdx++) + "Label", "~W~" + record.Key + "~G~" + record.Value.ToString(@"hh\:mm\:ss\.fff"));
 
-                    p.VirtualWorld = virtualWorld;
+                    slot.Player.VirtualWorld = virtualWorld;
 
-                    p.EnterCheckpoint += (sender, eventArgs) => { OnPlayerEnterCheckpoint((Player)sender); };
-                    p.EnterRaceCheckpoint += (sender, eventArgs) => { OnPlayerEnterCheckpoint((Player)sender); };
-                    p.KeyStateChanged += OnPlayerKeyStateChanged;
+                    slot.Player.EnterCheckpoint += (sender, eventArgs) => { OnPlayerEnterCheckpoint((Player)sender); };
+                    slot.Player.EnterRaceCheckpoint += (sender, eventArgs) => { OnPlayerEnterCheckpoint((Player)sender); };
+                    slot.Player.KeyStateChanged += OnPlayerKeyStateChanged;
 
-                    pos = rdm.Next(1, players.Count);
+                    pos = rdm.Next(0, slots.Count -1);
                     while (generatedPos.Contains(pos) && tries++ < MAX_PLAYERS_IN_RACE && pos >= this.SpawnPoints.Count)
-                        pos = rdm.Next(1, players.Count);
+                        pos = rdm.Next(0, slots.Count -1);
 
                     if (tries >= MAX_PLAYERS_IN_RACE)
                     {
@@ -283,9 +289,10 @@ namespace SampSharpGameMode1.Events.Races
                     veh.Engine = false;
                     veh.Doors = true;
                     veh.Died += OnPlayerVehicleDied;
-                    p.PutInVehicle(veh);
+                    slot.Player.PutInVehicle(veh);
 
-                    UpdatePlayerCheckpoint(p);
+                    UpdatePlayerCheckpoint(slot.Player);
+                    players.Add(slot.Player);
                 }
 
                 if (!isAborted)

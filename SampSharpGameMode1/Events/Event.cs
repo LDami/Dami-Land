@@ -37,8 +37,8 @@ namespace SampSharpGameMode1.Events
         public EventType Type { get; set; }
         public EventSource Source { get; set; }
         public int VirtualWorld { get; set; }
-
-        public List<Player> players = new List<Player>();
+        public List<EventSlot> Slots { get; set; }
+        public int AvailableSlots { get; set; }
 
         public event EventHandler<EventLoadedEventArgs> Loaded;
         protected virtual void OnLoaded(EventLoadedEventArgs e)
@@ -62,25 +62,30 @@ namespace SampSharpGameMode1.Events
 
         public void Open()
         {
-            players.Clear();
+            Slots = new List<EventSlot>();
             Player.SendClientMessageToAll("[Event] The " + this.Type.ToString() + " " + this.Name + " will start soon, join it with " + Color.AliceBlue + "/event join");
             this.Status = EventStatus.Waiting;
         }
-        public abstract void Start();
+        public abstract void Start(List<EventSlot> slots);
 
         public void Join(Player player)
         {
-            if (player.IsConnected && !players.Contains(player))
+            if (player.IsConnected && Slots.Find(x => x.Player.Equals(player)) == null && this.HasAvailableSlots())
             {
-                players.Add(player);
+                Slots.Add(new EventSlot(player, Vector3R.Zero));
                 player.pEvent = this;
                 player.SendClientMessage("[Event] You joined the " + this.Type.ToString() + ", good luck !");
-                if(players.Count == Player.All.Count())
+                if (Slots.Count == Player.All.Count() || !this.HasAvailableSlots())
                 {
-                    this.Start();
+                    this.Start(Slots);
                 }
             }
         }
+
+        public bool HasAvailableSlots()
+		{
+            return (Slots.Count < AvailableSlots);
+		}
 
         public abstract void End();
 

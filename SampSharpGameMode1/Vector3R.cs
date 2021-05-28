@@ -7,6 +7,7 @@ namespace SampSharpGameMode1
 {
     public struct Vector3R
     {
+        public static Vector3R Zero = new Vector3R(Vector3.Zero, 0.0f);
         public Vector3 Position;
         public float Rotation;
 

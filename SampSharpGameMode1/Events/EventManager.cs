@@ -112,7 +112,7 @@ namespace SampSharpGameMode1.Events
                         }
                         if (evt.Status == EventStatus.Waiting)
                         {
-                            evt.Start();
+                            evt.Start(evt.Slots);
                         }
                     }
                     else if(eventArgs.ListItem == 1) // Abort

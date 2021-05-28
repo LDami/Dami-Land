@@ -217,10 +217,10 @@ namespace SampSharpGameMode1.Events.Derbys
             return (IsLoaded && StartingVehicle != null) ? true : false;
         }
 
-        public void Prepare(List<Player> players, int virtualWorld)
+        public void Prepare(List<EventSlot> slots, int virtualWorld)
         {
             if (IsPlayable())
-            {
+            { // TODO: implementer slots
                 bool isAborted = false;
                 this.players = players;
                 this.spectatingPlayers = new List<Player>();

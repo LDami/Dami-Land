@@ -37,11 +37,11 @@ namespace SampSharpGameMode1.Events.Derbys
             else OnLoaded(new EventLoadedEventArgs { ErrorMessage = "This race is not playable !" });
         }
 
-        public override void Start()
+        public override void Start(List<EventSlot> slots)
         {
-            if (loadedRace != null && this.players.Count > Derby.MIN_PLAYERS_IN_DERBY)
+            if (loadedRace != null && slots.Count > Derby.MIN_PLAYERS_IN_DERBY)
             {
-                loadedRace.Prepare(this.players, 1);
+                loadedRace.Prepare(slots, 1);
                 Player.SendClientMessageToAll("[Event] The " + this.Type.ToString() + " is starting, you cannot longer join it !");
                 this.Status = EventStatus.Running;
                 loadedRace.Finished += (sender, eventArgs) => { this.End(); };
@@ -51,7 +51,6 @@ namespace SampSharpGameMode1.Events.Derbys
         public override void End()
         {
             this.Status = EventStatus.Finished;
-            players.Clear();
             this.OnEnded(new EventStartedOrEndedEventArgs { });
         }
     }

@@ -30,7 +30,7 @@ namespace SampSharpGameMode1.Events
         /// </summary>
         /// <param name="players">List of Players who joined</param>
         /// <param name="virtualWorld">VirtualWorld of the event</param>
-        public void Prepare(List<Player> players, int virtualWorld);
+        public void Prepare(List<EventSlot> slots, int virtualWorld);
         /// <summary>
         ///     Start the event
         /// </summary>

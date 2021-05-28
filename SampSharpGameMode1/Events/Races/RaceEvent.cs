@@ -34,26 +34,28 @@ namespace SampSharpGameMode1.Events.Races
                 this.Status = EventStatus.Loaded;
                 this.Type = EventType.Race;
                 this.Source = loadedRace;
+                this.AvailableSlots = e.availableSlots;
                 OnLoaded(new EventLoadedEventArgs { EventLoaded = this, ErrorMessage = null });
             }
             else OnLoaded(new EventLoadedEventArgs { ErrorMessage = "This race is not playable !" });
         }
 
-        public override void Start()
+        public override void Start(List<EventSlot> slots)
         {
-            if(loadedRace != null && this.players.Count > Race.MIN_PLAYERS_IN_RACE)
+            if (loadedRace != null && slots.Count > Race.MIN_PLAYERS_IN_RACE)
             {
-                loadedRace.Prepare(this.players, 1);
+                loadedRace.Prepare(slots, 1);
                 Player.SendClientMessageToAll("[Event] The " + this.Type.ToString() + " is starting, you cannot longer join it !");
                 this.Status = EventStatus.Running;
-                loadedRace.Finished += (sender, eventArgs) => { this.End(); } ;
+                loadedRace.Finished += (sender, eventArgs) => { this.End(); };
                 this.OnStarted(new EventStartedOrEndedEventArgs { });
             }
+            else
+                Logger.WriteLineAndClose($"RaceEvent.cs - RaceEvent.Start:E: The race {this.loadedRace?.Name ?? "N/A"} cannot be started");
         }
         public override void End()
         {
             this.Status = EventStatus.Finished;
-            players.Clear();
             this.OnEnded(new EventStartedOrEndedEventArgs { });
         }
     }
