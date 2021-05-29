@@ -122,7 +122,7 @@ namespace SampSharpGameMode1
 
         public void CloseReader()
         {
-            Console.WriteLine("MySQLConnector.cs - MySQLConnector.OpenReader:I: Read rows: {0}", readRows);
+            Console.WriteLine("MySQLConnector.cs - MySQLConnector.CloseReader:I: Read rows: {0}", readRows);
             if (!reader.IsClosed)
                 reader.Close();
         }
