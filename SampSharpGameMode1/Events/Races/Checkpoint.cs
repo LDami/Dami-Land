@@ -1,11 +1,19 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
+using SampSharp.GameMode.Events;
 using SampSharp.GameMode.World;
+using System;
 
 namespace SampSharpGameMode1.Events.Races
 {
     public class Checkpoint
     {
+        public event EventHandler<PlayerEventArgs> PlayerVehicleChanged;
+        protected virtual void OnPlayerVehicleChanged(PlayerEventArgs e)
+		{
+            PlayerVehicleChanged?.Invoke(this, e);
+		}
+
         public enum NitroEvent
         {
             None,
@@ -61,6 +69,7 @@ namespace SampSharpGameMode1.Events.Races
                 veh.Died += player.pEvent.Source.OnPlayerVehicleDied;
                 player.PutInVehicle(veh);
                 veh.Velocity = vVel;
+                this.OnPlayerVehicleChanged(new PlayerEventArgs(player));
             }
             if (this.NextNitro == NitroEvent.Give)
             {

@@ -160,6 +160,7 @@ namespace SampSharpGameMode1.Events.Races
                                 checkpoint.NextNitro = (Checkpoint.NitroEvent)Convert.ToInt32(row["checkpoint_nitro"]);
 
                             checkpoint.Idx = idx;
+							checkpoint.PlayerVehicleChanged += Checkpoint_PlayerVehicleChanged;
                             this.checkpoints.Add(idx++, checkpoint);
                             row = GameMode.mySQLConnector.GetNextRow();
                         }
@@ -220,7 +221,7 @@ namespace SampSharpGameMode1.Events.Races
             }
         }
 
-        public Boolean IsPlayable()
+		public Boolean IsPlayable()
         {
             return (checkpoints.Count > 0 && StartingVehicle != null && SpawnPoints.Count > Race.MIN_PLAYERS_IN_RACE) ? true : false;
         }
@@ -420,6 +421,20 @@ namespace SampSharpGameMode1.Events.Races
                     Console.WriteLine("Race.cs - UpdatePlayerCheckpoint:E: Unable to display next checkpoint: " + e.Message);
                 }
             }
+        }
+
+        private void Checkpoint_PlayerVehicleChanged(object sender, SampSharp.GameMode.Events.PlayerEventArgs e)
+        {
+            foreach(Player p in spectatingPlayers)
+			{
+                if(players[playersData[p].spectatePlayerIndex].Equals(e.Player))
+                {
+                    if (e.Player.InAnyVehicle)
+                        p.SpectateVehicle(e.Player.Vehicle);
+                    else
+                        p.SpectatePlayer(e.Player);
+                }
+			}
         }
 
         public void RespawnPlayerOnLastCheckpoint(Player player, bool safeRespawn)
