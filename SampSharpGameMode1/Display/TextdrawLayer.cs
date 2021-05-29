@@ -16,6 +16,7 @@ namespace SampSharpGameMode1.Display
         Dictionary<string, TextdrawType> textdrawType = new Dictionary<string, TextdrawType>();
         Dictionary<string, EditingMode> textdrawEditMode = new Dictionary<string, EditingMode>();
         List<string> textdrawOrder = new List<string>();
+        private Action onClickAction;
 
 
         public enum TextdrawType { Box, Text };
@@ -57,7 +58,7 @@ namespace SampSharpGameMode1.Display
             return textdrawList[name];
         }
 
-        public void Show(string name)
+		public void Show(string name)
         {
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException();
@@ -224,6 +225,15 @@ namespace SampSharpGameMode1.Display
             textdrawList[name].Hide();
             textdrawList[name].Show();
         }
+
+        public void SetOnClickCallback(string name, Action callback)
+        {
+            textdrawList[name].Selectable = true;
+            textdrawList[name].Click += (object sender, SampSharp.GameMode.Events.ClickPlayerTextDrawEventArgs e) =>
+            {
+                callback();
+            };
+		}
 
         public bool SelectTextdraw(string name)
         {
