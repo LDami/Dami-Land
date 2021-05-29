@@ -51,6 +51,7 @@ namespace SampSharpGameMode1.Events.Races
         public List<Player> players;
         public Dictionary<Player, RacePlayer> playersData = new Dictionary<Player, RacePlayer>();
         public List<Player> spectatingPlayers; // Contains spectating players who finished the race, and others players who spectate without racing
+        private EventHandler<System.EventArgs> checkpointEventHandler;
         private Dictionary<Player, HUD> playersRecordsHUD = new Dictionary<Player, HUD>();
         private Dictionary<Player, HUD> playersLiveInfoHUD = new Dictionary<Player, HUD>();
         private Dictionary<Player, TimeSpan> playersTimeSpan = new Dictionary<Player, TimeSpan>();
@@ -90,6 +91,11 @@ namespace SampSharpGameMode1.Events.Races
         public void OnPlayerVehicleDied(object sender, SampSharp.GameMode.Events.PlayerEventArgs e)
         {
             OnPlayerFinished((Player)e.Player, "Vehicle destroyed");
+        }
+
+        public Race()
+		{
+            checkpointEventHandler = (sender, eventArgs) => { OnPlayerEnterCheckpoint((Player)sender); };
         }
 
         public void Load(int id)
@@ -234,7 +240,6 @@ namespace SampSharpGameMode1.Events.Races
                 for (int i = 0; i < slots.Count; i++)
                     remainingPos.Add(i);
                 int pos;
-                int tries = 0;
 
                 Dictionary<string, string> row;
                 foreach (EventSlot slot in slots)
@@ -270,34 +275,14 @@ namespace SampSharpGameMode1.Events.Races
 
                     slot.Player.VirtualWorld = virtualWorld;
 
-                    slot.Player.EnterCheckpoint += (sender, eventArgs) => { OnPlayerEnterCheckpoint((Player)sender); };
-                    slot.Player.EnterRaceCheckpoint += (sender, eventArgs) => { OnPlayerEnterCheckpoint((Player)sender); };
+                    slot.Player.EnterCheckpoint += checkpointEventHandler;
+                    slot.Player.EnterRaceCheckpoint += checkpointEventHandler;
                     slot.Player.KeyStateChanged += OnPlayerKeyStateChanged;
 
                     pos = remainingPos[rdm.Next(0, remainingPos.Count)];
 
-                    Logger.WriteLineAndClose("pos: " + pos);
-                    Logger.WriteLineAndClose("generatedPos.Contains(pos): " + generatedPos.Contains(pos));
-                    Logger.WriteLineAndClose("slots.Count: " + slots.Count);
-                    /*
-                    while (remainingPos.Contains(pos) && tries++ < MAX_PLAYERS_IN_RACE)
-                    {
-                        Logger.WriteLineAndClose("-- TRYING AGAIN");
-                        pos = rdm.Next(0, remainingPos.Count);
-                        Logger.WriteLineAndClose("pos: " + pos);
-                        Logger.WriteLineAndClose("generatedPos.Contains(pos): " + generatedPos.Contains(pos));
-                        Logger.WriteLineAndClose("slots.Count: " + slots.Count);
-                    }
-                    */
                     remainingPos.Remove(pos);
                     Logger.WriteLineAndClose($"Position for {slot.Player.Name}: {pos}");
-                    if (tries >= MAX_PLAYERS_IN_RACE)
-                    {
-                        Player.SendClientMessageToAll("Error during position randomization for the race. Race aborted");
-                        isAborted = true;
-                        break;
-                    }
-                    tries = 0;
 
                     BaseVehicle veh = BaseVehicle.Create(StartingVehicle.GetValueOrDefault(VehicleModelType.Bike), this.SpawnPoints[pos].Position, this.SpawnPoints[pos].Rotation, 1, 1);
                     veh.VirtualWorld = virtualWorld;
@@ -477,6 +462,7 @@ namespace SampSharpGameMode1.Events.Races
         {
             if(reason.Equals("Finished"))
             {
+                Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} finished the race {this.Name}");
                 if(playersTimeSpan.Count == 0)
                 {
                     winner = player;
@@ -505,6 +491,7 @@ namespace SampSharpGameMode1.Events.Races
                         placeStr = place + "th";
                         break;
                 }
+                player.SendClientMessage("You finished " + placeStr);
 
                 string finishText = placeStr + " place !~n~" + duration.ToString(@"hh\:mm\:ss\.fff");
                 bool isNewRecord = false;
@@ -536,6 +523,12 @@ namespace SampSharpGameMode1.Events.Races
                     GameMode.mySQLConnector.Execute("INSERT INTO race_records (race_id, player_id, record_duration) VALUES (@race_id, @player_id, @record_duration)", param);
                 }
             }
+            else
+			{
+                Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} has been ejected from the race {this.Name} (reason: {reason})");
+                player.SendClientMessage("You lost (reason: " + reason + ")");
+                player.GameText("GAME OVER", 5000, 4);
+            }
 
             if(player.InAnyVehicle)
             {
@@ -555,6 +548,7 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     Eject(p);
                 }
+                spectatingPlayers.Clear();
                 RaceEventArgs args = new RaceEventArgs();
                 args.race = this;
                 OnFinished(args);
@@ -575,6 +569,9 @@ namespace SampSharpGameMode1.Events.Races
         public void Eject(Player player)
         {
             playersRecordsHUD[player].Hide();
+            player.EnterCheckpoint -= checkpointEventHandler;
+            player.EnterRaceCheckpoint -= checkpointEventHandler;
+            player.KeyStateChanged -= OnPlayerKeyStateChanged;
             player.ToggleSpectating(false);
             player.VirtualWorld = 0;
             player.Spawn();

@@ -213,6 +213,9 @@ namespace SampSharpGameMode1.Events.Races
             {
                 player.DisableCheckpoint();
                 player.DisableRaceCheckpoint();
+                player.KeyStateChanged -= Player_KeyStateChanged;
+                player.EnterCheckpoint -= Player_EnterCheckpoint;
+                player.EnterRaceCheckpoint -= Player_EnterRaceCheckpoint;
             }
         }
 
