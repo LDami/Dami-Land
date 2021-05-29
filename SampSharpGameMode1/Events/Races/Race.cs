@@ -167,7 +167,6 @@ namespace SampSharpGameMode1.Events.Races
                             "FROM race_spawn " +
                             "WHERE race_id=@id ORDER BY spawn_index", param);
                         row = GameMode.mySQLConnector.GetNextRow();
-                        if (row.Count == 0) errorFlag = true;
 
                         this.SpawnPoints = new List<Vector3R>();
                         Vector3R pos;
@@ -231,6 +230,9 @@ namespace SampSharpGameMode1.Events.Races
 
                 Random rdm = new Random();
                 List<int> generatedPos = new List<int>();
+                List<int> remainingPos = new List<int>();
+                for (int i = 0; i < slots.Count; i++)
+                    remainingPos.Add(i);
                 int pos;
                 int tries = 0;
 
@@ -272,10 +274,23 @@ namespace SampSharpGameMode1.Events.Races
                     slot.Player.EnterRaceCheckpoint += (sender, eventArgs) => { OnPlayerEnterCheckpoint((Player)sender); };
                     slot.Player.KeyStateChanged += OnPlayerKeyStateChanged;
 
-                    pos = rdm.Next(0, slots.Count -1);
-                    while (generatedPos.Contains(pos) && tries++ < MAX_PLAYERS_IN_RACE && pos >= this.SpawnPoints.Count)
-                        pos = rdm.Next(0, slots.Count -1);
+                    pos = remainingPos[rdm.Next(0, remainingPos.Count)];
 
+                    Logger.WriteLineAndClose("pos: " + pos);
+                    Logger.WriteLineAndClose("generatedPos.Contains(pos): " + generatedPos.Contains(pos));
+                    Logger.WriteLineAndClose("slots.Count: " + slots.Count);
+                    /*
+                    while (remainingPos.Contains(pos) && tries++ < MAX_PLAYERS_IN_RACE)
+                    {
+                        Logger.WriteLineAndClose("-- TRYING AGAIN");
+                        pos = rdm.Next(0, remainingPos.Count);
+                        Logger.WriteLineAndClose("pos: " + pos);
+                        Logger.WriteLineAndClose("generatedPos.Contains(pos): " + generatedPos.Contains(pos));
+                        Logger.WriteLineAndClose("slots.Count: " + slots.Count);
+                    }
+                    */
+                    remainingPos.Remove(pos);
+                    Logger.WriteLineAndClose($"Position for {slot.Player.Name}: {pos}");
                     if (tries >= MAX_PLAYERS_IN_RACE)
                     {
                         Player.SendClientMessageToAll("Error during position randomization for the race. Race aborted");

@@ -66,6 +66,7 @@ namespace SampSharpGameMode1.Events.Races
                             layer.SetTextdrawText("totalcp", "Total CP: 0");
                             layer.SetTextdrawText("editingmode", "Mode: None");
                             layer.UnselectAllTextdraw();
+                            layer.SetOnClickCallback("editingmode", OnEditingModeClick);
                             fs.Close();
                         }
                     }
@@ -101,6 +102,10 @@ namespace SampSharpGameMode1.Events.Races
                 layer.SetTextdrawText("editingmode", editingMode.ToString());
                 this.SetSelectedIdx(selectedIdx, editingMode);
             }
+            private void OnEditingModeClick()
+			{
+                Player.SendClientMessageToAll("EditingMode textdraw clicked !");
+			}
         }
         enum EditingMode { Checkpoints, SpawnPos }
 
@@ -175,6 +180,7 @@ namespace SampSharpGameMode1.Events.Races
             if (!player.InAnyVehicle)
             {
                 BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, player.Position + new Vector3(0.0, 5.0, 0.0), 0.0f, 1, 1);
+                player.DisableRemoteVehicleCollisions(true);
                 player.PutInVehicle(veh);
             }
 
@@ -254,7 +260,7 @@ namespace SampSharpGameMode1.Events.Races
                         { "@spawn_rot",  editingRace.SpawnPoints[i].Rotation },
                     };
                     mySQLConnector.Execute("INSERT INTO race_spawn " +
-                        "(race_id, spawn_index, spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_pos_rot) VALUES " +
+                        "(race_id, spawn_index, spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot) VALUES " +
                         "(@id, @spawn_index, @spawn_pos_x, @spawn_pos_y, @spawn_pos_z, @spawn_rot)", param);
 
                 }
@@ -455,6 +461,41 @@ namespace SampSharpGameMode1.Events.Races
                         ShowRaceDialog();
                         break;
                     }
+                case Keys.Yes:
+					{
+                        if (editingMode == EditingMode.SpawnPos)
+                        {
+                            if(player.InAnyVehicle)
+                            {
+                                if (spawnIndex >= editingRace.SpawnPoints.Count)
+                                    editingRace.SpawnPoints.Add(new Vector3R(player.Vehicle.Position, player.Vehicle.Angle));
+                                else
+                                    editingRace.SpawnPoints[spawnIndex] = new Vector3R(player.Vehicle.Position, player.Vehicle.Angle);
+                                spawnVehicles[spawnIndex] = BaseVehicle.Create(
+                                    editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus),
+                                    editingRace.SpawnPoints[spawnIndex].Position,
+                                    editingRace.SpawnPoints[spawnIndex].Rotation,
+                                    0, 0
+                                );
+                                player.Notificate(spawnIndex + "/" + Race.MAX_PLAYERS_IN_RACE);
+                                spawnIndex++;
+                                if (spawnVehicles[spawnIndex] is BaseVehicle)
+                                {
+                                    if (!spawnVehicles[spawnIndex].IsDisposed)
+                                        spawnVehicles[spawnIndex].Dispose();
+                                }
+                            }
+                            else
+                            {
+                                player.Notificate(spawnIndex + "/" + Race.MAX_PLAYERS_IN_RACE);
+                                spawnIndex++;
+                                hud.SetSelectedIdx(spawnIndex.ToString(), editingMode);
+                                UpdatePlayerSpawnMover();
+                                moverObject.Edit();
+                            }
+                        }
+                        break;
+					}
             }
         }
 
@@ -540,12 +581,11 @@ namespace SampSharpGameMode1.Events.Races
                                             veh.Dispose();
                                     }
                                     VehicleModelType vehicleType = editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus);
-                                    if (editingRace.SpawnPoints == null)
+                                    if (editingRace.SpawnPoints.Count == 0)
                                     {
                                         spawnVehicles[0] = BaseVehicle.Create(vehicleType, editingRace.checkpoints[0].Position, 0.0f, 0, 0);
                                         editingRace.SpawnPoints = new List<Vector3R>();
-                                        for(int i=0; i < editingRace.SpawnPoints.Count - 1; i++)
-                                            editingRace.SpawnPoints[i] = new Vector3R(editingRace.checkpoints[0].Position, 0.0f);
+                                        editingRace.SpawnPoints.Add(new Vector3R(editingRace.checkpoints[0].Position, 0.0f));
                                     }
                                     else
                                     {
@@ -569,15 +609,27 @@ namespace SampSharpGameMode1.Events.Races
                                             }
                                         }
                                     }
+                                    spawnIndex = 0;
+                                    hud.SetSelectedIdx(spawnIndex.ToString(), editingMode);
+                                    /*
+                                    player.PutInVehicle(BaseVehicle.Create(
+                                        editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus),
+                                        editingRace.SpawnPoints[spawnIndex].Position,
+                                        editingRace.SpawnPoints[spawnIndex].Rotation,
+                                        0, 0
+                                    ));
+                                    */
+                                    player.SendClientMessage("Avoid placing vehicle on the checkpoint zone !");
                                     //TODO: canceledit
+                                    
                                     spawnIndex = 0;
                                     UpdatePlayerSpawnMover();
                                     moverObject.Edit();
-                                    player.SendClientMessage("Avoid placing vehicle on the checkpoint zone !");
                                     player.ToggleControllable(false);
                                     player.cameraController.SetFree();
                                     player.cameraController.SetPosition(new Vector3(moverObject.Position.X + 10.0, moverObject.Position.Y + 10.0, moverObject.Position.Z + 10.0));
                                     player.cameraController.SetTarget(moverObject.Position, true);
+                                    
                                 }
                                 else
                                 {
@@ -905,9 +957,7 @@ namespace SampSharpGameMode1.Events.Races
                 // TODO: Z position of moverObject is not visually updated after new Z pos found by ColAndreas
                 if (e.EditObjectResponse == EditObjectResponse.Final)
                 {
-                    player.cameraController.SetBehindPlayer();
-                    player.ToggleControllable(true);
-                    moverObject.Dispose();
+                    EditNextSpawnPointOrCreate();
                 }
                 else if (e.EditObjectResponse == EditObjectResponse.Update)
                 {
@@ -915,9 +965,32 @@ namespace SampSharpGameMode1.Events.Races
                     player.cameraController.MoveToTarget(finalPos);
                 }
             }
-            if (e.EditObjectResponse == EditObjectResponse.Final || e.EditObjectResponse == EditObjectResponse.Cancel)
+            if (e.EditObjectResponse == EditObjectResponse.Cancel)
                 player.cameraController.SetBehindPlayer();
         }
+
+        private void EditNextSpawnPointOrCreate()
+		{
+            if((spawnIndex + 1) < spawnVehicles.Length)
+			{
+                if(spawnVehicles[spawnIndex + 1] == null) // Create
+                {
+                    editingRace.SpawnPoints.Add(new Vector3R(spawnVehicles[spawnIndex].Position + new Vector3(0.0, 0.0, 5.0), spawnVehicles[spawnIndex].Angle));
+                    VehicleModelType vehicleType = editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus);
+                    spawnVehicles[spawnIndex + 1] = BaseVehicle.Create(vehicleType, spawnVehicles[spawnIndex].Position + new Vector3(0.0, 0.0, 5.0), spawnVehicles[spawnIndex].Angle, 0, 0);
+                }
+                else
+                {
+                    spawnVehicles[spawnIndex + 1].Position = editingRace.SpawnPoints[spawnIndex + 1].Position;
+                    spawnVehicles[spawnIndex + 1].Angle = editingRace.SpawnPoints[spawnIndex + 1].Rotation;
+                }
+                spawnIndex++;
+                UpdatePlayerSpawnMover();
+                moverObject.Edit();
+                player.cameraController.MoveTo(moverObject.Position + new Vector3(10.0, 10.0, 10.0));
+                player.cameraController.MoveToTarget(moverObject.Position);
+            }
+		}
 
 
         public static Dictionary<string, string> Find(string str)
