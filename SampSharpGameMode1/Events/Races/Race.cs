@@ -87,7 +87,7 @@ namespace SampSharpGameMode1.Events.Races
         protected virtual void OnFinished(RaceEventArgs e)
         {
             Finished?.Invoke(this, e);
-            Player.SendClientMessageToAll("Race \"" + e.race.Name + "\" is finished, the winner is " + e.race.winner.Name + " !");
+            Player.SendClientMessageToAll("Race \"" + e.race.Name + "\" is finished, the winner is " + (e.race.winner?.Name ?? "nobody") + " !");
         }
 
         public void OnPlayerVehicleDied(object sender, SampSharp.GameMode.Events.PlayerEventArgs e)
@@ -604,9 +604,6 @@ namespace SampSharpGameMode1.Events.Races
                 vehicle.Dispose();
             }
 
-            player.DisableCheckpoint();
-            player.DisableRaceCheckpoint();
-
             players.Remove(player);
             if(players.Count == 0) // Si on arrive dernier / si le dernier arrive
             {
@@ -636,11 +633,23 @@ namespace SampSharpGameMode1.Events.Races
         public void Eject(Player player)
         {
             playersRecordsHUD[player].Hide();
+            players.RemoveAll(x => x.Equals(player));
+            spectatingPlayers.RemoveAll(x => x.Equals(player));
+
+            if (player.InAnyVehicle)
+            {
+                BaseVehicle vehicle = player.Vehicle;
+                player.RemoveFromVehicle();
+                if(vehicle != null) vehicle.Dispose();
+            }
+            player.DisableCheckpoint();
+            player.DisableRaceCheckpoint();
             player.EnterCheckpoint -= checkpointEventHandler;
             player.EnterRaceCheckpoint -= checkpointEventHandler;
             player.KeyStateChanged -= OnPlayerKeyStateChanged;
             player.ToggleSpectating(false);
             player.VirtualWorld = 0;
+            player.pEvent = null;
             player.Spawn();
         }
     }

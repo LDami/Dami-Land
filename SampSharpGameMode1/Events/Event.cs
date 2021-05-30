@@ -82,6 +82,15 @@ namespace SampSharpGameMode1.Events
             }
         }
 
+        public void Leave(Player player)
+		{
+            if (player.IsConnected && Slots.Find(x => x.Player.Equals(player)) != null)
+			{
+                this.Source.Eject(player);
+            }
+
+        }
+
         public bool HasAvailableSlots()
 		{
             return (Slots.Count < AvailableSlots);

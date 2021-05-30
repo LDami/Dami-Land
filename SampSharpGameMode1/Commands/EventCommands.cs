@@ -23,6 +23,13 @@ namespace SampSharpGameMode1.Commands
                 else
                     GameMode.eventManager.openedEvent.Join(player);
             }
+
+            [Command("leave")]
+            private static void LeaveEvent(Player player)
+            {
+                if(player.pEvent != null)
+                    player.pEvent.Leave(player);
+            }
         }
     }
 }
