@@ -51,7 +51,7 @@ namespace SampSharpGameMode1.Events.Races
         public List<Player> players;
         public Dictionary<Player, RacePlayer> playersData = new Dictionary<Player, RacePlayer>();
         public List<Player> spectatingPlayers; // Contains spectating players who finished the race, and others players who spectate without racing
-        private EventHandler<System.EventArgs> checkpointEventHandler;
+        private EventHandler<EventArgs> checkpointEventHandler;
         private Dictionary<Player, HUD> playersRecordsHUD = new Dictionary<Player, HUD>();
         private Dictionary<Player, HUD> playersLiveInfoHUD = new Dictionary<Player, HUD>();
         private Dictionary<Player, TimeSpan> playersTimeSpan = new Dictionary<Player, TimeSpan>();
@@ -64,14 +64,16 @@ namespace SampSharpGameMode1.Events.Races
 
         public struct PlayerCheckpointData
         {
-            public PlayerCheckpointData(Checkpoint cp, VehicleModelType model, Vector3 velocity, float angle)
+            public PlayerCheckpointData(Checkpoint cp, TimeSpan time, VehicleModelType model, Vector3 velocity, float angle)
             {
                 this.Checkpoint = cp;
+                this.Time = time;
                 this.VehicleModel = model;
                 this.VehicleVelocity = velocity;
                 this.VehicleAngle = angle;
             }
             public Checkpoint Checkpoint { get; set; }
+            public TimeSpan Time { get; set; }
             public VehicleModelType VehicleModel { get; set; }
             public Vector3 VehicleVelocity { get; set; }
             public float VehicleAngle { get; set; }
@@ -242,6 +244,8 @@ namespace SampSharpGameMode1.Events.Races
                     remainingPos.Add(i);
                 int pos;
 
+                string displayedRecord;
+
                 Dictionary<string, string> row;
                 foreach (EventSlot slot in slots)
                 {
@@ -269,10 +273,17 @@ namespace SampSharpGameMode1.Events.Races
 
                     playersData.Add(slot.Player, playerData);
 
+                    playersLiveInfoHUD[slot.Player] = new HUD(slot.Player, "racelive.json");
+                    playersLiveInfoHUD[slot.Player].Hide("checkpointtime");
+                    playersLiveInfoHUD[slot.Player].Hide("checkpointdelta");
+
                     playersRecordsHUD[slot.Player] = new HUD(slot.Player, "racerecords.json");
                     int recordIdx = 1;
                     foreach(KeyValuePair<string, TimeSpan> record in records)
-                        playersRecordsHUD[slot.Player].SetText("localRecord" + (recordIdx++) + "Label", "~W~" + record.Key + "~G~" + record.Value.ToString(@"hh\:mm\:ss\.fff"));
+                    {
+                        displayedRecord = (record.Value.Hours > 0) ? record.Value.ToString(@"hh\:mm\:ss\.fff") : record.Value.ToString(@"mm\:ss\.fff");
+                        playersRecordsHUD[slot.Player].SetText("localRecord" + (recordIdx++) + "Label", "~W~" + record.Key + "~R~ - ~G~" + displayedRecord);
+                    }
 
                     slot.Player.VirtualWorld = virtualWorld;
 
@@ -387,13 +398,54 @@ namespace SampSharpGameMode1.Events.Races
                 }
                 else
                 {
+                    string displayedCPTime;
+                    TimeSpan cpTime = (DateTime.Now - startedTime);
+                    if (cpTime.Hours > 0)
+                        displayedCPTime = cpTime.ToString(@"hh\:mm\:ss\.fff");
+                    else
+                        displayedCPTime = cpTime.ToString(@"mm\:ss\.fff");
+
+                    playersLiveInfoHUD[player].SetText("checkpointtime", displayedCPTime);
+                    playersLiveInfoHUD[player].Show("checkpointtime");
+                    Player playerInFront;
+                    TimeSpan gap = TimeSpan.MaxValue;
+                    Logger.WriteLineAndClose($"{player.Name} entered in a checkpoint");
+                    foreach (KeyValuePair<Player, PlayerCheckpointData> kvp in playerLastCheckpointData)
+					{
+                        if(kvp.Value.Checkpoint == playersData[player].nextCheckpoint)
+                        {
+                            Logger.WriteLineAndClose($"{kvp.Key.Name} has already take this checkpoint before");
+                            Logger.WriteLineAndClose($"gap: {gap.ToString(@"mm\:ss\.fff")}");
+                            Logger.WriteLineAndClose($"cpTime.Subtract(kvp.Value.Time): {cpTime.Subtract(kvp.Value.Time).ToString(@"mm\:ss\.fff")}");
+                            if (gap.CompareTo((cpTime.Subtract(kvp.Value.Time))) > 0)
+                            {
+                                Logger.WriteLineAndClose($"His gap is lower than previous");
+                                gap = cpTime - kvp.Value.Time;
+                                playerInFront = kvp.Key;
+                            }
+                            else
+                                Logger.WriteLineAndClose($"The gap stay unchanged");
+                        }
+					}
+                    if(gap < TimeSpan.MaxValue)
+                    {
+                        Logger.WriteLineAndClose($"gap is shown");
+                        playersLiveInfoHUD[player].SetText("checkpointdelta", "~R~+ " + gap.ToString(@"mm\:ss\.fff"));
+                        playersLiveInfoHUD[player].Show("checkpointdelta");
+                    }
+                    SampSharp.GameMode.SAMP.Timer.RunOnce(5000, () =>
+                    {
+                        playersLiveInfoHUD[player].Hide("checkpointtime");
+                        playersLiveInfoHUD[player].Hide("checkpointdelta");
+                    });
+
                     int cpidx = playersData[player].nextCheckpoint.Idx;
                     Console.WriteLine("Race.cs - OnPlayerEnterCheckpoint:I: playerCheckpoint[" + player.Name + "].Idx = " + playersData[player].nextCheckpoint.Idx);
                     player.Notificate("CP: " + cpidx + "/" + (this.checkpoints.Count - 1).ToString());
                     playersData[player].nextCheckpoint = this.checkpoints[cpidx+1];
                     UpdatePlayerCheckpoint(player);
 
-                    playerLastCheckpointData[player] = new PlayerCheckpointData(this.checkpoints[cpidx], player.Vehicle.Model, player.Vehicle.Velocity, player.Vehicle.Angle);
+                    playerLastCheckpointData[player] = new PlayerCheckpointData(this.checkpoints[cpidx], cpTime, player.Vehicle.Model, player.Vehicle.Velocity, player.Vehicle.Angle);
 
                     this.checkpoints[cpidx].ExecuteEvents(player);
                 }

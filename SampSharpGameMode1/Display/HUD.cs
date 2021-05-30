@@ -53,6 +53,7 @@ namespace SampSharpGameMode1.Display
                             if (textdraw.Type.Equals("text"))
                             {
                                 layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Text);
+                                layer.SetTextdrawText(textdraw.Name, textdraw.Text);
                                 layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
                                 layer.SetTextdrawColor(textdraw.Name, textdraw.Color);
                                 layer.SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
