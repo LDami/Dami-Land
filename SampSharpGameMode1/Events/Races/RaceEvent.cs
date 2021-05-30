@@ -45,7 +45,7 @@ namespace SampSharpGameMode1.Events.Races
             if (loadedRace != null && slots.Count > Race.MIN_PLAYERS_IN_RACE)
             {
                 loadedRace.Prepare(slots, 1);
-                Player.SendClientMessageToAll("[Event] The " + this.Type.ToString() + " is starting, you cannot longer join it !");
+                Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " is starting, you cannot longer join it !");
                 this.Status = EventStatus.Running;
                 loadedRace.Finished += (sender, eventArgs) => { this.End(); };
                 this.OnStarted(new EventStartedOrEndedEventArgs { });

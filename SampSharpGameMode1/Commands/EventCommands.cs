@@ -19,7 +19,7 @@ namespace SampSharpGameMode1.Commands
             private static void JoinEvent(Player player)
             {
                 if (GameMode.eventManager.openedEvent == null)
-                    player.SendClientMessage(Color.Red, "[Event] There is no opened event !");
+                    player.SendClientMessage(Color.Red, "[Event]" + Color.White + " There is no opened event !");
                 else
                     GameMode.eventManager.openedEvent.Join(player);
             }

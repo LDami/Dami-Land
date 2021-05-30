@@ -63,7 +63,7 @@ namespace SampSharpGameMode1.Events
         public void Open()
         {
             Slots = new List<EventSlot>();
-            Player.SendClientMessageToAll("[Event] The " + this.Type.ToString() + " " + this.Name + " will start soon, join it with " + Color.AliceBlue + "/event join");
+            Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " " + Color.PowderBlue + this.Name + Color.White + " will start soon, join it with " + Color.PowderBlue + "/event join");
             this.Status = EventStatus.Waiting;
         }
         public abstract void Start(List<EventSlot> slots);
@@ -74,7 +74,7 @@ namespace SampSharpGameMode1.Events
             {
                 Slots.Add(new EventSlot(player, Vector3R.Zero));
                 player.pEvent = this;
-                player.SendClientMessage("[Event] You joined the " + this.Type.ToString() + ", good luck !");
+                player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You joined the " + this.Type.ToString() + ", good luck !");
                 if (Slots.Count == Player.All.Count() || !this.HasAvailableSlots())
                 {
                     this.Start(Slots);

@@ -87,7 +87,7 @@ namespace SampSharpGameMode1.Events.Races
         protected virtual void OnFinished(RaceEventArgs e)
         {
             Finished?.Invoke(this, e);
-            Player.SendClientMessageToAll("Race \"" + e.race.Name + "\" is finished, the winner is " + (e.race.winner?.Name ?? "nobody") + " !");
+            Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " Race \"" + e.race.Name + "\" is finished, the winner is " + Color.Orange + (e.race.winner?.Name ?? "nobody") + Color.White + " !");
         }
 
         public void OnPlayerVehicleDied(object sender, SampSharp.GameMode.Events.PlayerEventArgs e)
@@ -543,22 +543,25 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     case 1:
                         placeStr = "1st";
+                        player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You finished " + Color.Green + placeStr);
                         player.GiveMoney(1000);
                         player.PlaySound(5448);
                         break;
                     case 2:
                         placeStr = "2nd";
+                        player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You finished " + Color.Orange + placeStr);
                         player.GiveMoney(750);
                         break;
                     case 3:
                         placeStr = "3rd";
+                        player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You finished " + Color.OrangeRed + placeStr);
                         player.GiveMoney(500);
                         break;
                     default:
+                        player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You finished " + placeStr);
                         placeStr = place + "th";
                         break;
                 }
-                player.SendClientMessage("You finished " + placeStr);
 
                 string finishText = placeStr + " place !~n~" + duration.ToString(@"hh\:mm\:ss\.fff");
                 bool isNewRecord = false;
@@ -593,7 +596,7 @@ namespace SampSharpGameMode1.Events.Races
             else
 			{
                 Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} has been ejected from the race {this.Name} (reason: {reason})");
-                player.SendClientMessage("You lost (reason: " + reason + ")");
+                player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You lost (reason: " + reason + ")");
                 player.GameText("GAME OVER", 5000, 4);
             }
 
