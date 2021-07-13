@@ -1,5 +1,6 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Events;
+using SampSharp.GameMode.World;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,6 +10,8 @@ namespace SampSharpGameMode1
     public class CameraController
     {
         public Player player;
+        private BaseVehicle playerVehicle; // Store the player's vehicle before set spectating
+        public bool Enabled { get; set; }
         public bool LockTarget { get; set; }
         public Vector3 LockedTarget { get; set; }
         private Vector3 lastLookAtPos;
@@ -16,6 +19,7 @@ namespace SampSharpGameMode1
         {
             this.player = player;
             this.player.KeyStateChanged += OnPlayerKeyStateChanged;
+            this.Enabled = false;
             this.LockTarget = false;
             this.LockedTarget = Vector3.Zero;
             this.lastLookAtPos = Vector3.Zero;
@@ -32,45 +36,79 @@ namespace SampSharpGameMode1
 
         public void SetFree()
         {
-            player.ToggleSpectating(true);
-            System.Threading.Thread.Sleep(100);
-            player.CameraPosition = player.Position + new Vector3(0.0, 0.0, 5.0);
+            if(this.Enabled)
+			{
+                if (player.InAnyVehicle)
+                    playerVehicle = player.Vehicle;
+                player.ToggleSpectating(true);
+                System.Threading.Thread.Sleep(100);
+                player.CameraPosition = player.Position + new Vector3(0.0, 0.0, 5.0);
+			}
+            else
+                Logger.WriteLineAndClose($"CameraController.cs - CameraController.SetFree:I: CameraController is not enabled");
         }
 
         public void SetBehindPlayer()
         {
-            player.ToggleSpectating(false);
-            player.PutCameraBehindPlayer();
+            if (this.Enabled)
+            {
+                player.ToggleSpectating(false);
+                player.PutCameraBehindPlayer();
+                if(playerVehicle != null)
+                    player.PutInVehicle(playerVehicle);
+            }
+            else
+                Logger.WriteLineAndClose($"CameraController.cs - CameraController.SetBehindPlayer:I: CameraController is not enabled");
         }
 
         public void SetPosition(Vector3 position)
-		{
-            player.CameraPosition = position;
-            Logger.WriteLineAndClose($"CameraController.cs - CameraController.SetPosition:I: New position = " + position.ToString());
+        {
+            if (this.Enabled)
+            {
+                player.CameraPosition = position;
+                Logger.WriteLineAndClose($"CameraController.cs - CameraController.SetPosition:I: New position = " + position.ToString());
+            }
+            else
+                Logger.WriteLineAndClose($"CameraController.cs - CameraController.SetPosition:I: CameraController is not enabled");
         }
 
         public void MoveTo(Vector3 position)
         {
-            player.InterpolateCameraPosition(player.CameraPosition, position, 200, SampSharp.GameMode.Definitions.CameraCut.Move);
-            Logger.WriteLineAndClose($"CameraController.cs - CameraController.MoveTo:I: Moving to = " + position.ToString());
+            if (this.Enabled)
+            {
+                player.InterpolateCameraPosition(player.CameraPosition, position, 200, SampSharp.GameMode.Definitions.CameraCut.Move);
+                Logger.WriteLineAndClose($"CameraController.cs - CameraController.MoveTo:I: Moving to = " + position.ToString());
+            }
+            else
+                Logger.WriteLineAndClose($"CameraController.cs - CameraController.MoveTo:I: CameraController is not enabled");
         }
 
         public void SetTarget(Vector3 target, bool locked = false)
-		{
-            player.SetCameraLookAt(target, SampSharp.GameMode.Definitions.CameraCut.Cut);
-            lastLookAtPos = target;
-            if (locked)
+        {
+            if (this.Enabled)
             {
-                LockTarget = true;
-                LockedTarget = target;
+                player.SetCameraLookAt(target, SampSharp.GameMode.Definitions.CameraCut.Cut);
+                lastLookAtPos = target;
+                if (locked)
+                {
+                    LockTarget = true;
+                    LockedTarget = target;
+                }
+                Logger.WriteLineAndClose($"CameraController.cs - CameraController.SetTarget:I: Look at position = " + target.ToString());
             }
-            Logger.WriteLineAndClose($"CameraController.cs - CameraController.SetTarget:I: Look at position = " + target.ToString());
+            else
+                Logger.WriteLineAndClose($"CameraController.cs - CameraController.SetTarget:I: CameraController is not enabled");
         }
 
         public void MoveToTarget(Vector3 target)
         {
-            player.InterpolateCameraLookAt(lastLookAtPos, target, 200, SampSharp.GameMode.Definitions.CameraCut.Move);
-            lastLookAtPos = target;
+            if (this.Enabled)
+            {
+                player.InterpolateCameraLookAt(lastLookAtPos, target, 200, SampSharp.GameMode.Definitions.CameraCut.Move);
+                lastLookAtPos = target;
+            }
+            else
+                Logger.WriteLineAndClose($"CameraController.cs - CameraController.MoveToTarget:I: CameraController is not enabled");
         }
 
         private double GetAngle(Vector3 target, double distance)
@@ -87,7 +125,7 @@ namespace SampSharpGameMode1
 
         private void OnPlayerKeyStateChanged(object sender, KeyStateChangedEventArgs e)
         {
-            if(player.CameraMode == SampSharp.GameMode.Definitions.CameraMode.Fixed)
+            if(player.CameraMode == SampSharp.GameMode.Definitions.CameraMode.Fixed && player.State == SampSharp.GameMode.Definitions.PlayerState.Spawned)
             {
                 Vector3 cameraPos = player.CameraPosition;
                 double angle;
