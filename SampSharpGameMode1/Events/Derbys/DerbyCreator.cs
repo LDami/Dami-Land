@@ -8,6 +8,7 @@ using SampSharp.GameMode.World;
 using SampSharp.Streamer;
 using SampSharp.Streamer.World;
 using SampSharpGameMode1.Display;
+using SampSharpGameMode1.Events._Tools;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -114,64 +115,27 @@ namespace SampSharpGameMode1.Events.Derbys
         const int moverObjectModelID = 3082;
         Vector3 moverObjectOffset = new Vector3(0.0f, 0.0f, 1.0f);
 
-        BaseVehicle[] spawnVehicles;
-        int spawnIndex;
-
         #region PlayerEvents
         private void OnPlayerKeyStateChanged(object sender, KeyStateChangedEventArgs e)
         {
             switch (e.NewKeys)
             {
-                case Keys.AnalogLeft:
-                    {
-                        switch (editingMode)
-                        {
-                            case EditingMode.Mapping:
-                                {
-                                    break;
-                                }
-                            case EditingMode.SpawnPos:
-                                {
-                                    break;
-                                }
-                        }
-                        break;
-                    }
-                case Keys.AnalogRight:
-                    {
-                        switch (editingMode)
-                        {
-                            case EditingMode.Mapping:
-                                {
-                                    break;
-                                }
-                            case EditingMode.SpawnPos:
-                                {
-                                    break;
-                                }
-                        }
-                        break;
-                    }
                 case Keys.Submission:
-                    {
-                        ShowDerbyDialog();
-                        break;
-                    }
+                    ShowDerbyDialog();
+                    break;
                 case Keys.No:
+                    Streamer streamer = new Streamer();
+                    DynamicObject obj = streamer.GetPlayerCameraTargetObject(player);
+                    if (obj != null)
                     {
-                        Streamer streamer = new Streamer();
-                        DynamicObject obj = streamer.GetPlayerCameraTargetObject(player);
-                        if (obj != null)
-                        {
-                            if(lastSelectedObjectId != -1)
-                                labels[lastSelectedObjectId].Color = Color.White;
-                            labels[obj.Id].Color = Color.Red;
-                            obj.Edited += OnMapObjectEdited;
-                            obj.Edit(player);
-                            lastSelectedObjectId = obj.Id;
-                        }
-                        break;
+                        if(lastSelectedObjectId != -1)
+                            labels[lastSelectedObjectId].Color = Color.White;
+                        labels[obj.Id].Color = Color.Red;
+                        obj.Edited += OnMapObjectEdited;
+                        obj.Edit(player);
+                        lastSelectedObjectId = obj.Id;
                     }
+                    break;
             }
         }
         private void OnPlayerPickUpPickup(object pickup, PlayerEventArgs e)
@@ -187,7 +151,6 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             player = _player;
             editingDerby = null;
-            spawnVehicles = new BaseVehicle[Derby.MAX_PLAYERS_IN_DERBY];
         }
 
         public void Create()
@@ -418,6 +381,7 @@ namespace SampSharpGameMode1.Events.Derbys
             ListDialog derbyDialog = new ListDialog("Derby options", "Select", "Cancel");
             derbyDialog.AddItem("Select starting vehicle [" + editingDerby.StartingVehicle + "]");
             derbyDialog.AddItem("Edit derby name");
+            derbyDialog.AddItem("Edit spawn positions");
 
             derbyDialog.Show(player);
             derbyDialog.Response += DerbyDialog_Response;
@@ -471,6 +435,16 @@ namespace SampSharpGameMode1.Events.Derbys
                                 };
                                 break;
                             }
+                        case 2: // Set/Edit spawn position
+							{
+                                SpawnerCreator spawnerCreator = new SpawnerCreator(player, 0, editingDerby.StartingVehicle.GetValueOrDefault(VehicleModelType.Ambulance), editingDerby.SpawnPoints);
+                                spawnerCreator.Quit += (sender, e) =>
+                                {
+                                    editingDerby.SpawnPoints = e.spawnPoints;
+                                    player.Notificate("Spawn points updated");
+                                };
+                                break;
+							}
                     }
                 }
             }
