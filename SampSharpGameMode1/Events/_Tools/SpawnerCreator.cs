@@ -8,6 +8,7 @@ using SampSharp.Streamer;
 using SampSharp.Streamer.World;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace SampSharpGameMode1.Events._Tools
@@ -27,7 +28,8 @@ namespace SampSharpGameMode1.Events._Tools
 
 		public virtual void OnQuit(SpawnCreatorQuitEventArgs e)
 		{
-			foreach(BaseVehicle v in vehicles)
+			this.player.KeyStateChanged -= Player_KeyStateChanged;
+			foreach (BaseVehicle v in vehicles)
 			{
 				if (!v.IsDisposed)
 					v.Dispose();
@@ -51,6 +53,11 @@ namespace SampSharpGameMode1.Events._Tools
 		private float moverObjectTempZAngle;
 
 		private Player player;
+		private Stopwatch getKeysTimer;
+		/// <summary>
+		///		Number of milliseconds the script must not check for player's key in Player_Update
+		/// </summary>
+		private const int maxGetKeysTimer = 125;
 
 		private int selectionIndex;
 
@@ -58,31 +65,29 @@ namespace SampSharpGameMode1.Events._Tools
 		public SpawnerCreator(Player player, int world, VehicleModelType model, List<Vector3R> existingSpawnPoints)
 		{
 			this.player = player;
+			this.player.Update += Player_Update; // Used to detect left/right arrow
 			this.player.KeyStateChanged += Player_KeyStateChanged;
 			this.player.cameraController.Enabled = true;
-			
+			this.getKeysTimer = new Stopwatch();
+			getKeysTimer.Start();
+
 			this.world = world;
 			this.model = model;
-			foreach(Vector3R v in existingSpawnPoints)
-			{
-				Console.WriteLine("pos1: " + v.Position);
-			}
+
 			vehicles = existingSpawnPoints.ConvertAll(
 				new Converter<Vector3R, BaseVehicle>(Vector3RToBaseVehicle));
-			foreach (BaseVehicle v in vehicles)
-			{
-				Console.WriteLine("pos2: " + v.Position);
-			}
 			if (vehicles.Count > 0)
 			{
 				selectionIndex = 0;
+				vehicles[selectionIndex].ChangeColor(1, 1);
 				moverObject = new PlayerObject(this.player, moverObjectModelID, vehicles[selectionIndex].Position + moverObjectOffset, vehicles[selectionIndex].Rotation);
 				moverObject.Edited += MoverObject_Edited;
 				player.SendClientMessage("Spawn Creator loaded, here is the controls:");
-				player.SendClientMessage("    Fire button: Edit current vehicle's position");
-				player.SendClientMessage("    Walk button: Quit editor");
-				player.SendClientMessage("    4 (num - analog left) button: Go to previous vehicle");
-				player.SendClientMessage("    6 (num - analog right) button: Go to next vehicle");
+				player.SendClientMessage("    Fire button (default: left mouse or CTRL):   Edit current vehicle's position");
+				player.SendClientMessage("    Handbrake button (default: Space):           Refresh editor");
+				player.SendClientMessage("    Crouch button (default: C):                  Quit editor");
+				player.SendClientMessage("    left button:                                 Go to previous vehicle");
+				player.SendClientMessage("    right button:                                Go to next vehicle");
 				player.cameraController.SetFree();
 				UpdatePlayerCamera();
 			}
@@ -90,44 +95,60 @@ namespace SampSharpGameMode1.Events._Tools
 				OnQuit(new SpawnCreatorQuitEventArgs(new List<Vector3R>()));
 		}
 
+		private void Player_Update(object sender, SampSharp.GameMode.Events.PlayerUpdateEventArgs e)
+		{
+			if(this.getKeysTimer.ElapsedMilliseconds >= maxGetKeysTimer)
+			{
+				if (this.getKeysTimer.IsRunning) this.getKeysTimer.Stop();
+				((Player)sender).GetKeys(out Keys keys, out int updown, out int leftright);
+				if (leftright == -128) // Left
+				{
+					if (selectionIndex > 0)
+					{
+						vehicles[selectionIndex].ChangeColor(0, 0);
+						selectionIndex--;
+					}
+					vehicles[selectionIndex].ChangeColor(1, 1);
+					moverObject.Position = vehicles[selectionIndex].Position;
+					UpdatePlayerCamera();
+					player.Notificate(selectionIndex + "/" + (vehicles.Count - 1));
+					this.getKeysTimer.Restart();
+				}
+				if (leftright == 128) // Right
+				{
+					if (selectionIndex < vehicles.Count)
+					{
+						vehicles[selectionIndex].ChangeColor(0, 0);
+						selectionIndex++;
+					}
+					if (selectionIndex == vehicles.Count) // Create a new spawn position
+					{
+						vehicles.Add(BaseVehicle.Create(model, vehicles[selectionIndex - 1].Position + new Vector3(0.0, 0.0, 2.0), 0.0f, 1, 1));
+					}
+					vehicles[selectionIndex].ChangeColor(1, 1);
+					moverObject.Position = vehicles[selectionIndex].Position;
+					UpdatePlayerCamera();
+					player.Notificate(selectionIndex + "/" + (vehicles.Count - 1));
+					this.getKeysTimer.Restart();
+				}
+			}
+		}
+
 		private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
 		{
 			switch(e.NewKeys)
 			{
 				case Keys.Fire:
-					if(!(moverObject is null)) moverObject.Edit();
+					if(!moverObject.IsDisposed) moverObject.Edit();
 					break;
 
-				case Keys.Walk:
+				case Keys.Handbrake:
+					moverObject.Position = vehicles[selectionIndex].Position;
+					UpdatePlayerCamera();
+					break;
+
+				case Keys.Crouch:
 					OnQuit(new SpawnCreatorQuitEventArgs(GetSpawnPoints()));
-					break;
-
-				case Keys.AnalogLeft:
-					if (selectionIndex > 0)
-					{
-						vehicles[selectionIndex].ChangeColor(0, 0);
-						selectionIndex --;
-					}
-					vehicles[selectionIndex].ChangeColor(1, 1);
-					moverObject.Position = vehicles[selectionIndex].Position;
-					UpdatePlayerCamera();
-					player.Notificate(selectionIndex + "/" + (vehicles.Count-1));
-					break;
-
-				case Keys.AnalogRight:
-					if (selectionIndex < vehicles.Count)
-					{
-						vehicles[selectionIndex].ChangeColor(0, 0);
-						selectionIndex ++;
-					}
-					if (selectionIndex == vehicles.Count) // Create a new spawn position
-					{
-						vehicles.Add(BaseVehicle.Create(model, vehicles[selectionIndex - 1].Position, 0.0f, 1, 1));
-					}
-					vehicles[selectionIndex].ChangeColor(1, 1);
-					moverObject.Position = vehicles[selectionIndex].Position;
-					UpdatePlayerCamera();
-					player.Notificate(selectionIndex + "/" + (vehicles.Count-1));
 					break;
 			}
 		}
@@ -169,7 +190,7 @@ namespace SampSharpGameMode1.Events._Tools
 
 		private BaseVehicle Vector3RToBaseVehicle(Vector3R v)
 		{
-			BaseVehicle veh = BaseVehicle.Create(this.model, v.Position, v.Rotation, 0, 1);
+			BaseVehicle veh = BaseVehicle.Create(this.model, v.Position, v.Rotation, 0, 0);
 			//veh.VirtualWorld = world;
 			return veh;
 		}
