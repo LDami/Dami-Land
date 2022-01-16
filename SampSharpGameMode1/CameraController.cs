@@ -14,6 +14,7 @@ namespace SampSharpGameMode1
         public bool Enabled { get; set; }
         public bool LockTarget { get; set; }
         public Vector3 LockedTarget { get; set; }
+        public float LockDistance { get; set; }
         private Vector3 lastLookAtPos;
         public CameraController(Player player)
         {
@@ -22,6 +23,7 @@ namespace SampSharpGameMode1
             this.Enabled = false;
             this.LockTarget = false;
             this.LockedTarget = Vector3.Zero;
+            this.LockDistance = 200.0f;
             this.lastLookAtPos = Vector3.Zero;
         }
 
@@ -76,7 +78,7 @@ namespace SampSharpGameMode1
         {
             if (this.Enabled)
             {
-                player.InterpolateCameraPosition(player.CameraPosition, position, 200, SampSharp.GameMode.Definitions.CameraCut.Move);
+                player.InterpolateCameraPosition(player.CameraPosition, position, 100, SampSharp.GameMode.Definitions.CameraCut.Move);
                 Logger.WriteLineAndClose($"CameraController.cs - CameraController.MoveTo:I: Moving to = " + position.ToString());
             }
             else
@@ -104,7 +106,7 @@ namespace SampSharpGameMode1
         {
             if (this.Enabled)
             {
-                player.InterpolateCameraLookAt(lastLookAtPos, target, 200, SampSharp.GameMode.Definitions.CameraCut.Move);
+                player.InterpolateCameraLookAt(lastLookAtPos, target, 100, SampSharp.GameMode.Definitions.CameraCut.Move);
                 lastLookAtPos = target;
             }
             else
@@ -129,15 +131,14 @@ namespace SampSharpGameMode1
             {
                 Vector3 cameraPos = player.CameraPosition;
                 double angle;
-                double dist = cameraPos.DistanceTo(LockedTarget);
                 switch (e.NewKeys)
                 {
                     case SampSharp.GameMode.Definitions.Keys.AnalogLeft:
                         if(LockTarget)
                         {
-                            angle = GetAngle(LockedTarget, dist);
+                            angle = GetAngle(LockedTarget, LockDistance);
                             Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: LockedTarget = " + LockedTarget.ToString());
-                            Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: dist = " + dist.ToString());
+                            Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: dist = " + LockDistance.ToString());
                             Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: cameraPos = " + cameraPos.ToString());
                             Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: LockedTarget = " + LockedTarget.ToString());
                             Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: previous angle = " + angle.ToString());
@@ -148,8 +149,8 @@ namespace SampSharpGameMode1
                             Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: cos = " + cos.ToString());
                             Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: sin = " + sin.ToString());
                             MoveTo(new Vector3(
-                                (cos * dist) + LockedTarget.X,
-                                (sin * dist) + LockedTarget.Y,
+                                (cos * LockDistance) + LockedTarget.X,
+                                (sin * LockDistance) + LockedTarget.Y,
                                 cameraPos.Z
                             ));
                             MoveToTarget(LockedTarget);
@@ -160,9 +161,9 @@ namespace SampSharpGameMode1
                     case SampSharp.GameMode.Definitions.Keys.AnalogRight:
                         if (LockTarget)
                         {
-                            angle = GetAngle(LockedTarget, dist);
+                            angle = GetAngle(LockedTarget, LockDistance);
                             Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: LockedTarget = " + LockedTarget.ToString());
-                            Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: dist = " + dist.ToString());
+                            Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: dist = " + LockDistance.ToString());
                             Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: cameraPos = " + cameraPos.ToString());
                             Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: LockedTarget = " + LockedTarget.ToString());
                             Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: previous angle = " + angle.ToString());
@@ -173,8 +174,8 @@ namespace SampSharpGameMode1
                             Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: cos = " + cos.ToString());
                             Logger.WriteLineAndClose($"CameraController.cs - CameraController.OnPlayerKeyStateChanged:I: sin = " + sin.ToString());
                             MoveTo(new Vector3(
-                                (cos * dist) + LockedTarget.X,
-                                (sin * dist) + LockedTarget.Y,
+                                (cos * LockDistance) + LockedTarget.X,
+                                (sin * LockDistance) + LockedTarget.Y,
                                 cameraPos.Z
                             ));
                             MoveToTarget(LockedTarget);
