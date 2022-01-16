@@ -11,7 +11,6 @@ namespace SampSharpGameMode1
     public class MySQLConnector
     {
         private static MySQLConnector _instance = null;
-        private MySqlConnection mySqlConnection = null;
 
         public MySQLConnector()
         {
@@ -24,6 +23,17 @@ namespace SampSharpGameMode1
             return _instance;
         }
 
+        private MySqlConnection mySqlConnection = null;
+
+        private MySqlDataReader reader = null;
+        private int readRows;
+        private int rowsAffected;
+        public int RowsAffected { get => rowsAffected; private set => rowsAffected = value; }
+
+        /// <summary>
+        ///     Connects to the server configured in ConfigurationManager
+        /// </summary>
+        /// <returns>true if connection succeed, else false</returns>
         public Boolean Connect()
         {
             if (mySqlConnection == null)
@@ -45,8 +55,7 @@ namespace SampSharpGameMode1
                 }
                 catch (MySqlException e)
                 {
-                    //Console.WriteLine("MySQLConnector.cs - MySQLConnector.Connect:E: MySQL Exception: " + e);
-                    Console.WriteLine("MySQLConnector.cs - MySQLConnector.Connect:E: Unable to connect to the database");
+                    Console.WriteLine("MySQLConnector.cs - MySQLConnector.Connect:E: Unable to connect to the database: " + e.Code);
                     mySqlConnection = null;
                     return false;
                 }
@@ -64,8 +73,12 @@ namespace SampSharpGameMode1
             return mySqlConnection.State.ToString();
         }
 
-        private int rowsAffected;
-        public int RowsAffected { get => rowsAffected; private set => rowsAffected = value; }
+        /// <summary>
+        ///     Executes a SQL query
+        /// </summary>
+        /// <param name="query">The query string to execute</param>
+        /// <param name="parameters">Dictionary(string, object) of parameters</param>
+        /// <returns>Last inserted id</returns>
         public long Execute(string query, Dictionary<string, object> parameters)
         {
             if (!query.StartsWith("SELECT"))
@@ -89,8 +102,11 @@ namespace SampSharpGameMode1
                 return -1;
         }
 
-        private MySqlDataReader reader = null;
-        private int readRows;
+        /// <summary>
+        ///     Opens a SQL recordset
+        /// </summary>
+        /// <param name="query">The query string to execute</param>
+        /// <param name="parameters">Dictionary(string, object) of parameters</param>
         public void OpenReader(string query, Dictionary<string, object> parameters)
         {
             if (query.StartsWith("SELECT"))
@@ -120,12 +136,20 @@ namespace SampSharpGameMode1
             }
         }
 
+        /// <summary>
+        ///     Closes the last opened recordset
+        /// </summary>
         public void CloseReader()
         {
             Console.WriteLine("MySQLConnector.cs - MySQLConnector.CloseReader:I: Read rows: {0}", readRows);
             if (!reader.IsClosed)
                 reader.Close();
         }
+
+        /// <summary>
+        ///     Get the next row of the opened SQL recordset
+        /// </summary>
+        /// <returns>Dictionary(column-name: string, value: string) of the row</returns>
         public Dictionary<string, string> GetNextRow()
         {
             Dictionary<string, string> result = new Dictionary<string, string>();
