@@ -83,7 +83,7 @@ namespace SampSharpGameMode1.Events.Races
             }
             public void SetRaceName(string name)
             {
-                layer.SetTextdrawText("racename", name);
+                layer.SetTextdrawText("racename", name ?? "[Untitled]");
             }
             public void SetSelectedIdx(string idx, EditingMode editingMode)
             {
@@ -125,6 +125,7 @@ namespace SampSharpGameMode1.Events.Races
         PlayerObject moverObject;
         const int moverObjectModelID = 19133;
         Vector3 moverObjectOffset = new Vector3(0.0f, 0.0f, 1.0f);
+        float moverObjectTempZAngle;
 
 
         BaseVehicle[] spawnVehicles;
@@ -139,6 +140,7 @@ namespace SampSharpGameMode1.Events.Races
         public void Create()
         {
             editingRace = new Race();
+            editingRace.Name = "[Untitled]";
             editingRace.SpawnPoints = new List<Vector3R>();
             checkpointIndex = 0;
             editingRace.StartingVehicle = VehicleModelType.Infernus;
@@ -614,19 +616,11 @@ namespace SampSharpGameMode1.Events.Races
                                     }
                                     spawnIndex = 0;
                                     hud.SetSelectedIdx(spawnIndex.ToString(), editingMode);
-                                    /*
-                                    player.PutInVehicle(BaseVehicle.Create(
-                                        editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus),
-                                        editingRace.SpawnPoints[spawnIndex].Position,
-                                        editingRace.SpawnPoints[spawnIndex].Rotation,
-                                        0, 0
-                                    ));
-                                    */
                                     player.SendClientMessage("Avoid placing vehicle on the checkpoint zone !");
-                                    //TODO: canceledit
                                     
                                     spawnIndex = 0;
                                     UpdatePlayerSpawnMover();
+                                    AutoUpdateSpawnMoverZAngle();
                                     moverObject.Edit();
                                     player.ToggleControllable(false);
                                     player.cameraController.SetFree();
@@ -673,7 +667,26 @@ namespace SampSharpGameMode1.Events.Races
             }
         }
 
-        public void UpdatePlayerSpawnMover()
+        private void AutoUpdateSpawnMoverZAngle()
+		{
+            Timer t = new Timer(1000, true);
+            t.Tick += (sender, evt) =>
+            {
+                if (editingMode != EditingMode.SpawnPos)
+                    t.IsRepeating = false;
+                else
+                {
+                    if(!(spawnVehicles[spawnIndex] is null))
+                    {
+                        BaseVehicle tmp = spawnVehicles[spawnIndex];
+                        spawnVehicles[spawnIndex].Dispose();
+                        spawnVehicles[spawnIndex] = BaseVehicle.Create(tmp.Model, tmp.Position, moverObjectTempZAngle, 0, 0);
+                    }
+                }
+            };
+		}
+
+		public void UpdatePlayerSpawnMover()
         {
             if (spawnIndex < editingRace.SpawnPoints.Count)
             {
@@ -738,6 +751,7 @@ namespace SampSharpGameMode1.Events.Races
                     {
                         case 0: // Edit checkpoint position
                             {
+                                player.cameraController.Enabled = true;
                                 if (moverObject == null)
                                 {
                                     moverObject = new PlayerObject(
@@ -915,7 +929,7 @@ namespace SampSharpGameMode1.Events.Races
 
             Vector3 nextPos = (nextCp != null) ? nextCp.Position : Vector3.Zero;
 
-            if (shownCheckpoint == null)
+            if (shownCheckpoint == null || shownCheckpoint.IsDisposed)
                 shownCheckpoint = new DynamicRaceCheckpoint(cp.Type, cp.Position, nextPos, cp.Size, 500.0f);
             else
             {
@@ -950,26 +964,34 @@ namespace SampSharpGameMode1.Events.Races
             }
             else if (editingMode == EditingMode.SpawnPos)
             {
-                Physics.ColAndreas.FindZ_For2DCoord(e.Position.X, e.Position.Y, out float zPos);
-                float deltaZ = BaseVehicle.GetModelInfo(spawnVehicles[spawnIndex].Model, VehicleModelInfoType.Size).Z / 2;
-                Vector3 finalPos = new Vector3(e.Position.X, e.Position.Y, zPos + deltaZ);
-                editingRace.SpawnPoints[spawnIndex] = new Vector3R(finalPos, spawnVehicles[spawnIndex].Angle);
-                spawnVehicles[spawnIndex].Position = finalPos;
-                player.SendClientMessage(finalPos.ToString());
-                UpdatePlayerSpawnMover();
-                // TODO: Z position of moverObject is not visually updated after new Z pos found by ColAndreas
-                if (e.EditObjectResponse == EditObjectResponse.Final)
+                if(!(spawnVehicles[spawnIndex] is null)) // can be disposed by AutoUpdateSpawnMoverZAngle
                 {
-                    EditNextSpawnPointOrCreate();
-                }
-                else if (e.EditObjectResponse == EditObjectResponse.Update)
-                {
-                    player.cameraController.MoveTo(finalPos + new Vector3(10.0, 10.0, 10.0));
-                    player.cameraController.MoveToTarget(finalPos);
+                    Physics.ColAndreas.FindZ_For2DCoord(e.Position.X, e.Position.Y, out float zPos);
+                    float deltaZ = BaseVehicle.GetModelInfo(spawnVehicles[spawnIndex].Model, VehicleModelInfoType.Size).Z / 2;
+                    Vector3 finalPos = new Vector3(e.Position.X, e.Position.Y, zPos + deltaZ);
+                    editingRace.SpawnPoints[spawnIndex] = new Vector3R(finalPos, e.Rotation.Z);
+                    spawnVehicles[spawnIndex].Position = finalPos;
+                    moverObjectTempZAngle = e.Rotation.Z;
+                    player.SendClientMessage(finalPos.ToString());
+
+                    UpdatePlayerSpawnMover();
+                    // TODO: Z position of moverObject is not visually updated after new Z pos found by ColAndreas
+                    if (e.EditObjectResponse == EditObjectResponse.Final)
+                    {
+                        EditNextSpawnPointOrCreate();
+                    }
+                    else if (e.EditObjectResponse == EditObjectResponse.Update)
+                    {
+                        player.cameraController.MoveTo(finalPos + new Vector3(10.0, 10.0, 10.0));
+                        player.cameraController.MoveToTarget(finalPos);
+                    }
                 }
             }
             if (e.EditObjectResponse == EditObjectResponse.Cancel)
+            {
                 player.cameraController.SetBehindPlayer();
+                player.cameraController.Enabled = true;
+            }
         }
 
         private void EditNextSpawnPointOrCreate()
