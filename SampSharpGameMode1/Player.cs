@@ -642,7 +642,7 @@ namespace SampSharpGameMode1
         }
 
         [Command("rep")]
-        private void RepCommand(int vel)
+        private void RepCommand()
         {
             if (!IsInEvent() && this.InAnyVehicle)
             {
@@ -707,13 +707,46 @@ namespace SampSharpGameMode1
             GameMode.eventManager.ShowManagerDialog(this);
         }
 
-        [Command("mapping")]
-        private void MappingCommand()
+        [Command("jet")]
+        private void JetpackCommand()
+		{
+            this.SpecialAction = SpecialAction.Usejetpack;
+		}
+        [CommandGroup("mapping")]
+        class MappingCommandClass
         {
-            if (!playerMapping.IsInMappingMode)
-                playerMapping.Enter();
-            else
-                playerMapping.Exit();
+            [Command("init")]
+            private static void MappingCommand(Player player)
+            {
+                if (!player.playerMapping.IsInMappingMode)
+                    player.playerMapping.Enter();
+                else
+                    player.playerMapping.Exit();
+            }
+            [Command("addo")]
+            private static void AddObjectCommand(Player player, int modelid)
+            {
+                if (player.playerMapping.IsInMappingMode)
+                    player.playerMapping.AddObject(modelid);
+            }
+            [Command("delo")]
+            private static void DelObjectCommand(Player player, int objectid)
+            {
+                if (player.playerMapping.IsInMappingMode)
+                    player.playerMapping.DelObject(objectid);
+            }
+            [Command("replace")]
+            private static void ReplaceCommand(Player player, int objectid, int modelid)
+            {
+                if (player.playerMapping.IsInMappingMode)
+                    player.playerMapping.ReplaceObject(objectid, modelid);
+            }
+            [Command("edit")]
+            private static void EditCommand(Player player, int objectid)
+            {
+                if (player.playerMapping.IsInMappingMode)
+                    player.playerMapping.EditObject(objectid);
+            }
         }
 
         class GroupedCommandClass
