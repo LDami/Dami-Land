@@ -150,10 +150,15 @@ namespace SampSharpGameMode1
         {
             private static Dictionary<string, string> field = new Dictionary<string, string>()
             {
+                /* Race */
                 {"race_id", "Race ID"},
                 {"race_name", "Race Name"},
                 {"race_creator", "Race Creator"},
-                {"race_type", "Race Type"}
+                {"race_type", "Race Type"},
+                /* Derby */
+                {"derby_id", "Derby ID"},
+                {"derby_name", "Derby Name"},
+                {"derby_creator", "Derby Creator"},
             };
             
             public static string GetFieldName(string name)

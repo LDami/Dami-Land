@@ -437,8 +437,8 @@ namespace SampSharpGameMode1.Events.Derbys
                             }
                         case 2: // Set/Edit spawn position
 							{
-                                SpawnerCreator spawnerCreator = new SpawnerCreator(player, 0, editingDerby.StartingVehicle.GetValueOrDefault(VehicleModelType.Ambulance), editingDerby.SpawnPoints);
-                                spawnerCreator.Quit += (sender, e) =>
+                                new SpawnerCreator(player, 0, editingDerby.StartingVehicle.GetValueOrDefault(VehicleModelType.Ambulance), editingDerby.SpawnPoints)
+                                    .Quit += (sender, e) =>
                                 {
                                     editingDerby.SpawnPoints = e.spawnPoints;
                                     player.Notificate("Spawn points updated");
@@ -553,9 +553,10 @@ namespace SampSharpGameMode1.Events.Derbys
         }
         public static Dictionary<string, string> GetInfo(int id)
         {
-            // id, name, creator, type, number of spawn points
+            // id, name, creator, type, number of spawn points, number of pickups, number of map objects
             Dictionary<string, string> results = new Dictionary<string, string>();
             Dictionary<string, string> row;
+            bool exists = false;
 
             MySQLConnector mySQLConnector = MySQLConnector.Instance();
             Dictionary<string, object> param = new Dictionary<string, object>
@@ -566,22 +567,32 @@ namespace SampSharpGameMode1.Events.Derbys
             mySQLConnector.OpenReader("SELECT derby_id, derby_name, derby_creator FROM derbys WHERE derby_id = @id", param);
 
             row = mySQLConnector.GetNextRow();
+            if (row.Count > 0) exists = true;
             foreach (KeyValuePair<string, string> kvp in row)
                 results.Add(MySQLConnector.Field.GetFieldName(kvp.Key), kvp.Value);
 
             mySQLConnector.CloseReader();
 
-            mySQLConnector.OpenReader("SELECT COUNT(*) as nbr " +
-                "FROM derby_spawnpos WHERE derby_id = @id", param);
-            int nbrOfSpawnPoints = 0;
-            row = mySQLConnector.GetNextRow();
-            while (row.Count > 0)
+            if(exists)
             {
-                nbrOfSpawnPoints++;
+                mySQLConnector.OpenReader("SELECT COUNT(*) as nbr " +
+                    "FROM derby_spawn WHERE derby_id = @id", param);
                 row = mySQLConnector.GetNextRow();
+                results.Add("Spawn points", row["nbr"]);
+                mySQLConnector.CloseReader();
+
+                mySQLConnector.OpenReader("SELECT COUNT(*) as nbr " +
+                    "FROM derby_pickups WHERE derby_id = @id", param);
+                row = mySQLConnector.GetNextRow();
+                results.Add("Pickups", row["nbr"]);
+                mySQLConnector.CloseReader();
+
+                mySQLConnector.OpenReader("SELECT COUNT(*) as nbr " +
+                    "FROM derby_mapobjects WHERE derby_id = @id", param);
+                row = mySQLConnector.GetNextRow();
+                results.Add("Map objects", row["nbr"]);
+                mySQLConnector.CloseReader();
             }
-            results.Add("Nombre de spawn points", nbrOfSpawnPoints.ToString());
-            mySQLConnector.CloseReader();
 
             return results;
         }

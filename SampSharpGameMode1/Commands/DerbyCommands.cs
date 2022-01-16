@@ -140,11 +140,11 @@ namespace SampSharpGameMode1.Commands
 
 
             [Command("find")]
-            private static void FindRace(Player player, string name)
+            private static void FindDerby(Player player, string name)
             {
                 Dictionary<string, string> result = DerbyCreator.Find(name);
                 if (result.Count == 0)
-                    player.SendClientMessage("No race found !");
+                    player.SendClientMessage("No derby found !");
                 else
                 {
                     foreach (KeyValuePair<string, string> kvp in result)
@@ -159,10 +159,10 @@ namespace SampSharpGameMode1.Commands
             {
                 Dictionary<string, string> result = DerbyCreator.GetInfo(id);
                 if (result.Count == 0)
-                    player.SendClientMessage("No race found !");
+                    player.SendClientMessage("No derby found !");
                 else
                 {
-                    var infoList = new ListDialog("Race info", "Ok", "");
+                    var infoList = new ListDialog("Derby info", "Ok", "");
                     string str = "";
                     foreach (KeyValuePair<string, string> kvp in result)
                     {
