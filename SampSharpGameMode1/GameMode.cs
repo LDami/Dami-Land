@@ -71,6 +71,22 @@ namespace SampSharpGameMode1
             Console.WriteLine("Total path points: " + PathExtractor.pathPoints.Count);
             
             
+
+            /* Loading parked vehicles */
+            Console.Write("GameMode.cs - GameMode.OnInitialized:I: Loading parked vehicles ... ");
+            mySQLConnector.OpenReader("SELECT * FROM parked_vehicles", new Dictionary<string, object>());
+            Dictionary<string, string> row = mySQLConnector.GetNextRow();
+            while(row.Count > 0)
+			{
+                BaseVehicle v = BaseVehicle.CreateStatic((VehicleModelType)Convert.ToInt32(row["model_id"]), new Vector3(
+                    (float)Convert.ToDouble(row["spawn_pos_x"]),
+                    (float)Convert.ToDouble(row["spawn_pos_y"]),
+                    (float)Convert.ToDouble(row["spawn_pos_z"])), (float)Convert.ToDouble(row["spawn_rot"]), 0, 0);
+                StoredVehicle.AddDbPool(v.Id, Convert.ToInt32(row["vehicle_id"]));
+                row = mySQLConnector.GetNextRow();
+			}
+            mySQLConnector.CloseReader();
+            Console.WriteLine("Done !");
             Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Gamemode ready !");
             
             Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Connecting to socket ... ");
