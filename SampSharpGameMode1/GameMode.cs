@@ -1,21 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using SampSharp.Core.Natives;
 using SampSharp.GameMode;
+using SampSharp.GameMode.Definitions;
+using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using SampSharpGameMode1.Civilisation;
 using SampSharpGameMode1.Events;
+using static SampSharp.GameMode.SAMP.Server;
 using static SampSharpGameMode1.Civilisation.PathExtractor;
 
 namespace SampSharpGameMode1
 {
     public class GameMode : BaseMode
     {
-        #region Overrides of BaseMode
-
         public static MySQLConnector mySQLConnector = null;
         public static EventManager eventManager = null;
         public MySocketIO socket = null;
+        #region Overrides of BaseMode
+
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
@@ -25,6 +29,7 @@ namespace SampSharpGameMode1
             Console.WriteLine("----------------------------------\n");
 
             this.AddPlayerClass(1, 1, new Vector3(1431.6393, 1519.5398, 10.5988), 0.0f);
+            //this.AddPlayerClass(1, 1, new Vector3(-1574.7374, 2671.0313, 55.6593), 0.0f);
             //this.AddPlayerClass(1, 1, new Vector3(-2699.6025,2381.6885,66.8945), 0.0f);
 
             Logger.Init();
@@ -34,7 +39,7 @@ namespace SampSharpGameMode1
             Boolean isConnected = false;
             while (!isConnected)
             {
-                System.Threading.Thread.Sleep(1000);
+                Thread.Sleep(1000);
                 if (mySQLConnector.Connect())
                 {
                     Console.WriteLine("Done");
@@ -66,11 +71,14 @@ namespace SampSharpGameMode1
             //Civilisation.PathExtractor.SeparateNodes(54);
             //Civilisation.PathExtractor.CheckLinks(54);
             Civilisation.PathExtractor.ValidateNaviLink();
-            
 
             Console.WriteLine("Total path points: " + PathExtractor.pathPoints.Count);
             
-            
+
+
+            Console.Write("GameMode.cs - GameMode.OnInitialized:I: Initializing ColAndreas ... ");
+            Physics.ColAndreas.Init();
+            Console.WriteLine("Done !");
 
             /* Loading parked vehicles */
             Console.Write("GameMode.cs - GameMode.OnInitialized:I: Loading parked vehicles ... ");

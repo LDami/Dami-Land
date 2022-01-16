@@ -1,8 +1,6 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace SampSharpGameMode1
 {

@@ -338,4 +338,5 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
-/SampSharpGameMode1/App.config
+/SampSharpGameMode1/App.debug.config
+/SampSharpGameMode1/App.release.config

@@ -68,6 +68,7 @@ namespace SampSharpGameMode1.Events._Tools
 			this.player.Update += Player_Update; // Used to detect left/right arrow
 			this.player.KeyStateChanged += Player_KeyStateChanged;
 			this.player.cameraController.Enabled = true;
+			this.player.ToggleControllable(false);
 			this.getKeysTimer = new Stopwatch();
 			getKeysTimer.Start();
 
@@ -90,6 +91,7 @@ namespace SampSharpGameMode1.Events._Tools
 				player.SendClientMessage("    right button:                                Go to next vehicle");
 				player.cameraController.SetFree();
 				UpdatePlayerCamera();
+				player.PutInVehicle(vehicles[selectionIndex]);
 			}
 			else
 				OnQuit(new SpawnCreatorQuitEventArgs(new List<Vector3R>()));
@@ -109,6 +111,7 @@ namespace SampSharpGameMode1.Events._Tools
 						selectionIndex--;
 					}
 					vehicles[selectionIndex].ChangeColor(1, 1);
+					player.PutInVehicle(vehicles[selectionIndex]);
 					moverObject.Position = vehicles[selectionIndex].Position;
 					UpdatePlayerCamera();
 					player.Notificate(selectionIndex + "/" + (vehicles.Count - 1));
@@ -126,6 +129,7 @@ namespace SampSharpGameMode1.Events._Tools
 						vehicles.Add(BaseVehicle.Create(model, vehicles[selectionIndex - 1].Position + new Vector3(0.0, 0.0, 2.0), 0.0f, 1, 1));
 					}
 					vehicles[selectionIndex].ChangeColor(1, 1);
+					player.PutInVehicle(vehicles[selectionIndex]);
 					moverObject.Position = vehicles[selectionIndex].Position;
 					UpdatePlayerCamera();
 					player.Notificate(selectionIndex + "/" + (vehicles.Count - 1));
@@ -165,8 +169,19 @@ namespace SampSharpGameMode1.Events._Tools
 				Vector3 finalPos = new Vector3(e.Position.X, e.Position.Y, zPos + deltaZ);
 				vehicles[selectionIndex].Position = finalPos;
 				moverObjectTempZAngle = e.Rotation.Z;
+				vehicles[selectionIndex].Angle = moverObjectTempZAngle;
+				player.SendClientMessage("Angle updated: " + moverObjectTempZAngle);
 
-				moverObject.Position = finalPos;
+				if(moverObject.Position.DistanceTo(finalPos) > 5.0)
+				{
+					player.SendClientMessage("too far");
+					moverObject.Dispose();
+					moverObject = new PlayerObject(this.player, moverObjectModelID, finalPos + moverObjectOffset, new Vector3(0, 0, vehicles[selectionIndex].Angle));
+					moverObject.Edited += MoverObject_Edited;
+					moverObject.Edit();
+				}
+				else
+					moverObject.Position = finalPos;
 				// TODO: Z position of moverObject is not visually updated after new Z pos found by ColAndreas
 				if (e.EditObjectResponse == EditObjectResponse.Update)
 				{

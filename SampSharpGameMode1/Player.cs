@@ -12,7 +12,6 @@ using SampSharp.GameMode.World;
 using SampSharpGameMode1.Civilisation;
 using SampSharpGameMode1.Display;
 using SampSharpGameMode1.Events;
-using SampSharpGameMode1.Events.Races;
 using static SampSharpGameMode1.Civilisation.PathExtractor;
 
 namespace SampSharpGameMode1
@@ -54,8 +53,8 @@ namespace SampSharpGameMode1
 
             Console.WriteLine("Players.cs - Player.OnConnected:I: New player connected: [" + this.Id + "] " + this.Name);
 
-            //this.SetSpawnInfo(0, 0, new Vector3(1431.6393, 1519.5398, 10.5988), 0.0f);
-            
+            this.SetSpawnInfo(1, 1, new Vector3(1431.6393, 1519.5398, 10.5988), 0.0f);
+
             if(!this.IsNPC)
             {
                 isConnected = false;
@@ -109,12 +108,12 @@ namespace SampSharpGameMode1
                 naviObjects = new List<GlobalObject>();
                 pathLabels = new TextLabel[1000];
                 naviLabels = new TextLabel[1000];
-                if (npc != null) npc.PlayerInstance.Dispose();
-            }
+                //if (npc != null) npc.PlayerInstance.Dispose();
 
-            if(this.vehicleAI != null)
-            {
-                this.vehicleAI.Kick();
+                if (this.vehicleAI != null)
+                {
+                    this.vehicleAI.Kick();
+                }
             }
         }
 
@@ -129,6 +128,7 @@ namespace SampSharpGameMode1
         public override void OnUpdate(PlayerUpdateEventArgs e)
         {
             base.OnUpdate(e);
+            /*
             if (playerMapping != null)
                 playerMapping.Update();
             //if (playerRaceCreator != null)
@@ -138,13 +138,16 @@ namespace SampSharpGameMode1
                 double vel = Math.Sqrt(this.Vehicle.Velocity.LengthSquared) * 181.5;
                 vehicleHUD.SetText("speed", vel.ToString(@"N3"));
             }
-
+            */
         }
         public override void OnEnterVehicle(EnterVehicleEventArgs e)
         {
             base.OnEnterVehicle(e);
+            Logger.WriteLineAndClose(e.Player.Name + " entered vehicle id " + e.Vehicle.Id + " as " + (e.IsPassenger ? "passenger" : "driver"));
+            /*
             vehicleHUD = new HUD(this, "speedometer.json");
             vehicleHUD.SetText("speed", "0");
+            */
         }
         public override void OnExitVehicle(PlayerVehicleEventArgs e)
         {
@@ -174,9 +177,15 @@ namespace SampSharpGameMode1
             base.OnClickMap(e);
             CalculateWay(this.Position, e.Position);
         }
-        #endregion
 
-        public void Notificate(string message)
+		public override void OnPickUpPickup(PickUpPickupEventArgs e)
+		{
+			base.OnPickUpPickup(e);
+            this.SendClientMessage("picked up !");
+		}
+		#endregion
+
+		public void Notificate(string message)
         {
             if(!message.Equals(""))
                 this.GameText(message, 1000, 3);
@@ -259,7 +268,7 @@ namespace SampSharpGameMode1
 
         private void PwdLoginDialog_Response(object sender, DialogResponseEventArgs e)
         {
-            if (e.DialogButton != DialogButton.Right)
+            if (e.DialogButton == DialogButton.Left)
             {
                 if (e.InputText.Length == 0)
                 {
@@ -626,13 +635,23 @@ namespace SampSharpGameMode1
                 Console.WriteLine("vehicleAI is null !");
         }
         [Command("put")]
-        private void PutCommand(Player player, int vID)
+        private void PutCommand()
         {
-            Console.WriteLine("Player.cs - Player.PutCommand:I: Player: " + player.Name);
-            Console.WriteLine("Player.cs - Player.PutCommand:I: Player state: " + player.State);
-            BaseVehicle vehicle = BaseVehicle.FindOrCreate(vID);
-            Console.WriteLine("Player.cs - Player.PutCommand:I: Vehicle ID: " + vehicle.Id);
-            player.PutInVehicle(vehicle);
+            if (vehicleAI != null)
+                vehicleAI.PutNPCInVehicle();
+            else
+                Console.WriteLine("vehicleAI is null !");
+        }
+        [Command("putme")]
+        private void PutMeCommand()
+        {
+            this.PutInVehicle(BaseVehicle.Find(VehicleAI.vehicleID));
+        }
+
+        [Command("select-td")]
+        private void SelectTDCommand()
+        {
+            this.SelectTextDraw(Color.OrangeRed);
         }
 
         [Command("ak47")]
@@ -640,6 +659,22 @@ namespace SampSharpGameMode1
         {
             this.GiveWeapon(Weapon.AK47, 500);
         }
+        [Command("tec")]
+        private void TecCommand()
+        {
+            this.GiveWeapon(Weapon.Tec9, 500);
+        }
+        [Command("pickup")]
+        private void PickupCommand(int id = -1)
+        {
+            Events.Derbys.DerbyPickupRandomEvent pickup = new Events.Derbys.DerbyPickupRandomEvent(this, id);
+        }
+
+        [Command("camdist")]
+        private void SetCameraDistance(int distance)
+		{
+            this.cameraController.LockDistance = (float)distance;
+		}
 
         [Command("rep")]
         private void RepCommand()
@@ -933,6 +968,16 @@ namespace SampSharpGameMode1
                     if (player.textdrawCreator != null)
                     {
                         player.textdrawCreator.Select(name);
+                    }
+                    else
+                        player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
+                }
+                [Command("unselect")]
+                private static void Unselect(Player player)
+                {
+                    if (player.textdrawCreator != null)
+                    {
+                        player.textdrawCreator.Unselect();
                     }
                     else
                         player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");

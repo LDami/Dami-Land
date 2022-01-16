@@ -145,6 +145,8 @@ namespace SampSharpGameMode1.Display
         {
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException();
+            if (text is null)
+                throw new ArgumentNullException();
             textdrawList[name].text = text;
             this.ChangeTextdrawMode(name, textdrawEditMode[name]);
             this.UpdateTextdraw(name);
