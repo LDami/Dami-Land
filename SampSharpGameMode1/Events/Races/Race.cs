@@ -276,6 +276,7 @@ namespace SampSharpGameMode1.Events.Races
                     playersLiveInfoHUD[slot.Player] = new HUD(slot.Player, "racelive.json");
                     playersLiveInfoHUD[slot.Player].Hide("checkpointtime");
                     playersLiveInfoHUD[slot.Player].Hide("checkpointdelta");
+                    playersLiveInfoHUD[slot.Player].Hide("nitro");
 
                     playersRecordsHUD[slot.Player] = new HUD(slot.Player, "racerecords.json");
                     int recordIdx = 1;
@@ -448,6 +449,10 @@ namespace SampSharpGameMode1.Events.Races
                     playerLastCheckpointData[player] = new PlayerCheckpointData(this.checkpoints[cpidx], cpTime, player.Vehicle.Model, player.Vehicle.Velocity, player.Vehicle.Angle);
 
                     this.checkpoints[cpidx].ExecuteEvents(player);
+                    if (this.checkpoints[cpidx].NextNitro == Checkpoint.NitroEvent.Give)
+                        playersLiveInfoHUD[player].Show("nitro");
+                    if (this.checkpoints[cpidx].NextNitro == Checkpoint.NitroEvent.Remove)
+                        playersLiveInfoHUD[player].Hide("nitro");
                 }
             }
         }
@@ -580,7 +585,6 @@ namespace SampSharpGameMode1.Events.Races
 
                 player.GameText(finishText, 5000, 4);
 
-
                 if (isNewRecord)
                 {
                     Dictionary<string, object> param = new Dictionary<string, object>();
@@ -636,6 +640,7 @@ namespace SampSharpGameMode1.Events.Races
 
         public void Eject(Player player)
         {
+            playersLiveInfoHUD[player].Hide();
             playersRecordsHUD[player].Hide();
             players.RemoveAll(x => x.Equals(player));
             spectatingPlayers.RemoveAll(x => x.Equals(player));
