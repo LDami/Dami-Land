@@ -154,10 +154,15 @@ namespace SampSharpGameMode1.Commands
             }
         }
 
-		[Command("tp")]
+        [Command("tp")]
         private void TP()
         {
             this.Position = new Vector3(1431.6393, 1519.5398, 10.5988);
+        }
+        [Command("unfreeze")]
+        private void UnfreezeCommand(Player p)
+        {
+            p.ToggleControllable(true);
         }
     }
 }
