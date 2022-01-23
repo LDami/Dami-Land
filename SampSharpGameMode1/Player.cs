@@ -21,8 +21,8 @@ namespace SampSharpGameMode1
     {
         MySQLConnector mySQLConnector = null;
 
-        private int db_id;
-        public int Db_Id { get => db_id; set => db_id = value; }
+        private int dbid;
+        public int DbId { get => dbid; set => dbid = value; }
 
         Boolean isConnected;
         int passwordEntryTries = 3;
@@ -202,7 +202,7 @@ namespace SampSharpGameMode1
                 mySQLConnector.CloseReader();
                 if (results.Count > 0)
                 {
-                    this.Db_Id = Convert.ToInt32(results["id"]);
+                    this.DbId = Convert.ToInt32(results["id"]);
                     return true;
                 }
                 else
@@ -245,7 +245,7 @@ namespace SampSharpGameMode1
                         param.Add("@name", this.Name);
                         mySQLConnector.OpenReader("SELECT id FROM users WHERE name=@name", param);
                         Dictionary<string, string> results = mySQLConnector.GetNextRow();
-                        this.Db_Id = Convert.ToInt32(results["id"]);
+                        this.DbId = Convert.ToInt32(results["id"]);
                         mySQLConnector.CloseReader();
                         this.Spawn();
                     }
@@ -327,7 +327,7 @@ namespace SampSharpGameMode1
             Player result = null;
             foreach(Player player in Player.All)
             {
-                if(player.Db_Id == id)
+                if(player.DbId == id)
                 {
                     result = player;
                     break;

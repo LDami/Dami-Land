@@ -258,7 +258,7 @@ namespace SampSharpGameMode1.Events.Races
                     Dictionary<string, object> param = new Dictionary<string, object>
                     {
                         { "@race_id", this.Id },
-                        { "@player_id", slot.Player.Db_Id}
+                        { "@player_id", slot.Player.DbId}
                     };
                     GameMode.mySQLConnector.OpenReader("SELECT record_duration " +
                         "FROM race_records WHERE race_id=@race_id AND player_id=@player_id", param);
@@ -584,11 +584,11 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     Dictionary<string, object> param = new Dictionary<string, object>();
                     param.Add("@race_id", this.Id);
-                    param.Add("@player_id", player.Db_Id);
+                    param.Add("@player_id", player.DbId);
                     GameMode.mySQLConnector.Execute("DELETE FROM race_records WHERE race_id = @race_id AND player_id = @player_id", param);
                     param = new Dictionary<string, object>();
                     param.Add("@race_id", this.Id);
-                    param.Add("@player_id", player.Db_Id);
+                    param.Add("@player_id", player.DbId);
                     param.Add("@record_duration", duration.ToString(@"hh\:mm\:ss\.ffffff"));
                     GameMode.mySQLConnector.Execute("INSERT INTO race_records (race_id, player_id, record_duration) VALUES (@race_id, @player_id, @record_duration)", param);
                 }
