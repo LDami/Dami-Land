@@ -134,6 +134,14 @@ namespace SampSharpGameMode1.Commands
                     (player.eventCreator as RaceCreator).PutFinish(player.Position);
                 }
             }
+            [Command("teleport")]
+            private static void TeleportCommand(Player player)
+            {
+                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
+                {
+                    (player.eventCreator as RaceCreator).TeleportToCurrent();
+                }
+            }
             [Command("addcp")]
             private static void AddCP(Player player)
             {

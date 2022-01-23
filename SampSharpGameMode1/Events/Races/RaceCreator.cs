@@ -377,11 +377,6 @@ namespace SampSharpGameMode1.Events.Races
             UpdatePlayerCheckpoint();
             hud.SetSelectedIdx(checkpointIndex.ToString(), editingMode);
             hud.SetTotalCP(editingRace.checkpoints.Count);
-            Console.WriteLine("RaceCreator.cs - RaceCreator.AddCheckpoint:I: checkpoints:");
-            foreach (KeyValuePair<int, Checkpoint> kvp in editingRace.checkpoints)
-            {
-                Console.WriteLine("RaceCreator.cs - RaceCreator.AddCheckpoint:I: [" + kvp.Key + "] = " + kvp.Value);
-            }
         }
         public void MoveCurrent(Vector3 position)
         {
@@ -397,6 +392,18 @@ namespace SampSharpGameMode1.Events.Races
                 player.SendClientMessage(Color.Red, "Error, place a checkpoint first ! (/race addcp)");
             }
         }
+        public void TeleportToCurrent()
+        {
+            try
+            {
+                player.Teleport(editingRace.checkpoints[checkpointIndex].Position);
+            }
+            catch (NullReferenceException e)
+            {
+                Console.WriteLine("RaceCreator.cs - TeleportToCurrent:E: Cannot teleport player to current: " + e.Message);
+                player.SendClientMessage(Color.Red, "Error, place a checkpoint first ! (/race addcp)");
+            }
+		}
         private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
         {
             //if (e.NewKeys.ToString() != "0") player.GameText(e.NewKeys.ToString(), 100, 3);

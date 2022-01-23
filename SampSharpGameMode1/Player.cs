@@ -191,6 +191,19 @@ namespace SampSharpGameMode1
                 this.GameText(message, 1000, 3);
         }
 
+        /// <summary>
+        /// Teleports player, or the player's vehicle to the given position
+        /// </summary>
+        /// <param name="position">Position to teleport the player to</param>
+        public void Teleport(Vector3 position)
+		{
+            position += Vector3.UnitZ;
+            if (this.InAnyVehicle)
+                this.Vehicle.Position = position;
+            else
+                this.Position = position;
+		}
+
         public Boolean IsRegistered()
         {
             if (mySQLConnector != null)
