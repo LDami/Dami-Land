@@ -750,37 +750,67 @@ namespace SampSharpGameMode1
         [CommandGroup("mapping")]
         class MappingCommandClass
         {
+            private static MapCreator mapCreator;
+
             [Command("init")]
             private static void MappingCommand(Player player)
             {
-                if (!player.playerMapping.IsInMappingMode)
-                    player.playerMapping.Enter();
-                else
-                    player.playerMapping.Exit();
+                if (mapCreator is null)
+                    mapCreator = new MapCreator(player);
+            }
+            [Command("list")]
+            private static void ListCommand(Player player)
+            {
+                InputDialog dialog = new InputDialog("Map list", "Enter keywords (separated with space) if you want to search a specific map, otherwise let the field empty", false, "Search", "Cancel");
+                dialog.Response += (object sender, DialogResponseEventArgs e) =>
+                {
+                    if(e.DialogButton == DialogButton.Left)
+					{
+                        string[] keywords = e.InputText.Split(" ");
+                        MapCreator.ShowMapList(player, keywords);
+					}
+                };
+                dialog.Show(player);
             }
             [Command("addo")]
             private static void AddObjectCommand(Player player, int modelid)
             {
-                if (player.playerMapping.IsInMappingMode)
-                    player.playerMapping.AddObject(modelid);
+                if (!(mapCreator is null))
+                    mapCreator.AddObject(modelid);
+                else
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
             }
             [Command("delo")]
             private static void DelObjectCommand(Player player, int objectid)
             {
-                if (player.playerMapping.IsInMappingMode)
-                    player.playerMapping.DelObject(objectid);
+                if (!(mapCreator is null))
+                    mapCreator.DelObject(objectid);
+                else
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
             }
             [Command("replace")]
             private static void ReplaceCommand(Player player, int objectid, int modelid)
             {
-                if (player.playerMapping.IsInMappingMode)
-                    player.playerMapping.ReplaceObject(objectid, modelid);
+                if (!(mapCreator is null))
+                    mapCreator.ReplaceObject(objectid, modelid);
+                else
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
             }
             [Command("edit")]
             private static void EditCommand(Player player, int objectid)
             {
-                if (player.playerMapping.IsInMappingMode)
-                    player.playerMapping.EditObject(objectid);
+                if (!(mapCreator is null))
+                    mapCreator.EditObject(objectid);
+                else
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
+            }
+            [Command("save")]
+            private static void SaveCommand(Player player)
+            {
+                if (!(mapCreator is null))
+                    mapCreator.Save();
+                else
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
             }
         }
 
