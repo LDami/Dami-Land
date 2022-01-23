@@ -596,9 +596,9 @@ namespace SampSharpGameMode1.Events.Races
                                     VehicleModelType vehicleType = editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus);
                                     if (editingRace.SpawnPoints.Count == 0)
                                     {
-                                        spawnVehicles[0] = BaseVehicle.Create(vehicleType, editingRace.checkpoints[0].Position, 0.0f, 0, 0);
+                                        spawnVehicles[0] = BaseVehicle.Create(vehicleType, editingRace.checkpoints[0].Position + Vector3.UnitZ, 0.0f, 0, 0);
                                         editingRace.SpawnPoints = new List<Vector3R>();
-                                        editingRace.SpawnPoints.Add(new Vector3R(editingRace.checkpoints[0].Position, 0.0f));
+                                        editingRace.SpawnPoints.Add(new Vector3R(editingRace.checkpoints[0].Position + Vector3.UnitZ, 0.0f));
                                     }
                                     else
                                     {
