@@ -269,6 +269,7 @@ namespace SampSharpGameMode1.Events.Races
                         "(@id, @spawn_index, @spawn_pos_x, @spawn_pos_y, @spawn_pos_z, @spawn_rot)", param);
 
                 }
+                isNew = false;
                 return (mySQLConnector.RowsAffected > 0);
             }
             return false;
