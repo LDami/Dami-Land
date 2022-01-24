@@ -18,10 +18,7 @@ namespace SampSharpGameMode1.Commands
             [Command("join")]
             private static void JoinEvent(Player player)
             {
-                if (GameMode.eventManager.openedEvent == null)
-                    player.SendClientMessage(Color.Red, "[Event]" + Color.White + " There is no opened event !");
-                else
-                    GameMode.eventManager.openedEvent.Join(player);
+                EventCommands.JoinEvent(player);
             }
 
             [Command("leave")]
@@ -30,6 +27,15 @@ namespace SampSharpGameMode1.Commands
                 if(player.pEvent != null)
                     player.pEvent.Leave(player);
             }
+        }
+
+        [Command("join")]
+        private static void JoinEvent(Player player)
+        {
+            if (GameMode.eventManager.openedEvent == null)
+                player.SendClientMessage(Color.Red, "[Event]" + Color.White + " There is no opened event !");
+            else
+                GameMode.eventManager.openedEvent.Join(player);
         }
     }
 }

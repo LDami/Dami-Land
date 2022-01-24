@@ -40,7 +40,7 @@ namespace SampSharpGameMode1.Events.Races
             else OnLoaded(new EventLoadedEventArgs { ErrorMessage = "This race is not playable !" });
         }
 
-        public override void Start(List<EventSlot> slots)
+        public override bool Start(List<EventSlot> slots)
         {
             if (loadedRace != null && slots.Count > Race.MIN_PLAYERS_IN_RACE)
             {
@@ -49,12 +49,33 @@ namespace SampSharpGameMode1.Events.Races
                 this.Status = EventStatus.Running;
                 loadedRace.Finished += (sender, eventArgs) => { this.End(); };
                 this.OnStarted(new EventStartedOrEndedEventArgs { });
+                return true;
             }
             else
+            {
                 Logger.WriteLineAndClose($"RaceEvent.cs - RaceEvent.Start:E: The race {this.loadedRace?.Name ?? "N/A"} cannot be started");
+                return false;
+            }
         }
         public override void End()
         {
+            if(!(this.loadedRace.spectatingPlayers is null))
+            {
+                //TODO: System.InvalidOperationException : 'Collection was modified; enumeration operation may not execute.'
+                foreach (Player player in this.loadedRace.spectatingPlayers)
+                {
+                    this.loadedRace.Eject(player);
+                }
+            }
+            if (!(this.loadedRace.players is null))
+            {
+                //TODO: System.InvalidOperationException : 'Collection was modified; enumeration operation may not execute.'
+                foreach (Player player in this.loadedRace.players)
+                {
+                    this.loadedRace.Eject(player);
+                }
+            }
+            if(this.Status >= EventStatus.Waiting) Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.Red + " The " + this.Type.ToString() + " has been aborted !");
             this.Status = EventStatus.Finished;
             this.OnEnded(new EventStartedOrEndedEventArgs { });
         }

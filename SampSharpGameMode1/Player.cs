@@ -739,16 +739,6 @@ namespace SampSharpGameMode1
             }
         }
 
-        [Command("join")]
-        private void JoinCommand()
-        {
-            if (GameMode.eventManager.openedEvent != null)
-            {
-                GameMode.eventManager.openedEvent.Join(this);
-            }
-            else this.SendClientMessage(Color.Red, "There is no event to join");
-        }
-
         [Command("event")]
         private void EventCommand()
         {

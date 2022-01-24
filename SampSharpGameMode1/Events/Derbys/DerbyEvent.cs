@@ -37,7 +37,7 @@ namespace SampSharpGameMode1.Events.Derbys
             else OnLoaded(new EventLoadedEventArgs { ErrorMessage = "This race is not playable !" });
         }
 
-        public override void Start(List<EventSlot> slots)
+        public override bool Start(List<EventSlot> slots)
         {
             if (loadedRace != null && slots.Count > Derby.MIN_PLAYERS_IN_DERBY)
             {
@@ -46,6 +46,12 @@ namespace SampSharpGameMode1.Events.Derbys
                 this.Status = EventStatus.Running;
                 loadedRace.Finished += (sender, eventArgs) => { this.End(); };
                 this.OnStarted(new EventStartedOrEndedEventArgs { });
+                return true;
+            }
+            else
+            {
+                Logger.WriteLineAndClose($"DerbyEvent.cs - DerbyEvent.Start:E: The derby {this.loadedRace?.Name ?? "N/A"} cannot be started");
+                return false;
             }
         }
         public override void End()

@@ -66,7 +66,7 @@ namespace SampSharpGameMode1.Events
             Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " " + Color.PowderBlue + this.Name + Color.White + " will start soon, join it with " + Color.PowderBlue + "/event join");
             this.Status = EventStatus.Waiting;
         }
-        public abstract void Start(List<EventSlot> slots);
+        public abstract bool Start(List<EventSlot> slots);
 
         public void Join(Player player)
         {

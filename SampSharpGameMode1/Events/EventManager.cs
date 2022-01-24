@@ -95,7 +95,7 @@ namespace SampSharpGameMode1.Events
             ListDialog managerOptionDialog = new ListDialog(evt.Name, "Select", "Cancel");
             if (evt.Status == EventStatus.Loaded)
                 managerOptionDialog.AddItem("Open event to players");
-            if (evt.Status == EventStatus.Waiting)
+            else if (evt.Status == EventStatus.Waiting)
                 managerOptionDialog.AddItem("Start event");
             managerOptionDialog.AddItem(Color.Red + "Abort event");
 
@@ -104,20 +104,40 @@ namespace SampSharpGameMode1.Events
             {
                 if (eventArgs.DialogButton == DialogButton.Left)
                 {
-                    if (eventArgs.ListItem == 0) // Open / Start
+                    if(evt.Status == EventStatus.Loaded || evt.Status == EventStatus.Waiting)
                     {
-                        if (evt.Status == EventStatus.Loaded)
+                        if (eventArgs.ListItem == 0) // Open / Start
                         {
-                            evt.Open();
+                            if (evt.Status == EventStatus.Loaded)
+                            {
+                                evt.Open();
+                                player.Notificate("Event opened");
+                            }
+                            if (evt.Status == EventStatus.Waiting)
+                            {
+                                if (evt.Start(evt.Slots)) player.Notificate("Event started");
+                                else player.SendClientMessage("The event cannot be started (there are maybe no player)");
+                            }
                         }
-                        if (evt.Status == EventStatus.Waiting)
+                        else if (eventArgs.ListItem == 1) // Abort
                         {
-                            evt.Start(evt.Slots);
+                            eventList.Remove(evt);
+                            if(openedEvent == evt)
+                                openedEvent = null;
+                            evt.End();
+                            player.Notificate("Event cancelled");
                         }
                     }
-                    else if(eventArgs.ListItem == 1) // Abort
+                    else
                     {
-                        evt.End();
+                        if (eventArgs.ListItem == 0) // Abort
+                        {
+                            eventList.Remove(evt);
+                            if (openedEvent == evt)
+                                openedEvent = null;
+                            evt.End();
+                            player.Notificate("Event cancelled");
+                        }
                     }
                 }
             };
