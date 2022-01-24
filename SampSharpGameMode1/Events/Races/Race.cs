@@ -287,6 +287,7 @@ namespace SampSharpGameMode1.Events.Races
                     }
 
                     slot.Player.VirtualWorld = virtualWorld;
+                    slot.Player.ToggleControllable(true);
 
                     slot.Player.EnterCheckpoint += checkpointEventHandler;
                     slot.Player.EnterRaceCheckpoint += checkpointEventHandler;
@@ -300,7 +301,6 @@ namespace SampSharpGameMode1.Events.Races
                     BaseVehicle veh = BaseVehicle.Create(StartingVehicle.GetValueOrDefault(VehicleModelType.Bike), this.SpawnPoints[pos].Position, this.SpawnPoints[pos].Rotation, 1, 1);
                     veh.VirtualWorld = virtualWorld;
                     veh.Engine = false;
-                    veh.Doors = true;
                     veh.Died += OnPlayerVehicleDied;
                     slot.Player.PutInVehicle(veh);
 
@@ -512,7 +512,6 @@ namespace SampSharpGameMode1.Events.Races
                         veh.VirtualWorld = this.virtualWorld;
                         veh.Engine = true;
                         if (!safeRespawn) veh.Velocity = playerLastCheckpointData[player].VehicleVelocity;
-                        veh.Doors = true;
                         veh.Died += OnPlayerVehicleDied;
                         player.PutInVehicle(veh);
                     }
