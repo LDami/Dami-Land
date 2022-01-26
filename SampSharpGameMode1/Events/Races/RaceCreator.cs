@@ -240,7 +240,7 @@ namespace SampSharpGameMode1.Events.Races
                         { "@checkpoint_pos_y", kvp.Value.Position.Y },
                         { "@checkpoint_pos_z", kvp.Value.Position.Z },
                         { "@checkpoint_size", kvp.Value.Size },
-                        { "@checkpoint_type", kvp.Key == editingRace.checkpoints.Count-1 ? kvp.Value.Type + 1: kvp.Value.Type },
+                        { "@checkpoint_type", kvp.Value.Type },
                         { "@checkpoint_vehiclechange", kvp.Value.NextVehicle },
                         { "@checkpoint_nitro", kvp.Value.NextNitro }
                     };

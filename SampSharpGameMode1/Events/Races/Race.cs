@@ -463,8 +463,7 @@ namespace SampSharpGameMode1.Events.Races
             Checkpoint cp = playersData[player].nextCheckpoint;
             if (cp == this.checkpoints[this.checkpoints.Count - 1]) // If it's the last checkpoint
             {
-                //player.SetCheckpoint(cp.Position, cp.Size);
-                player.SetRaceCheckpoint(cp.Type, cp.Position, Vector3.Zero, cp.Size);
+                player.SetRaceCheckpoint(cp.Type + 1, cp.Position, Vector3.Zero, cp.Size);
             }
             else
             {
