@@ -110,28 +110,12 @@ namespace SampSharpGameMode1.Commands
                 }
             }
 
-            [Command("set start")]
-            private static void SetStart(Player player)
-            {
-                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
-                {
-                    (player.eventCreator as RaceCreator).PutStart(player.Position);
-                }
-            }
             [Command("set current")]
             private static void MoveCurrent(Player player)
             {
                 if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
                 {
                     (player.eventCreator as RaceCreator).MoveCurrent(player.Position);
-                }
-            }
-            [Command("set finish")]
-            private static void SetFinish(Player player)
-            {
-                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
-                {
-                    (player.eventCreator as RaceCreator).PutFinish(player.Position);
                 }
             }
             [Command("teleport")]
