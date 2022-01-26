@@ -61,16 +61,16 @@ namespace SampSharpGameMode1.Events.Races
         {
             if(!(this.loadedRace.spectatingPlayers is null))
             {
-                //TODO: System.InvalidOperationException : 'Collection was modified; enumeration operation may not execute.'
-                foreach (Player player in this.loadedRace.spectatingPlayers)
+                List<Player> tmpPlayerList = new List<Player>(this.loadedRace.spectatingPlayers);
+                foreach (Player player in tmpPlayerList)
                 {
                     this.loadedRace.Eject(player);
                 }
             }
             if (!(this.loadedRace.players is null))
             {
-                //TODO: System.InvalidOperationException : 'Collection was modified; enumeration operation may not execute.'
-                foreach (Player player in this.loadedRace.players)
+                List<Player> tmpPlayerList = new List<Player>(this.loadedRace.players);
+                foreach (Player player in tmpPlayerList)
                 {
                     this.loadedRace.Eject(player);
                 }
