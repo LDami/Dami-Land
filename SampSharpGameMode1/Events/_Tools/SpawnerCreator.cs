@@ -35,29 +35,15 @@ namespace SampSharpGameMode1.Events._Tools
 					v.Dispose();
 			}
 			vehicles.Clear();
-			if(!moverObject.IsDisposed) moverObject.Dispose();
-
-			this.player.CancelEdit();
-			this.player.cameraController.SetBehindPlayer();
-			this.player.cameraController.Enabled = false;
 			Quit?.Invoke(this, e);
 		}
 
 		public List<BaseVehicle> vehicles = new List<BaseVehicle>();
+		public float vehicleWidth;
 		public int world;
 		public VehicleModelType model;
 
-		private PlayerObject moverObject;
-		private const int moverObjectModelID = 19133;
-		private Vector3 moverObjectOffset = new Vector3(0.0f, 0.0f, 1.0f);
-		private float moverObjectTempZAngle;
-
 		private Player player;
-		private Stopwatch getKeysTimer;
-		/// <summary>
-		///		Number of milliseconds the script must not check for player's key in Player_Update
-		/// </summary>
-		private const int maxGetKeysTimer = 125;
 
 		private int selectionIndex;
 
@@ -65,46 +51,38 @@ namespace SampSharpGameMode1.Events._Tools
 		public SpawnerCreator(Player player, int world, VehicleModelType model, List<Vector3R> existingSpawnPoints)
 		{
 			this.player = player;
-			this.player.Update += Player_Update; // Used to detect left/right arrow
 			this.player.KeyStateChanged += Player_KeyStateChanged;
 			this.player.cameraController.Enabled = true;
 			this.player.ToggleControllable(false);
-			this.getKeysTimer = new Stopwatch();
-			getKeysTimer.Start();
 
 			this.world = world;
 			this.model = model;
-
+			this.vehicleWidth = BaseVehicle.GetModelInfo(model, VehicleModelInfoType.Size).Y;
 			vehicles = existingSpawnPoints.ConvertAll(
 				new Converter<Vector3R, BaseVehicle>(Vector3RToBaseVehicle));
 			if (vehicles.Count > 0)
 			{
 				selectionIndex = 0;
 				vehicles[selectionIndex].ChangeColor(1, 1);
-				moverObject = new PlayerObject(this.player, moverObjectModelID, vehicles[selectionIndex].Position + moverObjectOffset, vehicles[selectionIndex].Rotation);
-				moverObject.Edited += MoverObject_Edited;
 				player.SendClientMessage("Spawn Creator loaded, here is the controls:");
-				player.SendClientMessage("    Fire button (default: left mouse or CTRL):   Edit current vehicle's position");
-				player.SendClientMessage("    Handbrake button (default: Space):           Refresh editor");
 				player.SendClientMessage("    Crouch button (default: C):                  Quit editor");
-				player.SendClientMessage("    left button:                                 Go to previous vehicle");
-				player.SendClientMessage("    right button:                                Go to next vehicle");
-				player.cameraController.SetFree();
-				UpdatePlayerCamera();
+				player.SendClientMessage("    keypad 4:                                 Go to previous vehicle");
+				player.SendClientMessage("    keypad 6:                                Go to next vehicle / Add vehicle");
 				player.PutInVehicle(vehicles[selectionIndex]);
 			}
 			else
 				OnQuit(new SpawnCreatorQuitEventArgs(new List<Vector3R>()));
 		}
 
-		private void Player_Update(object sender, SampSharp.GameMode.Events.PlayerUpdateEventArgs e)
+		private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
 		{
-			if(this.getKeysTimer.ElapsedMilliseconds >= maxGetKeysTimer)
+			switch(e.NewKeys)
 			{
-				if (this.getKeysTimer.IsRunning) this.getKeysTimer.Stop();
-				((Player)sender).GetKeys(out Keys keys, out int updown, out int leftright);
-				if (leftright == -128) // Left
-				{
+				case Keys.Crouch:
+					OnQuit(new SpawnCreatorQuitEventArgs(GetSpawnPoints()));
+					break;
+
+				case Keys.AnalogLeft:
 					if (selectionIndex > 0)
 					{
 						vehicles[selectionIndex].ChangeColor(0, 0);
@@ -112,13 +90,10 @@ namespace SampSharpGameMode1.Events._Tools
 					}
 					vehicles[selectionIndex].ChangeColor(1, 1);
 					player.PutInVehicle(vehicles[selectionIndex]);
-					moverObject.Position = vehicles[selectionIndex].Position;
-					UpdatePlayerCamera();
 					player.Notificate(selectionIndex + "/" + (vehicles.Count - 1));
-					this.getKeysTimer.Restart();
-				}
-				if (leftright == 128) // Right
-				{
+					break;
+
+				case Keys.AnalogRight:
 					if (selectionIndex < vehicles.Count)
 					{
 						vehicles[selectionIndex].ChangeColor(0, 0);
@@ -126,74 +101,20 @@ namespace SampSharpGameMode1.Events._Tools
 					}
 					if (selectionIndex == vehicles.Count) // Create a new spawn position
 					{
-						vehicles.Add(BaseVehicle.Create(model, vehicles[selectionIndex - 1].Position + new Vector3(0.0, 0.0, 2.0), 0.0f, 1, 1));
+						if(selectionIndex % 2 == 0)
+						{
+							vehicles.Add(BaseVehicle.Create(model, vehicles[selectionIndex - 2].Position + new Vector3(vehicleWidth + 5.0, 0.0, 2.0), vehicles[selectionIndex - 2].Angle, 0, 0));
+						}
+						else
+						{
+							vehicles.Add(BaseVehicle.Create(model, vehicles[selectionIndex - 1].Position + new Vector3(vehicleWidth / 2, 5.0, 2.0), vehicles[selectionIndex - 1].Angle, 0, 0));
+						}
 					}
 					vehicles[selectionIndex].ChangeColor(1, 1);
 					player.PutInVehicle(vehicles[selectionIndex]);
-					moverObject.Position = vehicles[selectionIndex].Position;
-					UpdatePlayerCamera();
 					player.Notificate(selectionIndex + "/" + (vehicles.Count - 1));
-					this.getKeysTimer.Restart();
-				}
-			}
-		}
-
-		private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
-		{
-			switch(e.NewKeys)
-			{
-				case Keys.Fire:
-					if(!moverObject.IsDisposed) moverObject.Edit();
-					break;
-
-				case Keys.Handbrake:
-					moverObject.Position = vehicles[selectionIndex].Position;
-					UpdatePlayerCamera();
-					break;
-
-				case Keys.Crouch:
-					OnQuit(new SpawnCreatorQuitEventArgs(GetSpawnPoints()));
 					break;
 			}
-		}
-
-		private void MoverObject_Edited(object sender, SampSharp.GameMode.Events.EditPlayerObjectEventArgs e)
-		{
-			if (e.EditObjectResponse == EditObjectResponse.Cancel)
-			{
-			}
-			else
-			{
-				Physics.ColAndreas.FindZ_For2DCoord(e.Position.X, e.Position.Y, out float zPos);
-				float deltaZ = BaseVehicle.GetModelInfo(vehicles[selectionIndex].Model, VehicleModelInfoType.Size).Z / 2;
-				Vector3 finalPos = new Vector3(e.Position.X, e.Position.Y, zPos + deltaZ);
-				vehicles[selectionIndex].Position = finalPos;
-				moverObjectTempZAngle = e.Rotation.Z;
-				vehicles[selectionIndex].Angle = moverObjectTempZAngle;
-				player.SendClientMessage("Angle updated: " + moverObjectTempZAngle);
-
-				if(moverObject.Position.DistanceTo(finalPos) > 5.0)
-				{
-					player.SendClientMessage("too far");
-					moverObject.Dispose();
-					moverObject = new PlayerObject(this.player, moverObjectModelID, finalPos + moverObjectOffset, new Vector3(0, 0, vehicles[selectionIndex].Angle));
-					moverObject.Edited += MoverObject_Edited;
-					moverObject.Edit();
-				}
-				else
-					moverObject.Position = finalPos;
-				// TODO: Z position of moverObject is not visually updated after new Z pos found by ColAndreas
-				if (e.EditObjectResponse == EditObjectResponse.Update)
-				{
-					UpdatePlayerCamera();
-				}
-			}
-		}
-
-		private void UpdatePlayerCamera()
-		{
-			player.cameraController.MoveTo(new Vector3(vehicles[selectionIndex].Position.X + 10.0, vehicles[selectionIndex].Position.Y + 10.0, vehicles[selectionIndex].Position.Z + 10.0));
-			player.cameraController.MoveToTarget(vehicles[selectionIndex].Position);
 		}
 
 		public List<Vector3R> GetSpawnPoints()

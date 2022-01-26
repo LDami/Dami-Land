@@ -7,6 +7,7 @@ using SampSharp.GameMode.World;
 using SampSharp.Streamer;
 using SampSharp.Streamer.World;
 using SampSharpGameMode1.Display;
+using SampSharpGameMode1.Events._Tools;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -125,7 +126,6 @@ namespace SampSharpGameMode1.Events.Races
         PlayerObject moverObject;
         const int moverObjectModelID = 19133;
         Vector3 moverObjectOffset = new Vector3(0.0f, 0.0f, 1.0f);
-        float moverObjectTempZAngle;
 
 
         BaseVehicle[] spawnVehicles;
@@ -183,7 +183,12 @@ namespace SampSharpGameMode1.Events.Races
             player.EnterRaceCheckpoint += Player_EnterRaceCheckpoint;
             if (!player.InAnyVehicle)
             {
-                BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, player.Position + new Vector3(0.0, 5.0, 0.0), 0.0f, 1, 1);
+                Vector3 pos;
+                if (editingRace.checkpoints.Count > 0)
+                    pos = editingRace.checkpoints[0].Position;
+                else
+                    pos = player.Position;
+                BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, pos, 0.0f, 1, 1);
                 player.DisableRemoteVehicleCollisions(true);
                 player.PutInVehicle(veh);
             }
@@ -401,7 +406,6 @@ namespace SampSharpGameMode1.Events.Races
                                 {
                                     if (spawnIndex > 0) spawnIndex--;
                                     hud.SetSelectedIdx(spawnIndex.ToString(), editingMode);
-                                    UpdatePlayerSpawnMover();
                                     break;
                                 }
                         }
@@ -431,7 +435,6 @@ namespace SampSharpGameMode1.Events.Races
                                 {
                                     if (spawnIndex < Race.MAX_PLAYERS_IN_RACE) spawnIndex++;
                                     hud.SetSelectedIdx(spawnIndex.ToString(), editingMode);
-                                    UpdatePlayerSpawnMover();
                                     break;
                                 }
                         }
@@ -442,42 +445,6 @@ namespace SampSharpGameMode1.Events.Races
                         ShowRaceDialog();
                         break;
                     }
-                case Keys.Yes:
-					{
-                        if (editingMode == EditingMode.SpawnPos)
-                        {
-                            if(player.InAnyVehicle)
-                            {
-                                if (spawnIndex >= editingRace.SpawnPoints.Count)
-                                    editingRace.SpawnPoints.Add(new Vector3R(player.Vehicle.Position, player.Vehicle.Angle));
-                                else
-                                    editingRace.SpawnPoints[spawnIndex] = new Vector3R(player.Vehicle.Position, player.Vehicle.Angle);
-
-                                spawnVehicles[spawnIndex] = BaseVehicle.Create(
-                                    editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus),
-                                    editingRace.SpawnPoints[spawnIndex].Position,
-                                    editingRace.SpawnPoints[spawnIndex].Rotation,
-                                    0, 0
-                                );
-                                player.Notificate(spawnIndex + "/" + Race.MAX_PLAYERS_IN_RACE);
-                                spawnIndex++;
-                                if (spawnVehicles[spawnIndex] is BaseVehicle)
-                                {
-                                    if (!spawnVehicles[spawnIndex].IsDisposed)
-                                        spawnVehicles[spawnIndex].Dispose();
-                                }
-                            }
-                            else
-                            {
-                                player.Notificate(spawnIndex + "/" + Race.MAX_PLAYERS_IN_RACE);
-                                spawnIndex++;
-                                hud.SetSelectedIdx(spawnIndex.ToString(), editingMode);
-                                UpdatePlayerSpawnMover();
-                                moverObject.Edit();
-                            }
-                        }
-                        break;
-					}
             }
         }
 
@@ -551,59 +518,23 @@ namespace SampSharpGameMode1.Events.Races
                             {
                                 if(editingRace.checkpoints.Count > 0)
                                 {
-                                    checkpointIndex = 0;
-                                    UpdatePlayerCheckpoint();
+                                    List<Vector3R> spawns = new List<Vector3R>();
+                                    if (editingRace.SpawnPoints.Count == 0)
+									{
+                                        spawns.Add(new Vector3R(editingRace.checkpoints[0].Position + Vector3.UnitZ));
+									}
+                                    else
+									{
+                                        spawns = editingRace.SpawnPoints;
+									}
+                                    SpawnerCreator spawner = new SpawnerCreator(player, 0, editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus), spawns);
+									spawner.Quit += (object sender, SpawnCreatorQuitEventArgs e) => {
+                                        editingRace.SpawnPoints = e.spawnPoints;
+                                        editingMode = EditingMode.Checkpoints;
+                                        hud.SetEditingMode(editingMode);
+                                    };
                                     editingMode = EditingMode.SpawnPos;
                                     hud.SetEditingMode(editingMode);
-
-                                    player.DisableRemoteVehicleCollisions(true);
-                                    foreach (BaseVehicle veh in spawnVehicles)
-                                    {
-                                        if (veh != null)
-                                            veh.Dispose();
-                                    }
-                                    VehicleModelType vehicleType = editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus);
-                                    if (editingRace.SpawnPoints.Count == 0)
-                                    {
-                                        spawnVehicles[0] = BaseVehicle.Create(vehicleType, editingRace.checkpoints[0].Position + Vector3.UnitZ, 0.0f, 0, 0);
-                                        editingRace.SpawnPoints = new List<Vector3R>();
-                                        editingRace.SpawnPoints.Add(new Vector3R(editingRace.checkpoints[0].Position + Vector3.UnitZ, 0.0f));
-                                    }
-                                    else
-                                    {
-                                        if (editingRace.SpawnPoints[0].Position == Vector3.Zero)
-                                        {
-                                            spawnVehicles[0] = BaseVehicle.Create(vehicleType, editingRace.checkpoints[0].Position + Vector3.UnitZ, 0.0f, 0, 0);
-                                            for (int i = 0; i < editingRace.SpawnPoints.Count - 1; i++)
-                                                editingRace.SpawnPoints[i] = new Vector3R(editingRace.checkpoints[0].Position + Vector3.UnitZ, 0.0f);
-                                        }
-                                        else
-                                        {
-                                            int idx = 0;
-                                            foreach (Vector3R spawn in editingRace.SpawnPoints.ToArray())
-                                            {
-                                                if (spawn.Position != Vector3.Zero)
-                                                {
-                                                    spawnVehicles[idx] = BaseVehicle.Create(vehicleType, spawn.Position, spawn.Rotation, 0, 0);
-                                                    editingRace.SpawnPoints[idx] = new Vector3R(spawn.Position, spawn.Rotation);
-                                                    idx++;
-                                                }
-                                            }
-                                        }
-                                    }
-                                    spawnIndex = 0;
-                                    hud.SetSelectedIdx(spawnIndex.ToString(), editingMode);
-                                    player.SendClientMessage("Press Y to add spawn point");
-                                    player.SendClientMessage("Avoid placing vehicle on the checkpoint zone !");
-                                    
-                                    moverObjectTempZAngle = editingRace.SpawnPoints[spawnIndex].Rotation;
-                                    UpdatePlayerSpawnMover();
-                                    AutoUpdateSpawnMoverZAngle();
-                                    moverObject.Edit();
-                                    player.cameraController.SetFree();
-                                    player.cameraController.SetPosition(new Vector3(moverObject.Position.X + 10.0, moverObject.Position.Y + 10.0, moverObject.Position.Z + 10.0));
-                                    player.cameraController.SetTarget(moverObject.Position, true);
-                                    
                                 }
                                 else
                                 {
@@ -644,54 +575,7 @@ namespace SampSharpGameMode1.Events.Races
             }
         }
 
-        private void AutoUpdateSpawnMoverZAngle()
-		{
-            Timer t = new Timer(1000, true);
-            t.Tick += (sender, evt) =>
-            {
-                if (editingMode != EditingMode.SpawnPos || editingRace == null)
-                    t.IsRepeating = false;
-                else
-                {
-                    if(!(spawnVehicles[spawnIndex] is null))
-                    {
-                        if(Math.Abs(spawnVehicles[spawnIndex].Angle - moverObjectTempZAngle) > 2.0f)
-                        {
-                            BaseVehicle tmp = BaseVehicle.Create(spawnVehicles[spawnIndex].Model, spawnVehicles[spawnIndex].Position, moverObjectTempZAngle, 0, 0);
-                            spawnVehicles[spawnIndex].Dispose();
-                            spawnVehicles[spawnIndex] = tmp;
-                        }
-                    }
-                }
-            };
-		}
-
-		public void UpdatePlayerSpawnMover()
-        {
-            if (spawnIndex < editingRace.SpawnPoints.Count)
-            {
-                Vector3R spawnPos = editingRace.SpawnPoints[spawnIndex];
-                if (moverObject == null)
-                {
-                    moverObject = new PlayerObject(
-                        player,
-                        moverObjectModelID,
-                        spawnPos.Position + moverObjectOffset,
-                        new Vector3(0.0, 0.0, 0.0));
-
-                    moverObject.Edit();
-                    moverObject.Edited += moverObject_Edited;
-                }
-                else
-                {
-                    moverObject.Position = spawnPos.Position;
-                }
-            }
-            else
-                Logger.WriteLineAndClose($"RaceCreator.cs - RaceCreator.UpdatePlayerSpawnMover:E: Variable spawnIndex ({spawnIndex}) is greater than SpawnPoint.Count ({editingRace.SpawnPoints.Count})");
-        }
-
-        private void Player_EnterCheckpoint(object sender, EventArgs e)
+		private void Player_EnterCheckpoint(object sender, EventArgs e)
         {
             ShowCheckpointDialog();
         }
@@ -942,60 +826,12 @@ namespace SampSharpGameMode1.Events.Races
                 editingRace.checkpoints[checkpointIndex].Position = e.Position - moverObjectOffset;
                 UpdatePlayerCheckpoint();
             }
-            else if (editingMode == EditingMode.SpawnPos)
-            {
-                if(!(spawnVehicles[spawnIndex] is null)) // can be disposed by AutoUpdateSpawnMoverZAngle
-                {
-                    Physics.ColAndreas.FindZ_For2DCoord(e.Position.X, e.Position.Y, out float zPos);
-                    float deltaZ = BaseVehicle.GetModelInfo(spawnVehicles[spawnIndex].Model, VehicleModelInfoType.Size).Z / 2;
-                    Vector3 finalPos = new Vector3(e.Position.X, e.Position.Y, zPos + deltaZ);
-                    editingRace.SpawnPoints[spawnIndex] = new Vector3R(finalPos, e.Rotation.Z);
-                    spawnVehicles[spawnIndex].Position = finalPos;
-                    moverObjectTempZAngle = e.Rotation.Z;
-                    player.SendClientMessage(finalPos.ToString());
-
-                    UpdatePlayerSpawnMover();
-                    if (e.EditObjectResponse == EditObjectResponse.Final)
-                    {
-                        EditNextSpawnPointOrCreate();
-                    }
-                    else if (e.EditObjectResponse == EditObjectResponse.Update)
-                    {
-                        player.cameraController.MoveTo(finalPos + new Vector3(10.0, 10.0, 10.0));
-                        player.cameraController.MoveToTarget(finalPos);
-                    }
-                }
-            }
             if (e.EditObjectResponse == EditObjectResponse.Cancel)
             {
                 player.cameraController.SetBehindPlayer();
                 player.cameraController.Enabled = true;
             }
         }
-
-        private void EditNextSpawnPointOrCreate()
-		{
-            if((spawnIndex + 1) < spawnVehicles.Length)
-			{
-                if(spawnVehicles[spawnIndex + 1] == null) // Create
-                {
-                    editingRace.SpawnPoints.Add(new Vector3R(spawnVehicles[spawnIndex].Position + new Vector3(0.0, 0.0, 5.0), spawnVehicles[spawnIndex].Angle));
-                    VehicleModelType vehicleType = editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus);
-                    spawnVehicles[spawnIndex + 1] = BaseVehicle.Create(vehicleType, spawnVehicles[spawnIndex].Position + new Vector3(0.0, 0.0, 5.0), spawnVehicles[spawnIndex].Angle, 0, 0);
-                }
-                else
-                {
-                    spawnVehicles[spawnIndex + 1].Position = editingRace.SpawnPoints[spawnIndex + 1].Position;
-                    spawnVehicles[spawnIndex + 1].Angle = editingRace.SpawnPoints[spawnIndex + 1].Rotation;
-                }
-                spawnIndex++;
-                UpdatePlayerSpawnMover();
-                moverObject.Edit();
-                player.cameraController.MoveTo(moverObject.Position + new Vector3(10.0, 10.0, 10.0));
-                player.cameraController.MoveToTarget(moverObject.Position);
-            }
-		}
-
 
         public static Dictionary<string, string> Find(string str)
         {
