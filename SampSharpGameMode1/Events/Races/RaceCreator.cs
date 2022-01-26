@@ -144,6 +144,7 @@ namespace SampSharpGameMode1.Events.Races
             editingRace.SpawnPoints = new List<Vector3R>();
             checkpointIndex = 0;
             editingRace.StartingVehicle = VehicleModelType.Infernus;
+            spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
             isNew = true;
             this.SetPlayerInEditor();
         }
@@ -166,6 +167,7 @@ namespace SampSharpGameMode1.Events.Races
                 isNew = false;
                 checkpointIndex = 0;
                 editingRace = e.race;
+                spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
                 UpdatePlayerCheckpoint();
                 player.SendClientMessage(Color.Green, "Race #" + e.race.Id + " loaded successfully in creation mode");
                 this.SetPlayerInEditor();
@@ -210,9 +212,18 @@ namespace SampSharpGameMode1.Events.Races
                 moverObject.Dispose();
             }
             moverObject = null;
-            //TODO: cancel edit ?
-            if(player != null)
+            if(spawnVehicles != null)
+			{
+                foreach(BaseVehicle veh in spawnVehicles)
+				{
+                    if(veh != null)
+                        veh.Dispose();
+				}
+			}
+            spawnVehicles = null;
+            if (player != null)
             {
+                player.CancelEdit();
                 player.DisableCheckpoint();
                 player.DisableRaceCheckpoint();
                 player.KeyStateChanged -= Player_KeyStateChanged;
