@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SampSharpGameMode1
 {
-	class StoredVehicle : BaseVehicle
+	public class StoredVehicle : BaseVehicle
 	{
 		public int DbId { get; private set; }
 
