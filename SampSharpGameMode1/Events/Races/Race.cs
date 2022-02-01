@@ -233,6 +233,7 @@ namespace SampSharpGameMode1.Events.Races
             if(IsPlayable())
             {
                 bool isAborted = false;
+                this.isPreparing = true;
                 this.players = new List<Player>();
                 this.spectatingPlayers = new List<Player>();
                 this.virtualWorld = virtualWorld;
@@ -310,10 +311,13 @@ namespace SampSharpGameMode1.Events.Races
 
                 if (!isAborted)
                 {
-                    countdown = 3;
-                    countdownTimer = new SampSharp.GameMode.SAMP.Timer(1000, true);
-                    countdownTimer.Tick += CountdownTimer_Tick;
-                    isPreparing = true;
+                    SampSharp.GameMode.SAMP.Timer preparationTimer = new SampSharp.GameMode.SAMP.Timer(3000, false);
+                    preparationTimer.Tick += (object sender, EventArgs e) =>
+                    {
+                        countdown = 3;
+                        countdownTimer = new SampSharp.GameMode.SAMP.Timer(1000, true);
+                        countdownTimer.Tick += CountdownTimer_Tick;
+                    };
                 }
                 else
                 {
@@ -327,6 +331,7 @@ namespace SampSharpGameMode1.Events.Races
             Player spectator = (Player)sender;
             if (spectatingPlayers.Contains(spectator))
             {
+                Player target;
                 switch (e.NewKeys)
                 {
                     case Keys.Fire:
@@ -335,17 +340,25 @@ namespace SampSharpGameMode1.Events.Races
                         {
                             playersData[(Player)sender].spectatePlayerIndex = 0;
                         }
-                        spectator.SpectatePlayer(players[playersData[(Player)sender].spectatePlayerIndex]);
-                        spectator.Notificate(players[playersData[(Player)sender].spectatePlayerIndex].Name);
+                        target = players[playersData[(Player)sender].spectatePlayerIndex];
+                        if(target.InAnyVehicle)
+                            spectator.SpectateVehicle(target.Vehicle);
+                        else
+                            spectator.SpectatePlayer(target);
+                        spectator.Notificate(target.Name);
                         break;
                     case Keys.Aim:
                         playersData[(Player)sender].spectatePlayerIndex--;
                         if (playersData[(Player)sender].spectatePlayerIndex < 0)
                         {
-                            playersData[(Player)sender].spectatePlayerIndex = players.Count;
+                            playersData[(Player)sender].spectatePlayerIndex = players.Count-1;
                         }
-                        spectator.SpectatePlayer(players[playersData[(Player)sender].spectatePlayerIndex]);
-                        spectator.Notificate(players[playersData[(Player)sender].spectatePlayerIndex].Name);
+                        target = players[playersData[(Player)sender].spectatePlayerIndex];
+                        if (target.InAnyVehicle)
+                            spectator.SpectateVehicle(target.Vehicle);
+                        else
+                            spectator.SpectatePlayer(target);
+                        spectator.Notificate(target.Name);
                         break;
                 }
             }
@@ -360,7 +373,6 @@ namespace SampSharpGameMode1.Events.Races
 
         private void CountdownTimer_Tick(object sender, EventArgs e)
         {
-            countdown--;
             foreach (Player p in players)
             {
                 p.GameText(countdown.ToString(), 1000, 6);
@@ -373,6 +385,8 @@ namespace SampSharpGameMode1.Events.Races
                 countdownTimer.Dispose();
                 Start();
             }
+            else
+                countdown--;
         }
 
         public void Start()
@@ -607,14 +621,15 @@ namespace SampSharpGameMode1.Events.Races
             {
                 BaseVehicle vehicle = player.Vehicle;
                 player.RemoveFromVehicle();
-                vehicle.Dispose();
+                if(!(vehicle is null) && !vehicle.IsDisposed) vehicle.Dispose();
             }
 
             players.Remove(player);
             if(players.Count == 0) // Si on arrive dernier / si le dernier arrive
             {
                 Eject(player);
-                foreach(Player p in spectatingPlayers)
+                List<Player> tmpPlayerList = new List<Player>(spectatingPlayers);
+                foreach (Player p in tmpPlayerList)
                 {
                     Eject(p);
                 }
