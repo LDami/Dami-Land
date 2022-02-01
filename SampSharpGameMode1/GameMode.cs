@@ -28,13 +28,15 @@ namespace SampSharpGameMode1
             Console.WriteLine(" LDami's gamemode");
             Console.WriteLine("----------------------------------\n");
 
-            this.AddPlayerClass(1, 1, new Vector3(1431.6393, 1519.5398, 10.5988), 0.0f);
-            //this.AddPlayerClass(1, 1, new Vector3(-1574.7374, 2671.0313, 55.6593), 0.0f);
+            //this.AddPlayerClass(1, 1, new Vector3(1431.6393, 1519.5398, 10.5988), 0.0f); // airlv
+            this.AddPlayerClass(1, 1, new Vector3(2486.5537, 1531.3606, 10.8191), 316.3417f);
             //this.AddPlayerClass(1, 1, new Vector3(-2699.6025,2381.6885,66.8945), 0.0f);
 
             Logger.Init();
 
-            Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Connecting to MySQL Server ...");
+            Logger logger = new Logger();
+
+            logger.Write("GameMode.cs - GameMode.OnInitialized:I: Connecting to MySQL Server ... ");
             mySQLConnector = MySQLConnector.Instance();
             Boolean isConnected = false;
             while (!isConnected)
@@ -42,8 +44,8 @@ namespace SampSharpGameMode1
                 Thread.Sleep(1000);
                 if (mySQLConnector.Connect())
                 {
-                    Console.WriteLine("Done");
-                    Console.WriteLine("MySql State: " + mySQLConnector.GetState());
+                    logger.WriteLine("Done !");
+                    logger.WriteLine($"GameMode.cs - GameMode.OnInitialized:I: MySql State: {mySQLConnector.GetState()}");
                     isConnected = true;
                 }
             }
@@ -51,7 +53,8 @@ namespace SampSharpGameMode1
             //NPC npc = new NPC();
             //npc.Create();
             //Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: NPC Created !");
-            
+
+            logger.Close();
             Civilisation.PathExtractor.Load();
             //Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths", 54);
             
@@ -72,35 +75,46 @@ namespace SampSharpGameMode1
             //Civilisation.PathExtractor.CheckLinks(54);
             Civilisation.PathExtractor.ValidateNaviLink();
 
-            Console.WriteLine("Total path points: " + PathExtractor.pathPoints.Count);
-            
+            logger = new Logger();
+            logger.WriteLine($"GameMode.cs - GameMode.OnInitialized:I: Total path points: {PathExtractor.pathPoints.Count}");
 
-
-            Console.Write("GameMode.cs - GameMode.OnInitialized:I: Initializing ColAndreas ... ");
+            logger.Write("GameMode.cs - GameMode.OnInitialized:I: Initializing ColAndreas ... ");
             Physics.ColAndreas.Init();
-            Console.WriteLine("Done !");
+            logger.WriteLine("Done !");
 
             /* Loading parked vehicles */
-            Console.Write("GameMode.cs - GameMode.OnInitialized:I: Loading parked vehicles ... ");
-            mySQLConnector.OpenReader("SELECT * FROM parked_vehicles", new Dictionary<string, object>());
-            Dictionary<string, string> row = mySQLConnector.GetNextRow();
-            while(row.Count > 0)
-			{
-                BaseVehicle v = BaseVehicle.CreateStatic((VehicleModelType)Convert.ToInt32(row["model_id"]), new Vector3(
-                    (float)Convert.ToDouble(row["spawn_pos_x"]),
-                    (float)Convert.ToDouble(row["spawn_pos_y"]),
-                    (float)Convert.ToDouble(row["spawn_pos_z"])), (float)Convert.ToDouble(row["spawn_rot"]), 0, 0);
-                StoredVehicle.AddDbPool(v.Id, Convert.ToInt32(row["vehicle_id"]));
-                row = mySQLConnector.GetNextRow();
-			}
-            mySQLConnector.CloseReader();
-            Console.WriteLine("Done !");
-            Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Gamemode ready !");
-            
+            logger.Write("GameMode.cs - GameMode.OnInitialized:I: Loading parked vehicles ... ");
+            try
+            {
+                mySQLConnector.OpenReader("SELECT * FROM parked_vehicles", new Dictionary<string, object>());
+                Dictionary<string, string> row = mySQLConnector.GetNextRow();
+                while (row.Count > 0)
+                {
+                    BaseVehicle v = BaseVehicle.CreateStatic((VehicleModelType)Convert.ToInt32(row["model_id"]), new Vector3(
+                        (float)Convert.ToDouble(row["spawn_pos_x"]),
+                        (float)Convert.ToDouble(row["spawn_pos_y"]),
+                        (float)Convert.ToDouble(row["spawn_pos_z"])), (float)Convert.ToDouble(row["spawn_rot"]), 0, 0);
+                    StoredVehicle.AddDbPool(v.Id, Convert.ToInt32(row["vehicle_id"]));
+                    row = mySQLConnector.GetNextRow();
+                }
+                mySQLConnector.CloseReader();
+                logger.WriteLine("Done !");
+                logger.WriteLine($"GameMode.cs - GameMode.OnInitialized:I: {StoredVehicle.PoolSize} vehicles loaded.");
+            }
+            catch(Exception ex)
+            {
+                logger.Write("Error !");
+                logger.WriteLine("GameMode.cs - GameMode.OnInitialized:E: Error trying to load vehicles: " + ex.Message);
+            }
+            logger.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Gamemode ready !");
+
+            logger.Close();
+
+            /*
             Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Connecting to socket ... ");
             socket = new MySocketIO("127.0.0.1", 5555);
             socket.Connect();
-
+            */
             Vector3 start = new Vector3(-2615.5942, 2307.6628, 7.7573);
             //Vector3 start = new Vector3(-1574.7374, 2671.0313, 55.6593); // pos1
             //Vector3 end = new Vector3(-2672.7515, 2461.6265, 41.8708); // Long
