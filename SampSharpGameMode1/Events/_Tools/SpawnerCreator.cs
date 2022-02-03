@@ -28,13 +28,7 @@ namespace SampSharpGameMode1.Events._Tools
 
 		public virtual void OnQuit(SpawnCreatorQuitEventArgs e)
 		{
-			this.player.KeyStateChanged -= Player_KeyStateChanged;
-			foreach (BaseVehicle v in vehicles)
-			{
-				if (!v.IsDisposed)
-					v.Dispose();
-			}
-			vehicles.Clear();
+			Unload();
 			Quit?.Invoke(this, e);
 		}
 
@@ -52,8 +46,6 @@ namespace SampSharpGameMode1.Events._Tools
 		{
 			this.player = player;
 			this.player.KeyStateChanged += Player_KeyStateChanged;
-			this.player.cameraController.Enabled = true;
-			this.player.ToggleControllable(false);
 
 			this.world = world;
 			this.model = model;
@@ -65,8 +57,7 @@ namespace SampSharpGameMode1.Events._Tools
 				selectionIndex = 0;
 				vehicles[selectionIndex].ChangeColor(1, 1);
 				player.SendClientMessage("Spawn Creator loaded, here is the controls:");
-				player.SendClientMessage("    Crouch button (default: C):                  Quit editor");
-				player.SendClientMessage("    keypad 4:                                 Go to previous vehicle");
+				player.SendClientMessage("    keypad 4:                                Go to previous vehicle");
 				player.SendClientMessage("    keypad 6:                                Go to next vehicle / Add vehicle");
 				player.PutInVehicle(vehicles[selectionIndex]);
 			}
@@ -74,14 +65,21 @@ namespace SampSharpGameMode1.Events._Tools
 				OnQuit(new SpawnCreatorQuitEventArgs(new List<Vector3R>()));
 		}
 
+		public void Unload()
+		{
+			this.player.KeyStateChanged -= Player_KeyStateChanged;
+			foreach (BaseVehicle v in vehicles)
+			{
+				if (!v.IsDisposed)
+					v.Dispose();
+			}
+			vehicles.Clear();
+		}
+
 		private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
 		{
 			switch(e.NewKeys)
 			{
-				case Keys.Crouch:
-					OnQuit(new SpawnCreatorQuitEventArgs(GetSpawnPoints()));
-					break;
-
 				case Keys.AnalogLeft:
 					if (selectionIndex > 0)
 					{

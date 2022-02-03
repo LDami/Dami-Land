@@ -33,6 +33,7 @@ namespace SampSharpGameMode1.Events.Races
         public VehicleModelType? StartingVehicle { get; set; }
         public List<Vector3R> SpawnPoints { get; set; }
         public bool IsLoaded { get; private set; }
+        public string Creator { get; set; }
 
         // Common Events
 
@@ -118,6 +119,7 @@ namespace SampSharpGameMode1.Events.Races
                     {
                         this.Id = Convert.ToInt32(row["race_id"]);
                         this.Name = row["race_name"].ToString();
+                        this.Creator = row["race_creator"].ToString();
                         this.Laps = Convert.ToInt32(row["race_laps"]);
                         if (Convert.ToInt32(row["race_startvehicle"]) >= 400 && Convert.ToInt32(row["race_startvehicle"]) <= 611)
                         {

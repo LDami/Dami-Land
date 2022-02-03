@@ -123,6 +123,9 @@ namespace SampSharpGameMode1.Events.Races
         int checkpointIndex;
         int spawnIndex;
 
+        SpawnerCreator spawnerCreator;
+        BaseVehicle? playerVehicle;
+
         PlayerObject moverObject;
         const int moverObjectModelID = 19133;
         Vector3 moverObjectOffset = new Vector3(0.0f, 0.0f, 1.0f);
@@ -164,13 +167,18 @@ namespace SampSharpGameMode1.Events.Races
         {
             if(e.success)
             {
-                isNew = false;
-                checkpointIndex = 0;
-                editingRace = e.race;
-                spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
-                UpdatePlayerCheckpoint();
-                player.SendClientMessage(Color.Green, "Race #" + e.race.Id + " loaded successfully in creation mode");
-                this.SetPlayerInEditor();
+                if(e.race.Creator == player.Name)
+                {
+                    isNew = false;
+                    checkpointIndex = 0;
+                    editingRace = e.race;
+                    spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
+                    UpdatePlayerCheckpoint();
+                    player.SendClientMessage(Color.Green, "Race #" + e.race.Id + " loaded successfully in creation mode");
+                    this.SetPlayerInEditor();
+                }
+                else
+                    player.SendClientMessage(Color.Red, "You cannot edit this race because you are not it's creator");
             }
             else
                 player.SendClientMessage(Color.Red, "Error loading race (missing mandatory datas)");
@@ -224,7 +232,12 @@ namespace SampSharpGameMode1.Events.Races
                     if(veh != null)
                         veh.Dispose();
 				}
-			}
+            }
+            if (spawnerCreator != null)
+            {
+                spawnerCreator.Unload();
+                spawnerCreator = null;
+            }
             spawnVehicles = null;
             if (player != null)
             {
@@ -269,6 +282,8 @@ namespace SampSharpGameMode1.Events.Races
                     { "@id", editingRace.Id }
                 };
                 mySQLConnector.Execute("DELETE FROM race_spawn WHERE race_id=@id", param);
+                if (spawnerCreator != null)
+                    editingRace.SpawnPoints = spawnerCreator.GetSpawnPoints();
                 if (editingRace.SpawnPoints.Count == 0)
                     player.SendClientMessage("You must place at least one spawn point (submission key) !");
                 for (int i = 0; i < editingRace.SpawnPoints.Count; i++)
@@ -516,29 +531,46 @@ namespace SampSharpGameMode1.Events.Races
                             }
                         case 2: // Set/Edit spawn position
                             {
-                                if(editingRace.checkpoints.Count > 0)
+                                if(editingMode == EditingMode.Checkpoints) // Going to SpawnPos mode
                                 {
-                                    List<Vector3R> spawns = new List<Vector3R>();
-                                    if (editingRace.SpawnPoints.Count == 0)
-									{
-                                        spawns.Add(new Vector3R(editingRace.checkpoints[0].Position + Vector3.UnitZ));
-									}
-                                    else
-									{
-                                        spawns = editingRace.SpawnPoints;
-									}
-                                    SpawnerCreator spawner = new SpawnerCreator(player, 0, editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus), spawns);
-									spawner.Quit += (object sender, SpawnCreatorQuitEventArgs e) => {
-                                        editingRace.SpawnPoints = e.spawnPoints;
-                                        editingMode = EditingMode.Checkpoints;
+                                    if (editingRace.checkpoints.Count > 0)
+                                    {
+                                        List<Vector3R> spawns = new List<Vector3R>();
+                                        if (editingRace.SpawnPoints.Count == 0)
+                                        {
+                                            spawns.Add(new Vector3R(editingRace.checkpoints[0].Position + Vector3.UnitZ));
+                                        }
+                                        else
+                                        {
+                                            spawns = editingRace.SpawnPoints;
+                                        }
+                                        playerVehicle = player.Vehicle;
+                                        spawnerCreator = new SpawnerCreator(player, 0, editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus), spawns);
+                                        spawnerCreator.Quit += (object sender, SpawnCreatorQuitEventArgs e) => {
+                                            editingRace.SpawnPoints = e.spawnPoints;
+                                            editingMode = EditingMode.Checkpoints;
+                                            hud.SetEditingMode(editingMode);
+                                        };
+                                        editingMode = EditingMode.SpawnPos;
                                         hud.SetEditingMode(editingMode);
-                                    };
-                                    editingMode = EditingMode.SpawnPos;
-                                    hud.SetEditingMode(editingMode);
+                                    }
+                                    else
+                                    {
+                                        player.SendClientMessage(Color.Red, "Error, place a checkpoint first ! (/race addcp)");
+                                    }
                                 }
-                                else
+                                else if(editingMode == EditingMode.SpawnPos) // Going to Checkpoint mode
                                 {
-                                    player.SendClientMessage(Color.Red, "Error, place a checkpoint first ! (/race addcp)");
+                                    if (spawnerCreator != null)
+                                    {
+                                        editingRace.SpawnPoints = spawnerCreator.GetSpawnPoints();
+                                        spawnerCreator.Unload();
+                                        spawnerCreator = null;
+                                    }
+                                    editingMode = EditingMode.Checkpoints;
+                                    hud.SetEditingMode(editingMode);
+                                    if (playerVehicle != null)
+                                        player.PutInVehicle(playerVehicle);
                                 }
                                 break;
                             }
