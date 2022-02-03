@@ -480,6 +480,7 @@ namespace SampSharpGameMode1.Events.Races
                 raceDialog.AddItem("Edit checkpoints");
 
             raceDialog.AddItem("Laps: " + editingRace.Laps);
+            raceDialog.AddItem("Open current checkpoint menu");
 
             raceDialog.Show(player);
             raceDialog.Response += RaceDialog_Response;
@@ -605,6 +606,11 @@ namespace SampSharpGameMode1.Events.Races
                                         ShowRaceDialog();
                                     }
                                 };
+                                break;
+                            }
+                        case 4: // Open checkpoint dialog
+							{
+                                ShowCheckpointDialog();
                                 break;
                             }
                     }
