@@ -20,6 +20,8 @@ namespace SampSharpGameMode1.Commands
             [Command("create")]
             private static void CreateDerby(Player player)
             {
+                player.SendClientMessage("Derby will be available soon !");
+                return;
                 if (!(player.eventCreator is DerbyCreator))
                 {
                     player.eventCreator = new DerbyCreator(player);
@@ -30,6 +32,8 @@ namespace SampSharpGameMode1.Commands
             [Command("loadc")]
             private static void LoadDerbyCreator(Player player, int id)
             {
+                player.SendClientMessage("Derby will be available soon !");
+                return;
                 if (!(player.eventCreator is DerbyCreator))
                 {
                     player.eventCreator?.Unload();
