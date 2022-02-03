@@ -28,7 +28,7 @@ namespace SampSharpGameMode1.Commands
         }
 
         private BaseVehicle vMenuDialogVehicle;
-        [Command("vmenu")]
+        [Command("vmenu", PermissionChecker = typeof(AdminPermissionChecker))]
         private void VehicleMenuCommand(int vehicleid)
         {
             BaseVehicle vehicle = BaseVehicle.Find(vehicleid);
@@ -159,7 +159,7 @@ namespace SampSharpGameMode1.Commands
         {
             this.Position = new Vector3(1431.6393, 1519.5398, 10.5988);
         }
-        [Command("unfreeze")]
+        [Command("unfreeze", PermissionChecker = typeof(AdminPermissionChecker))]
         private void UnfreezeCommand(Player p)
         {
             p.ToggleControllable(true);

@@ -24,7 +24,10 @@ namespace SampSharpGameMode1
         private int dbid;
         public int DbId { get => dbid; set => dbid = value; }
 
-        Boolean isConnected;
+		private int adminlevel;
+		public int Adminlevel { get => adminlevel; set => adminlevel = value; }
+
+        Boolean isAuthenticated;
         int passwordEntryTries = 3;
 
         TextdrawCreator textdrawCreator;
@@ -57,7 +60,8 @@ namespace SampSharpGameMode1
 
             if(!this.IsNPC)
             {
-                isConnected = false;
+                isAuthenticated = false;
+                Adminlevel = 0;
 
                 mySQLConnector = MySQLConnector.Instance();
 
@@ -94,7 +98,8 @@ namespace SampSharpGameMode1
 
             if(!this.IsNPC)
             {
-                isConnected = false;
+                isAuthenticated = false;
+                Adminlevel = 0;
 
                 mySQLConnector = null;
                 playerMapping = null;
@@ -240,7 +245,7 @@ namespace SampSharpGameMode1
             {
                 if (e.InputText.Length < 6 || e.InputText.Length > 20)
                 {
-                    isConnected = false;
+                    isAuthenticated = false;
                     ShowSignupForm();
                 }
                 else
@@ -253,7 +258,8 @@ namespace SampSharpGameMode1
                     if (mySQLConnector.RowsAffected > 0)
                     {
                         this.Notificate("Registered");
-                        isConnected = true;
+                        isAuthenticated = true;
+                        Adminlevel = 0;
                         param = new Dictionary<string, object>();
                         param.Add("@name", this.Name);
                         mySQLConnector.OpenReader("SELECT id FROM users WHERE name=@name", param);
@@ -285,7 +291,7 @@ namespace SampSharpGameMode1
             {
                 if (e.InputText.Length == 0)
                 {
-                    isConnected = true;
+                    isAuthenticated = true;
                     //this.Spawn();
                     /*
                     isConnected = false;
@@ -296,20 +302,20 @@ namespace SampSharpGameMode1
                 {
                     Dictionary<string, object> param = new Dictionary<string, object>();
                     param.Add("@name", this.Name);
-                    mySQLConnector.OpenReader("SELECT password FROM users WHERE name=@name", param);
+                    mySQLConnector.OpenReader("SELECT password, adminlvl FROM users WHERE name=@name", param);
                     Dictionary<string, string> results = mySQLConnector.GetNextRow();
                     mySQLConnector.CloseReader();
                     if (results.Count > 0)
                     {
                         if (Password.Verify(e.InputText, results["password"]))
                         {
-                            isConnected = true;
-                            this.Notificate("Logged in");
-                            this.Spawn();
+                            isAuthenticated = true;
+                            Adminlevel = Convert.ToInt32(results["adminlvl"]);
+                            this.Notificate("Logged in" + ((Adminlevel > 0) ? " as admin" : ""));
                         }
                         else
                         {
-                            isConnected = false;
+                            isAuthenticated = false;
                             passwordEntryTries--;
                             ShowLoginForm();
                         }

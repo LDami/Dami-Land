@@ -9,7 +9,7 @@ namespace SampSharpGameMode1.Commands
         [CommandGroup("event")]
         class EventsCommandsClass
         {
-            [Command("manage")]
+            [Command("manage", PermissionChecker = typeof(AdminPermissionChecker)))]
             private static void CreateEvent(Player player)
             {
                 GameMode.eventManager.ShowManagerDialog(player);
