@@ -56,7 +56,7 @@ namespace SampSharpGameMode1.Events._Tools
 			{
 				selectionIndex = 0;
 				vehicles[selectionIndex].ChangeColor(1, 1);
-				player.SendClientMessage("Spawn Creator loaded, here is the controls:");
+				player.SendClientMessage("Spawn Creator loaded, here are the controls:");
 				player.SendClientMessage("    keypad 4:                                Go to previous vehicle");
 				player.SendClientMessage("    keypad 6:                                Go to next vehicle / Add vehicle");
 				player.PutInVehicle(vehicles[selectionIndex]);

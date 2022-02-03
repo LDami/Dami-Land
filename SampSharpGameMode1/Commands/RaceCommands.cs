@@ -22,10 +22,32 @@ namespace SampSharpGameMode1.Commands
             }
         }
 
+        [Command("race")]
+        private static void RaceCommandUsage(Player player)
+		{
+            player.SendClientMessage("Usage: /race [action]");
+            player.SendClientMessage("Actions: create, loadc, save, exit, set current, teleport, addcp, find info");
+		}
+
         [CommandGroup("race")]
         class RaceCommandsClass
         {
-            // Creator
+            [Command("help")]
+            private static void HelpRace(Player player)
+			{
+                string list =
+                    "/race create               Create a new race" + "\n" +
+                    "/race loadc [id]           Loading an existing race" + "\n" +
+                    "/race find [name]          Find an existing race" + "\n" +
+                    "/race addcp                Add a checkpoint" + "\n" +
+                    "/race set current          Move the current checkpoint to your position" + "\n" +
+                    "/race teleport             Teleport yourself to the current checkpoint" + "\n" +
+                    "/race save                 Save the editing race" + "\n" +
+                    "/race exit                 Close the editor"
+                    ;
+                MessageDialog dialog = new MessageDialog("Command list", list, "Close");
+                dialog.Show(player);
+			}
 
             [Command("create")]
             private static void CreateRace(Player player)

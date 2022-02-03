@@ -206,6 +206,11 @@ namespace SampSharpGameMode1.Events.Races
             editingMode = EditingMode.Checkpoints;
             hud.SetSelectedIdx("S", editingMode);
             hud.SetTotalCP(editingRace.checkpoints.Count - 1);
+            player.SendClientMessage("Race Creator loaded, here are the controls:");
+            player.SendClientMessage("    keypad 4:                                Go to previous checkpoint");
+            player.SendClientMessage("    keypad 6:                                Go to next checkpoint");
+            player.SendClientMessage("    submission key (2/é):                    Open Race menu");
+            player.SendClientMessage("    /race help                               Show the controls list");
         }
 
         public void Unload()
