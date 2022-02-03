@@ -75,7 +75,8 @@ namespace SampSharpGameMode1.Events.Races
                     this.loadedRace.Eject(player);
                 }
             }
-            if(this.Status >= EventStatus.Waiting) Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.Red + " The " + this.Type.ToString() + " has been aborted !");
+            if(this.Status >= EventStatus.Waiting && this.Status != EventStatus.Running)
+                Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.Red + " The " + this.Type.ToString() + " has been aborted !");
             this.Status = EventStatus.Finished;
             this.OnEnded(new EventStartedOrEndedEventArgs { });
         }
