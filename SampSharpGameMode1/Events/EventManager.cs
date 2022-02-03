@@ -65,7 +65,12 @@ namespace SampSharpGameMode1.Events
             foreach (EventType t in (EventType[])Enum.GetValues(typeof(EventType)))
             {
                 if(t.ToString() != "Unknown")
-                    createEventDialog.AddItem(t.ToString());
+                {
+                    if (t.ToString() == "Derby")
+                        createEventDialog.AddItem("Derby [Not available now]");
+                    else
+                        createEventDialog.AddItem(t.ToString());
+                }
             }
 
             createEventDialog.Show(player);
@@ -163,6 +168,8 @@ namespace SampSharpGameMode1.Events
 
         public void ShowCreateEventSearchDialog(Player player, EventType eventType, string str)
         {
+            if (eventType == EventType.Derby) return;
+
             string query = "";
             string key_id = "", key_name = "", key_creator = "";
             switch(eventType)
