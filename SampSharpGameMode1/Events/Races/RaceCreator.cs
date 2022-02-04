@@ -643,6 +643,8 @@ namespace SampSharpGameMode1.Events.Races
             if(checkpointIndex > 0)
                 cpDialog.AddItem("Edit events");
 
+            cpDialog.AddItem(Color.Red + "Delete checkpoint");
+
             cpDialog.Show(player);
             cpDialog.Response += CpDialog_Response;
         }
@@ -701,9 +703,19 @@ namespace SampSharpGameMode1.Events.Races
                             }
                         case 3: // Edit events
                             {
-                                ShowCheckpointEventDialog();
+                                if (checkpointIndex > 0)
+                                    ShowCheckpointEventDialog();
+                                else
+								{
+                                    DeleteCurrentCheckpoint();
+								}
                                 break;
                             }
+                        case 4: // Delete checkpoint
+                            {
+                                DeleteCurrentCheckpoint();
+                                break;
+							}
                     }
                 }
             }
@@ -824,7 +836,34 @@ namespace SampSharpGameMode1.Events.Races
             }
         }
 
-        public void UpdatePlayerCheckpoint()
+        public void DeleteCurrentCheckpoint()
+		{
+            MessageDialog confirm = new MessageDialog("Confirmation", "You are about to delete the current checkpoint, are you sure ?", "Delete", "Cancel");
+            confirm.Response += (object sender, SampSharp.GameMode.Events.DialogResponseEventArgs e) =>
+            {
+                if(e.DialogButton == DialogButton.Left)
+				{
+                    Dictionary<int, Checkpoint> tmp = new Dictionary<int, Checkpoint>();
+                    int index = 0;
+                    for (int i = 0; i <= editingRace.checkpoints.Count -1; i++)
+                    {
+                        if (i != checkpointIndex) // We don't add the current checkpoint to the new list
+                        {
+                            tmp.Add(index, editingRace.checkpoints[i]);
+                            index++;
+                        }
+					}
+                    editingRace.checkpoints = new Dictionary<int, Checkpoint>(tmp);
+                    // By default, the new selected CP will be the next CP, but if it's the last CP we need to select the "new" last CP
+                    if (checkpointIndex == editingRace.checkpoints.Count)
+                        checkpointIndex--;
+                    UpdatePlayerCheckpoint();
+                }
+            };
+            confirm.Show(player);
+        }
+
+		public void UpdatePlayerCheckpoint()
         {
             player.DisableCheckpoint();
             player.DisableRaceCheckpoint();
