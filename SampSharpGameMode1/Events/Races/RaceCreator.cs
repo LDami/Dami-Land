@@ -915,6 +915,28 @@ namespace SampSharpGameMode1.Events.Races
             }
         }
 
+        public static List<string> GetPlayerRaceList(Player player)
+		{
+
+            MySQLConnector mySQLConnector = MySQLConnector.Instance();
+            mySQLConnector = MySQLConnector.Instance();
+            Dictionary<string, object> param = new Dictionary<string, object>
+                {
+                    { "@name", player.Name }
+                };
+            mySQLConnector.OpenReader("SELECT race_id, race_name FROM races WHERE race_creator = @name", param);
+            List<string> result = new List<string>();
+            Dictionary<string, string> row = mySQLConnector.GetNextRow();
+            while(row.Count > 0)
+			{
+                result.Add(row["race_id"] + "_" + Display.ColorPalette.Primary.Main + row["race_name"]);
+                row = mySQLConnector.GetNextRow();
+            }
+            mySQLConnector.CloseReader();
+
+            return result;
+		}
+
         public static Dictionary<string, string> Find(string str)
         {
             MySQLConnector mySQLConnector = MySQLConnector.Instance();
@@ -931,7 +953,7 @@ namespace SampSharpGameMode1.Events.Races
 
         public static Dictionary<string, string> GetInfo(int id)
         {
-            // id, name, creator, type, number of checkpoints, zone
+            // id, name, creator, type, number of checkpoints, zone, number of spawnpoints
             Dictionary<string, string> results = new Dictionary<string, string>();
             Dictionary<string, string> row;
 
@@ -967,7 +989,7 @@ namespace SampSharpGameMode1.Events.Races
                 }
                 row = mySQLConnector.GetNextRow();
             }
-            results.Add("Nombre de checkpoints", nbrOfCheckpoints.ToString());
+            results.Add("Number of checkpoints", nbrOfCheckpoints.ToString());
             mySQLConnector.CloseReader();
 
             // On récupère la zone du premier checkpoint
@@ -975,6 +997,14 @@ namespace SampSharpGameMode1.Events.Races
             string zoneStr = zone.GetZoneName(firstCheckpointPos);
             results.Add("Zone", zoneStr);
 
+            mySQLConnector.OpenReader("SELECT COUNT(spawn_index) as nbr " +
+                "FROM race_spawn WHERE race_id = @id", param);
+            row = mySQLConnector.GetNextRow();
+            if (row.Count == 0)
+                results.Add("Number of spawn points", Color.Red + "No spawn point");
+            else
+                results.Add("Number of spawn points", row["nbr"]);
+            mySQLConnector.CloseReader();
             return results;
         }
     }

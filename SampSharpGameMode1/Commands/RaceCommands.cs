@@ -12,6 +12,7 @@ namespace SampSharpGameMode1.Commands
 {
     class RaceCommands
     {
+        /* Respawn player during race */
         [Command("rr")]
         private static void RespawnCommand(Player player)
         {
@@ -22,7 +23,57 @@ namespace SampSharpGameMode1.Commands
             }
         }
 
-        [Command("race")]
+		/* Display a list of all the player's races */
+		[Command("myraces")]
+        private static void MyRacesCommand(Player player)
+		{
+            List<string> races = RaceCreator.GetPlayerRaceList(player);
+            if (races.Count == 0)
+                player.SendClientMessage("You don't have any races");
+            else
+            {
+                ListDialog list = new ListDialog(player.Name + "'s races", "Options", "Close");
+                list.AddItems(races);
+				list.Response += (object sender, DialogResponseEventArgs e) =>
+                {
+                    ListDialog actionList = new ListDialog("Action", "Select", "Cancel");
+                    actionList.AddItem("Infos ...");
+                    actionList.AddItem("Edit");
+                    actionList.AddItem("Delete");
+                    actionList.Response += (object sender, DialogResponseEventArgs ev) =>
+                    {
+                        if(ev.DialogButton == DialogButton.Left)
+                        {
+                            try
+                            {
+                                int raceid = Convert.ToInt32(races[e.ListItem].Substring(0, races[e.ListItem].IndexOf('_')));
+                                switch(ev.ListItem)
+								{
+                                    case 0: // Infos
+                                        RaceCommandsClass.GetInfo(player, raceid);
+                                        break;
+                                    case 1: // Edit
+                                        RaceCommandsClass.LoadRaceCreator(player, raceid);
+                                        break;
+                                    case 2: // Delete
+                                        player.SendClientMessage(Color.Red + "This function is not developped yet");
+                                        break;
+								}
+                            }
+                            catch(Exception ex)
+							{
+                                Logger.WriteLineAndClose("RaceCommands.cs - RaceCommands.MyRacesCommand:E: Exception raised: " + ex.Message);
+                                player.SendClientMessage(Color.Red + "An error occured");
+							}
+                        }
+                    };
+                    actionList.Show(player);
+                };
+                list.Show(player);
+            }
+		}
+
+		[Command("race")]
         private static void RaceCommandUsage(Player player)
 		{
             player.SendClientMessage("Usage: /race [action]");
@@ -61,7 +112,7 @@ namespace SampSharpGameMode1.Commands
             }
 
             [Command("loadc")]
-            private static void LoadRaceCreator(Player player, int id)
+            public static void LoadRaceCreator(Player player, int id)
             {
                 if (!(player.eventCreator is RaceCreator))
 				{
@@ -173,7 +224,7 @@ namespace SampSharpGameMode1.Commands
             }
 
             [Command("info")]
-            private static void GetInfo(Player player, int id)
+            public static void GetInfo(Player player, int id)
             {
                 Dictionary<string, string> result = RaceCreator.GetInfo(id);
                 if (result.Count == 0)
