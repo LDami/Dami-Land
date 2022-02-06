@@ -20,7 +20,7 @@ namespace SampSharpGameMode1.Events.Races
             Give,
             Remove
         }
-        public const float DefaultSize = 3.0f;
+        public const float DefaultSize = 5.0f;
         public int Idx { get; set; }
 
         public Vector3 Position { get; set; }
