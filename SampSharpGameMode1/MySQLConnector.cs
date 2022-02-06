@@ -50,12 +50,12 @@ namespace SampSharpGameMode1
                 {
                     mySqlConnection = new MySqlConnection(connstring);
                     mySqlConnection.Open();
-                    Console.WriteLine("MySQLConnector.cs - MySQLConnector.Connect:I: Connected to the database");
+                    Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.Connect:I: Connected to the database");
                     return true;
                 }
                 catch (MySqlException e)
                 {
-                    Console.WriteLine("MySQLConnector.cs - MySQLConnector.Connect:E: Unable to connect to the database: " + e.Code);
+                    Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.Connect:E: Unable to connect to the database: " + e.Code);
                     mySqlConnection = null;
                     return false;
                 }
@@ -84,13 +84,14 @@ namespace SampSharpGameMode1
             if (!query.StartsWith("SELECT"))
             {
                 rowsAffected = 0;
+                /*
                 Console.WriteLine("MySQLConnector.cs - MySQLConnector.Execute:I: Executing query: {0}", query);
                 Console.WriteLine("With params:");
                 foreach (KeyValuePair<string, object> kvp in parameters)
                 {
                     Console.WriteLine("\t- {0} = {1}", kvp.Key, kvp.Value);
                 }
-
+                */
                 var cmd = new MySqlCommand(query, mySqlConnection);
                 foreach (KeyValuePair<string, object> kvp in parameters)
                     cmd.Parameters.AddWithValue(kvp.Key, kvp.Value);
@@ -112,6 +113,7 @@ namespace SampSharpGameMode1
             if (query.StartsWith("SELECT"))
             {
                 readRows = 0;
+                /*
                 Console.WriteLine("MySQLConnector.cs - MySQLConnector.OpenReader:I: Fetching query: {0}", query);
                 Console.WriteLine("With params:");
                 foreach (KeyValuePair<string, object> kvp in parameters)
@@ -121,7 +123,7 @@ namespace SampSharpGameMode1
                     else
                         Console.WriteLine("\t- {0} = {1}", kvp.Key, kvp.Value);
                 }
-
+                */
                 var cmd = new MySqlCommand(query, mySqlConnection);
                 foreach (KeyValuePair<string, object> kvp in parameters)
                 {
@@ -132,7 +134,7 @@ namespace SampSharpGameMode1
                 }
 
                 reader = cmd.ExecuteReader();
-                Console.WriteLine("MySQLConnector.cs - MySQLConnector.OpenReader:I: Reader has rows: {0}", reader.HasRows);
+                //Console.WriteLine("MySQLConnector.cs - MySQLConnector.OpenReader:I: Reader has rows: {0}", reader.HasRows);
             }
         }
 
@@ -141,7 +143,7 @@ namespace SampSharpGameMode1
         /// </summary>
         public void CloseReader()
         {
-            Console.WriteLine("MySQLConnector.cs - MySQLConnector.CloseReader:I: Read rows: {0}", readRows);
+            //Console.WriteLine("MySQLConnector.cs - MySQLConnector.CloseReader:I: Read rows: {0}", readRows);
             if (!reader.IsClosed)
                 reader.Close();
         }
