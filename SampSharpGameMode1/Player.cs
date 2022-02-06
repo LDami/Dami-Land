@@ -27,16 +27,20 @@ namespace SampSharpGameMode1
 		private int adminlevel;
 		public int Adminlevel { get => adminlevel; set => adminlevel = value; }
 
-        Boolean isAuthenticated;
+        //Login
+		Boolean isAuthenticated;
         int passwordEntryTries = 3;
 
+        //Vehicle
+        private HUD vehicleHUD;
+        private bool nitroEnabled;
+        public bool NitroEnabled { get => nitroEnabled; set => nitroEnabled = value; }
+
+        //Creators
         TextdrawCreator textdrawCreator;
         PlayerMapping playerMapping;
         public EventCreator eventCreator;
         public CameraController cameraController;
-
-        private HUD vehicleHUD;
-
         public Event pEvent;
 
         //NPC npc;
@@ -187,6 +191,24 @@ namespace SampSharpGameMode1
 		{
 			base.OnPickUpPickup(e);
             this.SendClientMessage("picked up !");
+		}
+
+		public override void OnKeyStateChanged(KeyStateChangedEventArgs e)
+		{
+			base.OnKeyStateChanged(e);  
+            switch(e.NewKeys)
+			{
+                case Keys.Fire:
+                    if(this.InAnyVehicle && this.NitroEnabled && !this.IsInEvent())
+					{
+                        if(VehicleComponents.Get(1010).IsCompatibleWithVehicle(this.Vehicle))
+                        {
+                            this.Vehicle.RemoveComponent(1010);
+                            this.Vehicle.AddComponent(1010);
+						}
+                    }
+                    break;
+			}
 		}
 		#endregion
 
