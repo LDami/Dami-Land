@@ -291,6 +291,7 @@ namespace SampSharpGameMode1.Events.Races
 
                     slot.Player.VirtualWorld = virtualWorld;
                     slot.Player.ToggleControllable(true);
+                    slot.Player.ResetWeapons();
 
                     slot.Player.EnterCheckpoint += checkpointEventHandler;
                     slot.Player.EnterRaceCheckpoint += checkpointEventHandler;
@@ -377,8 +378,18 @@ namespace SampSharpGameMode1.Events.Races
         {
             foreach (Player p in players)
             {
-                p.GameText(countdown.ToString(), 1000, 6);
-                p.PlaySound((countdown > 0) ? 1056 : 1057);
+                if(!p.IsDisposed)
+                {
+                    p.GameText(countdown.ToString(), 1000, 6);
+                    p.PlaySound((countdown > 0) ? 1056 : 1057);
+                }
+                else
+				{
+                    countdownTimer.IsRepeating = false;
+                    countdownTimer.IsRunning = false;
+                    countdownTimer.Dispose();
+                    Eject(p);
+                }
             }
             if(countdown == 0)
             {
@@ -660,21 +671,24 @@ namespace SampSharpGameMode1.Events.Races
             players.RemoveAll(x => x.Equals(player));
             spectatingPlayers.RemoveAll(x => x.Equals(player));
 
-            if (player.InAnyVehicle)
+            if (!player.IsDisposed)
             {
-                BaseVehicle vehicle = player.Vehicle;
-                player.RemoveFromVehicle();
-                if(vehicle != null) vehicle.Dispose();
+                if (player.InAnyVehicle)
+                {
+                    BaseVehicle vehicle = player.Vehicle;
+                    player.RemoveFromVehicle();
+                    if (vehicle != null) vehicle.Dispose();
+                }
+                player.DisableCheckpoint();
+                player.DisableRaceCheckpoint();
+                player.EnterCheckpoint -= checkpointEventHandler;
+                player.EnterRaceCheckpoint -= checkpointEventHandler;
+                player.KeyStateChanged -= OnPlayerKeyStateChanged;
+                player.ToggleSpectating(false);
+                player.VirtualWorld = 0;
+                player.pEvent = null;
+                player.Spawn();
             }
-            player.DisableCheckpoint();
-            player.DisableRaceCheckpoint();
-            player.EnterCheckpoint -= checkpointEventHandler;
-            player.EnterRaceCheckpoint -= checkpointEventHandler;
-            player.KeyStateChanged -= OnPlayerKeyStateChanged;
-            player.ToggleSpectating(false);
-            player.VirtualWorld = 0;
-            player.pEvent = null;
-            player.Spawn();
         }
     }
 }

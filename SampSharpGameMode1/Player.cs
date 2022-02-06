@@ -27,6 +27,10 @@ namespace SampSharpGameMode1
 		private int adminlevel;
 		public int Adminlevel { get => adminlevel; set => adminlevel = value; }
 
+
+        //AntiCheat
+        AntiCheat antiCheat;
+
         //Login
 		Boolean isAuthenticated;
         int passwordEntryTries = 3;
@@ -41,7 +45,10 @@ namespace SampSharpGameMode1
         PlayerMapping playerMapping;
         public EventCreator eventCreator;
         public CameraController cameraController;
+
+        //Event
         public Event pEvent;
+        public bool IsInEvent { get => !(pEvent is null); }
 
         //NPC npc;
         VehicleAI vehicleAI;
@@ -67,10 +74,12 @@ namespace SampSharpGameMode1
                 isAuthenticated = false;
                 Adminlevel = 0;
 
+                antiCheat = new AntiCheat(this);
+
                 mySQLConnector = MySQLConnector.Instance();
 
                 textdrawCreator = new TextdrawCreator(this);
-                playerMapping = new PlayerMapping(this);
+                //playerMapping = new PlayerMapping(this);
                 cameraController = new CameraController(this);
                 eventCreator = null;
                 pEvent = null;
@@ -199,7 +208,7 @@ namespace SampSharpGameMode1
             switch(e.NewKeys)
 			{
                 case Keys.Fire:
-                    if(this.InAnyVehicle && this.NitroEnabled && !this.IsInEvent())
+                    if(this.InAnyVehicle && this.NitroEnabled && !this.IsInEvent)
 					{
                         if(VehicleComponents.Get(1010).IsCompatibleWithVehicle(this.Vehicle))
                         {
@@ -216,6 +225,18 @@ namespace SampSharpGameMode1
         {
             if(!message.Equals(""))
                 this.GameText(message, 1000, 3);
+        }
+
+        public void Kick(string message)
+        {
+            this.SendClientMessage(message);
+#if !DEBUG
+            SampSharp.GameMode.SAMP.Timer kickTimer = new SampSharp.GameMode.SAMP.Timer(1000, false);
+            kickTimer.Tick += (object sender, EventArgs e) =>
+            {
+                this.Kick();
+            };
+#endif
         }
 
         /// <summary>
@@ -288,7 +309,6 @@ namespace SampSharpGameMode1
                         Dictionary<string, string> results = mySQLConnector.GetNextRow();
                         this.DbId = Convert.ToInt32(results["id"]);
                         mySQLConnector.CloseReader();
-                        this.Spawn();
                     }
                     else
                         Console.WriteLine("Player.cs - Player.PwdSignupDialog_Response:E: Unable to create player (state: " + mySQLConnector.GetState() + ")");
@@ -351,16 +371,6 @@ namespace SampSharpGameMode1
             }
             else
                 this.Kick();
-        }
-
-        /**
-         * Boolean IsInEvent
-         * Parameters: None
-         * Returns: true (if the player is in any event) ; else false
-         * */
-        public Boolean IsInEvent()
-        {
-            return false;
         }
 
         public static Player GetPlayerByDatabaseId(int id)
@@ -720,7 +730,7 @@ namespace SampSharpGameMode1
         [Command("rep")]
         private void RepCommand()
         {
-            if (!IsInEvent() && this.InAnyVehicle)
+            if (!this.IsInEvent && this.InAnyVehicle)
             {
                 this.Vehicle.Repair();
                 this.Notificate("Vehicle repaired");
