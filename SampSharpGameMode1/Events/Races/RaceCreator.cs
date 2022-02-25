@@ -375,9 +375,14 @@ namespace SampSharpGameMode1.Events.Races
         {
             try
             {
-                editingMode = EditingMode.Checkpoints;
-                editingRace.checkpoints[checkpointIndex].Position = position + new Vector3(0.0, 5.0, 0.0);
-                UpdatePlayerCheckpoint();
+                if (editingRace.checkpoints.Count > 0)
+                {
+                    editingMode = EditingMode.Checkpoints;
+                    editingRace.checkpoints[checkpointIndex].Position = position + new Vector3(0.0, 5.0, 0.0);
+                    UpdatePlayerCheckpoint();
+                }
+                else
+                    player.SendClientMessage("Create a checkpoint first with command " + ColorPalette.Primary.Main + "/race addcp");
             }
             catch (NullReferenceException e)
             {
@@ -541,6 +546,8 @@ namespace SampSharpGameMode1.Events.Races
                                 {
                                     if (editingRace.checkpoints.Count > 0)
                                     {
+                                        checkpointIndex = 0;
+                                        UpdatePlayerCheckpoint();
                                         List<Vector3R> spawns = new List<Vector3R>();
                                         if (editingRace.SpawnPoints.Count == 0)
                                         {
