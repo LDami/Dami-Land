@@ -640,16 +640,20 @@ namespace SampSharpGameMode1.Events.Races
             players.Remove(player);
             if(players.Count == 0) // Si on arrive dernier / si le dernier arrive
             {
-                Eject(player);
-                List<Player> tmpPlayerList = new List<Player>(spectatingPlayers);
-                foreach (Player p in tmpPlayerList)
+                SampSharp.GameMode.SAMP.Timer ejectionTimer = new SampSharp.GameMode.SAMP.Timer(2000, false);
+                ejectionTimer.Tick += (object sender, EventArgs e) =>
                 {
-                    Eject(p);
-                }
-                spectatingPlayers.Clear();
-                RaceEventArgs args = new RaceEventArgs();
-                args.race = this;
-                OnFinished(args);
+                    Eject(player);
+                    List<Player> tmpPlayerList = new List<Player>(spectatingPlayers);
+                    foreach (Player p in tmpPlayerList)
+                    {
+                        Eject(p);
+                    }
+                    spectatingPlayers.Clear();
+                    RaceEventArgs args = new RaceEventArgs();
+                    args.race = this;
+                    OnFinished(args);
+                };
             }
             else
             {
