@@ -185,6 +185,7 @@ namespace SampSharpGameMode1.Events.Races
         }
         private void SetPlayerInEditor()
         {
+            player.VirtualWorld = (int)VirtualWord.EventCreators + player.Id;
             player.EnablePlayerCameraTarget(true);
             player.KeyStateChanged += Player_KeyStateChanged;
             player.EnterCheckpoint += Player_EnterCheckpoint;
@@ -197,6 +198,7 @@ namespace SampSharpGameMode1.Events.Races
                 else
                     pos = player.Position;
                 BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, pos, 0.0f, 1, 1);
+                veh.VirtualWorld = player.VirtualWorld;
                 player.DisableRemoteVehicleCollisions(true);
                 player.PutInVehicle(veh);
             }
@@ -246,6 +248,7 @@ namespace SampSharpGameMode1.Events.Races
             spawnVehicles = null;
             if (player != null)
             {
+                player.VirtualWorld = 0;
                 player.CancelEdit();
                 player.DisableCheckpoint();
                 player.DisableRaceCheckpoint();
