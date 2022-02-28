@@ -41,7 +41,7 @@ namespace SampSharpGameMode1
         public bool NitroEnabled { get => nitroEnabled; set => nitroEnabled = value; }
 
         //Creators
-        TextdrawCreator textdrawCreator;
+        public TextdrawCreator textdrawCreator;
         PlayerMapping playerMapping;
         public EventCreator eventCreator;
         public CameraController cameraController;
@@ -980,97 +980,7 @@ namespace SampSharpGameMode1
                     }
                 }
             }
-            [CommandGroup("td")]
-            class TextdrawCommandClass
-            {
-                [Command("init")]
-                private static void InitTD(Player player)
-                {
-                    if (player.textdrawCreator == null)
-                        player.textdrawCreator = new TextdrawCreator(player);
-
-                    player.textdrawCreator.Init();
-                    player.SendClientMessage("Textdraw Creator initialized");
-                }
-                [Command("exit")]
-                private static void Exit(Player player)
-                {
-                    if (player.textdrawCreator != null)
-                    {
-                        player.textdrawCreator.Close();
-                    }
-                }
-                [Command("hudswitch")]
-                private static void HUDSwitch(Player player)
-                {
-                    if (player.textdrawCreator != null)
-                    {
-                        player.textdrawCreator.HUDSwitch();
-                        player.SendClientMessage("Textdraw Creator interface has been switched");
-                    }
-                    else
-                        player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
-                }
-                [Command("add box")]
-                private static void AddBox(Player player, string name)
-                {
-                    if (player.textdrawCreator != null)
-                    {
-                        player.textdrawCreator.AddBox(name);
-                        player.SendClientMessage("Textdraw created");
-                    }
-                    else
-                        player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
-                }
-                [Command("add text")]
-                private static void AddText(Player player, string name)
-                {
-                    if (player.textdrawCreator != null)
-                    {
-                        player.textdrawCreator.AddText(name);
-                        player.SendClientMessage("Textdraw created");
-                    }
-                    else
-                        player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
-                }
-                [Command("select")]
-                private static void Select(Player player, string name)
-                {
-                    if (player.textdrawCreator != null)
-                    {
-                        player.textdrawCreator.Select(name);
-                    }
-                    else
-                        player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
-                }
-                [Command("unselect")]
-                private static void Unselect(Player player)
-                {
-                    if (player.textdrawCreator != null)
-                    {
-                        player.textdrawCreator.Unselect();
-                    }
-                    else
-                        player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
-                }
-                [Command("load")]
-                private static void Load(Player player, string name)
-                {
-                    if (player.textdrawCreator != null)
-                    {
-                        player.textdrawCreator.Load(name);
-                    }
-                }
-                [Command("save")]
-                private static void Save(Player player, string name)
-                {
-                    if (player.textdrawCreator != null)
-                    {
-                        player.textdrawCreator.Save(name);
-                    }
-                }
-
-            }
+            
             /*
             [CommandGroup("npc")]
             class NPCCommandClass

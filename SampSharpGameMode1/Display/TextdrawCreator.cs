@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 
 namespace SampSharpGameMode1.Display
 {
-    class TextdrawCreator
+    public class TextdrawCreator
     {
 
         class TextdrawHUD
