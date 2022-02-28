@@ -203,23 +203,106 @@ namespace SampSharpGameMode1.Commands
             player.SendClientMessage(Display.ColorPalette.Primary.Main + targetPlayer.Name + Display.ColorPalette.Secondary.Main + " has been killed");
         }
 
-        [Command("get")]
-        private static void GetPlayercommand(Player player, Player targetPlayer)
+        [Command("vw", "virtualworld", DisplayName = "vw")]
+        private static void VWCommand(Player player, int virtualworld)
         {
-            targetPlayer.Teleport(player.Position);
+            if (player.IsInEvent)
+            {
+                player.SendClientMessage(Color.Red + "You cannot use this command during events");
+            }
+            else if (player.eventCreator != null)
+            {
+                player.SendClientMessage(Color.Red + "You cannot use this command now, close your creator first");
+            }
+            else
+            {
+                AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+                if (virtualworld == (int)VirtualWord.Main || virtualworld == (int)VirtualWord.Players + player.Id || isAdmin.Check(player))
+                {
+                    player.VirtualWorld = virtualworld;
+                    player.Notificate("World ~g~" + virtualworld, 1);
+                    if (virtualworld != (int)VirtualWord.Main)
+                        player.SendClientMessage($"You have been teleported to a new VirtualWorld ! Type {Display.ColorPalette.Primary.Main}/vw 0{Color.White} to go back to the main world");
+                }
+                else
+                    player.SendClientMessage("Invalid VirtualWorld id");
+            }
+        }
+        [Command("vw", "virtualworld", DisplayName = "vw")]
+        private static void VWCommand(Player player, VirtualWord virtualworld)
+        {
+            if (player.IsInEvent)
+            {
+                player.SendClientMessage(Color.Red + "You cannot use this command during events");
+            }
+            else if (player.eventCreator != null)
+            {
+                player.SendClientMessage(Color.Red + "You cannot use this command now, close your creator first");
+            }
+            else
+            {
+                AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+                if (Enum.IsDefined(typeof(VirtualWord), virtualworld) && virtualworld < VirtualWord.Players) // Cannot teleport to a list of virualworlds like Players or Events
+                {
+                    player.VirtualWorld = (int)virtualworld;
+                    player.Notificate("World ~g~" + virtualworld, 1);
+                    if (virtualworld != VirtualWord.Main)
+                        player.SendClientMessage($"You have been teleported to a new VirtualWorld ! Type {Display.ColorPalette.Primary.Main}/vw 0{Color.White} to go back to the main world");
+                }
+                else
+                    player.SendClientMessage("Invalid VirtualWorld id");
+            }
+        }
+
+        [Command("get")]
+        private static void GetPlayerCommand(Player player, Player targetPlayer)
+        {
+            if (player.IsInEvent)
+            {
+                player.SendClientMessage(Color.Red + "You cannot use this command during events");
+            }
+            else if (player.eventCreator != null)
+            {
+                player.SendClientMessage(Color.Red + "You cannot use this command now, close your creator first");
+            }
+            else
+            {
+                if (targetPlayer.VirtualWorld != player.VirtualWorld)
+                {
+                    targetPlayer.VirtualWorld = player.VirtualWorld;
+                    targetPlayer.SendClientMessage($"You have been teleported to a new VirtualWorld ! Type {Display.ColorPalette.Primary.Main}/vw 0{Color.White} to go back to the main world");
+                }
+                targetPlayer.Teleport(player.Position + Vector3.UnitZ);
+            }
         }
         [Command("goto")]
-        private static void GotoPlayercommand(Player player, Player targetPlayer)
+        private static void GotoPlayerCommand(Player player, Player targetPlayer)
         {
-            if (targetPlayer.VirtualWorld != player.VirtualWorld)
-			{
-                AdminPermissionChecker isAdmin = new AdminPermissionChecker();
-                if(isAdmin.Check(player))
-                    player.VirtualWorld = targetPlayer.VirtualWorld;
-                else
-                    player.SendClientMessage("The target is not on the same VirtualWord. Only Administrators can travel through VirtualWords.");
+            if (player.IsInEvent)
+            {
+                player.SendClientMessage(Color.Red + "You cannot use this command during events");
             }
-            player.Teleport(targetPlayer.Position);
+            else if (player.eventCreator != null)
+            {
+                player.SendClientMessage(Color.Red + "You cannot use this command now, close your creator first");
+            }
+            else
+            {
+                if (targetPlayer.VirtualWorld != player.VirtualWorld)
+                {
+                    AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+                    if (isAdmin.Check(player))
+                    {
+                        player.VirtualWorld = targetPlayer.VirtualWorld;
+                        player.SendClientMessage($"You have been teleported to a new VirtualWorld ! Type {Display.ColorPalette.Primary.Main}/vw 0{Color.White} to go back to the main world");
+                        player.Teleport(targetPlayer.Position + Vector3.UnitZ);
+                    }
+                    else
+                        player.SendClientMessage("The target is not on the same VirtualWorld. Only Administrators can travel through VirtualWorlds.");
+                }
+                else
+                    player.Teleport(targetPlayer.Position + Vector3.UnitZ);
+            }
         }
     }
 }

@@ -183,6 +183,7 @@ namespace SampSharpGameMode1.Commands
                 if (player.eventCreator != null)
                 {
                     player.eventCreator.Unload();
+                    player.eventCreator = null;
                 }
             }
 

@@ -221,10 +221,10 @@ namespace SampSharpGameMode1
 		}
 		#endregion
 
-		public void Notificate(string message)
+		public void Notificate(string message, int style = 3)
         {
             if(!message.Equals(""))
-                this.GameText(message, 1000, 3);
+                this.GameText(message, 1000, style);
         }
 
         public void Kick(string message)
