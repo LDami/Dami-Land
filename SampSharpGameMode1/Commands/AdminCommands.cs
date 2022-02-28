@@ -168,12 +168,12 @@ namespace SampSharpGameMode1.Commands
         {
             Logger.WriteLineAndClose(p.Name + " has been kicked by " + this.Name + ". Reason: " + reason);
             this.SendClientMessage(Display.ColorPalette.Primary.Main + p.Name + Display.ColorPalette.Secondary.Main + " has been kicked");
-            p.Kick("You has been kicked by " + this.Name + ". Reason: " + reason);
+            p.Kick("You have been kicked by " + this.Name + ". Reason: " + reason);
         }
         [Command("ban", PermissionChecker = typeof(AdminPermissionChecker))]
         private void BanCommand(Player p, string reason)
         {
-            p.SendClientMessage("You has been banned by " + this.Name + ". Reason: " + reason);
+            p.SendClientMessage("You have been banned by " + this.Name + ". Reason: " + reason);
             Logger.WriteLineAndClose(p.Name + " has been banned by " + this.Name + ". Reason: " + reason);
             this.SendClientMessage(Display.ColorPalette.Primary.Main + p.Name + Display.ColorPalette.Secondary.Main + " has been banned");
             p.Ban(reason);
