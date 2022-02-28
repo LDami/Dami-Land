@@ -7,13 +7,13 @@ using System.Text;
 
 namespace SampSharpGameMode1.Commands
 {
-	class TextdrawCreatorCommands : Player
+	class TextdrawCreatorCommands
     {
         [Command("td")]
-        private void TDCommand()
+        private static void TDCommand(Player player)
 		{
-            this.SendClientMessage("Usage: /td [action]");
-            this.SendClientMessage("Actions: init, exit, load, save, hudswitch, add box, add text, select, unselect");
+            player.SendClientMessage("Usage: /td [action]");
+            player.SendClientMessage("Actions: init, exit, load, save, hudswitch, add box, add text, select, unselect");
         }
 
         [CommandGroup("td")]

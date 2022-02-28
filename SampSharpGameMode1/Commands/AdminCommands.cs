@@ -9,16 +9,24 @@ using System.Collections.Generic;
 
 namespace SampSharpGameMode1.Commands
 {
-    class AdminCommands : Player
+    class AdminCommands
     {
         [Command("getmodel")]
-        private void GetModel(string model)
+        private static void GetModel(Player player, string model)
         {
-            SendClientMessage("Found model: " + Utils.GetVehicleModelType(model).ToString());
+            player.SendClientMessage("Found model: " + Utils.GetVehicleModelType(model).ToString());
         }
 
+#if DEBUG
+        [Command("admin")]
+        private static void AdminTmp(Player player)
+        {
+            player.Adminlevel = 1;
+            player.SendClientMessage("You are admin now");
+        }
+#endif
         [Command("acmds")]
-        private void AdminCommandsListCommand()
+        private static void AdminCommandsListCommand(Player player)
 		{
             string cmdList = 
                 $"{Display.ColorPalette.Primary.Main}/vmenu [vehicleid] {Display.ColorPalette.Primary.Darken} Open Vehicle menu\n" +
@@ -28,12 +36,12 @@ namespace SampSharpGameMode1.Commands
                 $"{Display.ColorPalette.Primary.Main}/get [player] {Display.ColorPalette.Primary.Darken} Teleport player to your position\n" +
                 $"{Display.ColorPalette.Primary.Main}/goto [player] {Display.ColorPalette.Primary.Darken} Teleport yourself to player\n"
                 ;
-            new MessageDialog("Admin command list", cmdList, "Close").Show(this);
+            new MessageDialog("Admin command list", cmdList, "Close").Show(player);
 		}
 
-        private BaseVehicle vMenuDialogVehicle;
+        private static BaseVehicle vMenuDialogVehicle;
         [Command("vmenu", PermissionChecker = typeof(AdminPermissionChecker))]
-        private void VehicleMenuCommand(int vehicleid)
+        private static void VehicleMenuCommand(Player player, int vehicleid)
         {
             BaseVehicle vehicle = BaseVehicle.Find(vehicleid);
 
@@ -48,164 +56,170 @@ namespace SampSharpGameMode1.Commands
                 menu.AddItem(vehicle.Doors ? $"Doors: {Color.Red}locked" : $"Doors: {Color.Green}unlocked");
                 menu.AddItem(vehicle.HasTrailer ? "Detach trailer" : "Attach trailer");
 				menu.Response += VehicleMenu_Response;
-                menu.Show(this);
+                menu.Show(player);
             }
 		}
 
-        private void VehicleMenu_Response(object sender, SampSharp.GameMode.Events.DialogResponseEventArgs e)
+        private static void VehicleMenu_Response(object sender, SampSharp.GameMode.Events.DialogResponseEventArgs e)
         {
-            if (e.Player.Equals(this))
+            if (e.DialogButton == DialogButton.Left)
             {
-                if (e.DialogButton == DialogButton.Left)
+                Player player = ((Player)e.Player);
+                switch (e.ListItem)
                 {
-                    switch (e.ListItem)
-                    {
-                        case 0: // Eject driver
-                            vMenuDialogVehicle.Driver?.RemoveFromVehicle();
-                            this.Notificate("Driver ejected");
-                            break;
-                        case 1: // Respawn
-                            vMenuDialogVehicle.Respawn();
-                            this.Notificate("Vehicle respawned");
-                            break;
-                        case 2: // Destroy
-                            vMenuDialogVehicle.Driver?.RemoveFromVehicle();
-                            foreach (BasePlayer p in vMenuDialogVehicle.Passengers)
-                                p?.RemoveFromVehicle();
-                            vMenuDialogVehicle.Dispose();
-                            this.Notificate("Vehicle destroyed");
-                            break;
-                        case 3: // Park/Unpark
-                            StoredVehicle veh = StoredVehicle.GetStoredVehicle(vMenuDialogVehicle.Id);
-                            MySQLConnector mySQLConnector = MySQLConnector.Instance();
-                            Dictionary<string, object> param = new Dictionary<string, object>();
-                            if (veh is null) // Park
+                    case 0: // Eject driver
+                        vMenuDialogVehicle.Driver?.RemoveFromVehicle();
+                        player.Notificate("Driver ejected");
+                        break;
+                    case 1: // Respawn
+                        vMenuDialogVehicle.Respawn();
+                        player.Notificate("Vehicle respawned");
+                        break;
+                    case 2: // Destroy
+                        vMenuDialogVehicle.Driver?.RemoveFromVehicle();
+                        foreach (BasePlayer p in vMenuDialogVehicle.Passengers)
+                            p?.RemoveFromVehicle();
+                        vMenuDialogVehicle.Dispose();
+                        player.Notificate("Vehicle destroyed");
+                        break;
+                    case 3: // Park/Unpark
+                        StoredVehicle veh = StoredVehicle.GetStoredVehicle(vMenuDialogVehicle.Id);
+                        MySQLConnector mySQLConnector = MySQLConnector.Instance();
+                        Dictionary<string, object> param = new Dictionary<string, object>();
+                        if (veh is null) // Park
+                        {
+                            param.Add("@model_id", vMenuDialogVehicle.Model);
+                            param.Add("@posx", vMenuDialogVehicle.Position.X);
+                            param.Add("@posy", vMenuDialogVehicle.Position.Y);
+                            param.Add("@posz", vMenuDialogVehicle.Position.Z);
+                            param.Add("@rot", vMenuDialogVehicle.Angle);
+                            param.Add("@color1", null);
+                            param.Add("@color2", null);
+                            int id = (int)mySQLConnector.Execute("INSERT INTO parked_vehicles (model_id, spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot, color1, color2) VALUES (@model_id, @posx, @posy, @posz, @rot, @color1, @color2)", param);
+                            StoredVehicle.AddDbPool(vMenuDialogVehicle.Id, id);
+                            player.Notificate("Vehicle parked");
+                        }
+                        else
+                        {
+                            param.Add("@vehicle_id", veh.DbId);
+                            mySQLConnector.Execute("DELETE FROM parked_vehicles WHERE vehicle_id=@vehicle_id", param);
+                            StoredVehicle.RemoveFromDbPool(vMenuDialogVehicle.Id);
+                            player.Notificate("Vehicle unparked");
+                        }
+                        break;
+                    case 4: // Doors
+                        if(vMenuDialogVehicle.Doors)
+                        {
+                            vMenuDialogVehicle.Doors = false;
+                            player.Notificate("Vehicle's doors opened");
+                        }
+                        else
+                        {
+                            vMenuDialogVehicle.Doors = true;
+                            player.Notificate("Vehicle's doors locked");
+                        }
+                        break;
+                    case 5: // Trailer
+                        if(vMenuDialogVehicle.HasTrailer)
+						{
+                            vMenuDialogVehicle.Trailer = null;
+						}
+                        else
+						{
+                            InputDialog trailerIdMenu = new InputDialog("Attach trailer", "Enter trailer ID", false, "Attach", "Cancel");
+                            trailerIdMenu.Response += (object sender, SampSharp.GameMode.Events.DialogResponseEventArgs e) =>
                             {
-                                param.Add("@model_id", vMenuDialogVehicle.Model);
-                                param.Add("@posx", vMenuDialogVehicle.Position.X);
-                                param.Add("@posy", vMenuDialogVehicle.Position.Y);
-                                param.Add("@posz", vMenuDialogVehicle.Position.Z);
-                                param.Add("@rot", vMenuDialogVehicle.Angle);
-                                param.Add("@color1", null);
-                                param.Add("@color2", null);
-                                int id = (int)mySQLConnector.Execute("INSERT INTO parked_vehicles (model_id, spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot, color1, color2) VALUES (@model_id, @posx, @posy, @posz, @rot, @color1, @color2)", param);
-                                StoredVehicle.AddDbPool(vMenuDialogVehicle.Id, id);
-                                this.Notificate("Vehicle parked");
-                            }
-                            else
-                            {
-                                param.Add("@vehicle_id", veh.DbId);
-                                mySQLConnector.Execute("DELETE FROM parked_vehicles WHERE vehicle_id=@vehicle_id", param);
-                                StoredVehicle.RemoveFromDbPool(vMenuDialogVehicle.Id);
-                                this.Notificate("Vehicle unparked");
-                            }
-                            break;
-                        case 4: // Doors
-                            if(vMenuDialogVehicle.Doors)
-                            {
-                                vMenuDialogVehicle.Doors = false;
-                                this.Notificate("Vehicle's doors opened");
-                            }
-                            else
-                            {
-                                vMenuDialogVehicle.Doors = true;
-                                this.Notificate("Vehicle's doors locked");
-                            }
-                            break;
-                        case 5: // Trailer
-                            if(vMenuDialogVehicle.HasTrailer)
-							{
-                                vMenuDialogVehicle.Trailer = null;
-							}
-                            else
-							{
-                                InputDialog trailerIdMenu = new InputDialog("Attach trailer", "Enter trailer ID", false, "Attach", "Cancel");
-                                trailerIdMenu.Response += (object sender, SampSharp.GameMode.Events.DialogResponseEventArgs e) =>
+                                if(e.DialogButton == DialogButton.Left)
                                 {
-                                    if(e.DialogButton == DialogButton.Left)
+                                    try
                                     {
-                                        try
+                                        int id = int.Parse(e.InputText);
+                                        BaseVehicle foundV = BaseVehicle.Find(id);
+                                        if (foundV is null)
                                         {
-                                            int id = int.Parse(e.InputText);
-                                            BaseVehicle foundV = BaseVehicle.Find(id);
-                                            if (foundV is null)
+                                            trailerIdMenu.Message = "Invalid Id !";
+                                            trailerIdMenu.Show(player);
+                                        }
+                                        else
+										{
+                                            if (foundV.Driver is null)
                                             {
-                                                trailerIdMenu.Message = "Invalid Id !";
-                                                trailerIdMenu.Show(this);
+                                                vMenuDialogVehicle.Trailer = foundV;
+                                                player.Notificate("Vehicles attached");
                                             }
                                             else
-											{
-                                                if (foundV.Driver is null)
-                                                {
-                                                    vMenuDialogVehicle.Trailer = foundV;
-                                                    this.Notificate("Vehicles attached");
-                                                }
-                                                else
-                                                    this.SendClientMessage("You cannot attach an occupied vehicle !");
-                                            }
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            trailerIdMenu.Show(this);
+                                                player.SendClientMessage("You cannot attach an occupied vehicle !");
                                         }
                                     }
-                                };
-                                trailerIdMenu.Show(this);
-                            }
-                            break;
-                    }
+                                    catch (Exception ex)
+                                    {
+                                        trailerIdMenu.Show(player);
+                                    }
+                                }
+                            };
+                            trailerIdMenu.Show(player);
+                        }
+                        break;
                 }
             }
         }
 
         [Command("tp")]
-        private void TP()
+        private static void TP(Player player)
         {
-            this.Position = new Vector3(1431.6393, 1519.5398, 10.5988);
+            player.Position = new Vector3(1431.6393, 1519.5398, 10.5988);
         }
         [Command("kick", PermissionChecker = typeof(AdminPermissionChecker))]
-        private void KickCommand(Player p, string reason = "No reason")
+        private static void KickCommand(Player player, Player targetPlayer, string reason = "No reason")
         {
-            Logger.WriteLineAndClose(p.Name + " has been kicked by " + this.Name + ". Reason: " + reason);
-            this.SendClientMessage(Display.ColorPalette.Primary.Main + p.Name + Display.ColorPalette.Secondary.Main + " has been kicked");
-            p.Kick("You have been kicked by " + this.Name + ". Reason: " + reason);
+            Logger.WriteLineAndClose(targetPlayer.Name + " has been kicked by " + player.Name + ". Reason: " + reason);
+            player.SendClientMessage(Display.ColorPalette.Primary.Main + targetPlayer.Name + Display.ColorPalette.Secondary.Main + " has been kicked");
+            targetPlayer.Kick("You have been kicked by " + player.Name + ". Reason: " + reason);
         }
         [Command("ban", PermissionChecker = typeof(AdminPermissionChecker))]
-        private void BanCommand(Player p, string reason)
+        private static void BanCommand(Player player, Player targetPlayer, string reason)
         {
-            p.SendClientMessage("You have been banned by " + this.Name + ". Reason: " + reason);
-            Logger.WriteLineAndClose(p.Name + " has been banned by " + this.Name + ". Reason: " + reason);
-            this.SendClientMessage(Display.ColorPalette.Primary.Main + p.Name + Display.ColorPalette.Secondary.Main + " has been banned");
-            p.Ban(reason);
+            targetPlayer.SendClientMessage("You have been banned by " + player.Name + ". Reason: " + reason);
+            Logger.WriteLineAndClose(targetPlayer.Name + " has been banned by " + player.Name + ". Reason: " + reason);
+            player.SendClientMessage(Display.ColorPalette.Primary.Main + targetPlayer.Name + Display.ColorPalette.Secondary.Main + " has been banned");
+            targetPlayer.Ban(reason);
         }
         [Command("unfreeze", PermissionChecker = typeof(AdminPermissionChecker))]
-        private void UnfreezeCommand(Player p)
+        private static void UnfreezeCommand(Player player, Player targetPlayer)
         {
-            p.ToggleControllable(true);
-            this.SendClientMessage(Display.ColorPalette.Primary.Main + p.Name + Display.ColorPalette.Secondary.Main + " has been unfreezed");
+            targetPlayer.ToggleControllable(true);
+            player.SendClientMessage(Display.ColorPalette.Primary.Main + targetPlayer.Name + Display.ColorPalette.Secondary.Main + " has been unfreezed");
         }
         [Command("freeze", PermissionChecker = typeof(AdminPermissionChecker))]
-        private void FreezeCommand(Player p)
+        private static void FreezeCommand(Player player, Player targetPlayer)
         {
-            p.ToggleControllable(false);
-            this.SendClientMessage(Display.ColorPalette.Primary.Main + p.Name + Display.ColorPalette.Secondary.Main + " has been freezed");
+            targetPlayer.ToggleControllable(false);
+            player.SendClientMessage(Display.ColorPalette.Primary.Main + targetPlayer.Name + Display.ColorPalette.Secondary.Main + " has been freezed");
         }
         [Command("kill", PermissionChecker = typeof(AdminPermissionChecker))]
-        private void KillCommand(Player p)
+        private static void KillCommand(Player player, Player targetPlayer)
         {
-            p.Health = 0;
-            this.SendClientMessage(Display.ColorPalette.Primary.Main + p.Name + Display.ColorPalette.Secondary.Main + " has been killed");
+            targetPlayer.Health = 0;
+            player.SendClientMessage(Display.ColorPalette.Primary.Main + targetPlayer.Name + Display.ColorPalette.Secondary.Main + " has been killed");
         }
 
         [Command("get")]
-        private void GetPlayercommand(Player p)
+        private static void GetPlayercommand(Player player, Player targetPlayer)
         {
-            p.Teleport(this.Position);
+            targetPlayer.Teleport(player.Position);
         }
         [Command("goto")]
-        private void GotoPlayercommand(Player p)
+        private static void GotoPlayercommand(Player player, Player targetPlayer)
         {
-            this.Teleport(p.Position);
+            if (targetPlayer.VirtualWorld != player.VirtualWorld)
+			{
+                AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+                if(isAdmin.Check(player))
+                    player.VirtualWorld = targetPlayer.VirtualWorld;
+                else
+                    player.SendClientMessage("The target is not on the same VirtualWord. Only Administrators can travel through VirtualWords.");
+            }
+            player.Teleport(targetPlayer.Position);
         }
     }
 }
