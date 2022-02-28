@@ -36,38 +36,41 @@ namespace SampSharpGameMode1.Commands
                 list.AddItems(races);
 				list.Response += (object sender, DialogResponseEventArgs e) =>
                 {
-                    ListDialog actionList = new ListDialog("Action", "Select", "Cancel");
-                    actionList.AddItem("Infos ...");
-                    actionList.AddItem("Edit");
-                    actionList.AddItem("Delete");
-                    actionList.Response += (object sender, DialogResponseEventArgs ev) =>
+                    if(e.DialogButton == DialogButton.Left)
                     {
-                        if(ev.DialogButton == DialogButton.Left)
+                        ListDialog actionList = new ListDialog("Action", "Select", "Cancel");
+                        actionList.AddItem("Infos ...");
+                        actionList.AddItem("Edit");
+                        actionList.AddItem("Delete");
+                        actionList.Response += (object sender, DialogResponseEventArgs ev) =>
                         {
-                            try
+                            if (ev.DialogButton == DialogButton.Left)
                             {
-                                int raceid = Convert.ToInt32(races[e.ListItem].Substring(0, races[e.ListItem].IndexOf('_')));
-                                switch(ev.ListItem)
-								{
-                                    case 0: // Infos
-                                        RaceCommandsClass.GetInfo(player, raceid);
-                                        break;
-                                    case 1: // Edit
-                                        RaceCommandsClass.LoadRaceCreator(player, raceid);
-                                        break;
-                                    case 2: // Delete
-                                        player.SendClientMessage(Color.Red + "This function is not developped yet");
-                                        break;
-								}
+                                try
+                                {
+                                    int raceid = Convert.ToInt32(races[e.ListItem].Substring(0, races[e.ListItem].IndexOf('_')));
+                                    switch (ev.ListItem)
+                                    {
+                                        case 0: // Infos
+                                            RaceCommandsClass.GetInfo(player, raceid);
+                                            break;
+                                        case 1: // Edit
+                                            RaceCommandsClass.LoadRaceCreator(player, raceid);
+                                            break;
+                                        case 2: // Delete
+                                            player.SendClientMessage(Color.Red + "This function is not developped yet");
+                                            break;
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Logger.WriteLineAndClose("RaceCommands.cs - RaceCommands.MyRacesCommand:E: Exception raised: " + ex.Message);
+                                    player.SendClientMessage(Color.Red + "An error occured");
+                                }
                             }
-                            catch(Exception ex)
-							{
-                                Logger.WriteLineAndClose("RaceCommands.cs - RaceCommands.MyRacesCommand:E: Exception raised: " + ex.Message);
-                                player.SendClientMessage(Color.Red + "An error occured");
-							}
-                        }
-                    };
-                    actionList.Show(player);
+                        };
+                        actionList.Show(player);
+                    }
                 };
                 list.Show(player);
             }
