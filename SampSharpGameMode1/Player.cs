@@ -685,19 +685,13 @@ namespace SampSharpGameMode1
             else
                 Console.WriteLine("vehicleAI is null !");
         }
-        [Command("put")]
-        private void PutCommand()
-        {
-            if (vehicleAI != null)
-                vehicleAI.PutNPCInVehicle();
-            else
-                Console.WriteLine("vehicleAI is null !");
-        }
-        [Command("putme")]
-        private void PutMeCommand()
-        {
-            this.PutInVehicle(BaseVehicle.Find(VehicleAI.vehicleID));
-        }
+
+        [Command("map")]
+        private void MapCommand(string keywords)
+		{
+            MapCreator mapCreator = new MapCreator(this);
+            //mapCreator.ShowMapList(keywords);
+		}
 
         [Command("select-td")]
         private void SelectTDCommand()
