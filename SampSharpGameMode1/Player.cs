@@ -651,7 +651,7 @@ namespace SampSharpGameMode1
         [Command("create-ai")]
         private void CreateAICommand()
         {
-            vehicleAI = new VehicleAI(VehicleModelType.Infernus, this.Position + new Vector3(5.0, 0.0, 0.0), 0.0f);
+            //vehicleAI = new VehicleAI(VehicleModelType.Infernus, this.Position + new Vector3(5.0, 0.0, 0.0), 0.0f);
         }
         [Command("followme")]
         private void FollowMeCommand()

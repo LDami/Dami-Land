@@ -30,6 +30,7 @@ namespace SampSharpGameMode1.Civilisation
         TextLabel lbl, lbl2;
         public VehicleAI(VehicleModelType vehicleModel, Vector3 position, float angle)
         {
+            /*
             NPC npcInstance = Server.ConnectNPC("stayinvehicle", "npcidle");
             npcInstance.Connected += (sender, args) =>
             {
@@ -52,6 +53,7 @@ namespace SampSharpGameMode1.Civilisation
 
                 Console.WriteLine("VehicleAI.cs - VehicleAI.__:E: NPC is connected !");
             };
+            */
         }
 
         private void Npc_Spawned(object sender, SampSharp.GameMode.Events.SpawnEventArgs e)
