@@ -90,7 +90,7 @@ namespace SampSharpGameMode1
                 Dictionary<string, string> row = mySQLConnector.GetNextRow();
                 while (row.Count > 0)
                 {
-                    BaseVehicle v = BaseVehicle.CreateStatic((VehicleModelType)Convert.ToInt32(row["model_id"]), new Vector3(
+                    BaseVehicle v = StoredVehicle.CreateStatic((VehicleModelType)Convert.ToInt32(row["model_id"]), new Vector3(
                         (float)Convert.ToDouble(row["spawn_pos_x"]),
                         (float)Convert.ToDouble(row["spawn_pos_y"]),
                         (float)Convert.ToDouble(row["spawn_pos_z"])), (float)Convert.ToDouble(row["spawn_rot"]), 0, 0);
@@ -99,7 +99,7 @@ namespace SampSharpGameMode1
                 }
                 mySQLConnector.CloseReader();
                 logger.WriteLine("Done !");
-                logger.WriteLine($"GameMode.cs - GameMode.OnInitialized:I: {StoredVehicle.PoolSize} vehicles loaded.");
+                logger.WriteLine($"GameMode.cs - GameMode.OnInitialized:I: {StoredVehicle.GetPoolSize()} vehicles loaded.");
             }
             catch(Exception ex)
             {

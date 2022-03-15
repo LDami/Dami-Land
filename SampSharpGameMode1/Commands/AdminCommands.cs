@@ -52,7 +52,7 @@ namespace SampSharpGameMode1.Commands
                 menu.AddItem("Eject driver");
                 menu.AddItem("Respawn");
                 menu.AddItem("Destroy");
-                menu.AddItem(StoredVehicle.GetStoredVehicle(vehicle.Id) is null ? "Park" : "Unpark"); // Save vehicle spawn in database
+                menu.AddItem(StoredVehicle.GetVehicleDbId(vehicle.Id) == -1 ? "Park" : "Unpark"); // Save vehicle spawn in database
                 menu.AddItem(vehicle.Doors ? $"Doors: {Color.Red}locked" : $"Doors: {Color.Green}unlocked");
                 menu.AddItem(vehicle.HasTrailer ? "Detach trailer" : "Attach trailer");
 				menu.Response += VehicleMenu_Response;
@@ -83,10 +83,10 @@ namespace SampSharpGameMode1.Commands
                         player.Notificate("Vehicle destroyed");
                         break;
                     case 3: // Park/Unpark
-                        StoredVehicle veh = StoredVehicle.GetStoredVehicle(vMenuDialogVehicle.Id);
+                        int vDbId = StoredVehicle.GetVehicleDbId(vMenuDialogVehicle.Id);
                         MySQLConnector mySQLConnector = MySQLConnector.Instance();
                         Dictionary<string, object> param = new Dictionary<string, object>();
-                        if (veh is null) // Park
+                        if (vDbId == -1) // Park
                         {
                             param.Add("@model_id", vMenuDialogVehicle.Model);
                             param.Add("@posx", vMenuDialogVehicle.Position.X);
@@ -101,7 +101,7 @@ namespace SampSharpGameMode1.Commands
                         }
                         else
                         {
-                            param.Add("@vehicle_id", veh.DbId);
+                            param.Add("@vehicle_id", vDbId);
                             mySQLConnector.Execute("DELETE FROM parked_vehicles WHERE vehicle_id=@vehicle_id", param);
                             StoredVehicle.RemoveFromDbPool(vMenuDialogVehicle.Id);
                             player.Notificate("Vehicle unparked");

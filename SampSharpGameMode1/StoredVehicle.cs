@@ -1,4 +1,6 @@
-﻿using SampSharp.GameMode.World;
+﻿using SampSharp.GameMode;
+using SampSharp.GameMode.Definitions;
+using SampSharp.GameMode.World;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,27 +12,26 @@ namespace SampSharpGameMode1
 		public int DbId { get; private set; }
 
 
-		private static Dictionary<int, StoredVehicle> pool = new Dictionary<int, StoredVehicle>(); // pool[vehicleid] = dbid
+		private static readonly Dictionary<int, int> dbDict = new Dictionary<int, int>(); // pool[vehicleid] = dbid
+
 		public static void AddDbPool(int vehicleid, int dbid)
 		{
-			StoredVehicle veh = new StoredVehicle();
-			veh.DbId = dbid;
-			pool[vehicleid] = veh;
+			dbDict[vehicleid] = dbid;
 		}
 		public static void RemoveFromDbPool(int vehicleid)
 		{
-			pool.Remove(vehicleid);
+			dbDict.Remove(vehicleid);
 		}
-		public static StoredVehicle GetStoredVehicle(int vehicleid)
+		public static int GetVehicleDbId(int vehicleid)
 		{
-			try
-			{
-				return pool[vehicleid] ?? null;
-			}
-			catch(KeyNotFoundException e)
-			{
-				return null;
-			}
+			if (dbDict.ContainsKey(vehicleid))
+				return dbDict[vehicleid];
+			else
+				return -1;
+		}
+		public static int GetPoolSize()
+		{
+			return dbDict.Count;
 		}
 	}
 }
