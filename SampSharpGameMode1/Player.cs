@@ -60,14 +60,17 @@ namespace SampSharpGameMode1
 
         private int viewAreaID = -1;
 
-        #region Overrides of BasePlayer
+		#region Overrides of BasePlayer
         public override void OnConnected(EventArgs e)
         {
             base.OnConnected(e);
 
             Console.WriteLine("Players.cs - Player.OnConnected:I: New player connected: [" + this.Id + "] " + this.Name);
 
-            this.SetSpawnInfo(1, 1, new Vector3(1431.6393, 1519.5398, 10.5988), 0.0f);
+            //this.SetSpawnInfo(1, 1, new Vector3(1431.6393, 1519.5398, 10.5988), 0.0f);
+            this.SendClientMessage("Welcome to " + ColorPalette.Secondary.Main + "Dami's Land");
+            this.SendClientMessage(ColorPalette.Primary.Main + "This server is still in beta, type /beta to see what is coming soon !");
+            this.SendClientMessage(ColorPalette.Primary.Main + "You can create your own race with /race, and play it with other players with /event !");
 
             if(!this.IsNPC)
             {
@@ -620,6 +623,43 @@ namespace SampSharpGameMode1
                 }
                 lastNode = node;
             }
+        }
+
+        [Command("beta")]
+        private void BetaCommand()
+        {
+            this.SendClientMessage(ColorPalette.Secondary.Main + "These features are still in development and will be ready to test soon:");
+            this.SendClientMessage(ColorPalette.Primary.Main + "Derby creator and Derby games (need to implement Map creator first)");
+            this.SendClientMessage(ColorPalette.Primary.Main + "AI / NPC to play with !");
+            this.SendClientMessage(ColorPalette.Secondary.Main + "Tell us what you want to be implemented here :)");
+        }
+
+        [CommandGroup("time")]
+        class TimeCommands
+        {
+            [Command(IsGroupHelp = true)]
+            private static void TimeCommand(BasePlayer player)
+            {
+                player.SendClientMessage($"Usage: {ColorPalette.Secondary.Main}/time [option]");
+                player.SendClientMessage($"Options: {ColorPalette.Secondary.Main}day, night, set [hour]");
+            }
+            [Command("day")]
+            private static void DayCommand(BasePlayer player)
+            {
+                player.SetTime(12, 0);
+            }
+
+            [Command("night")]
+            private static void NightCommand(BasePlayer player)
+            {
+                player.SetTime(0, 0);
+            }
+            
+            [Command("set")]
+            private static void SetCommand(BasePlayer player, int hour)
+			{
+                player.SetTime(hour % 24, 0); 
+			}
         }
 
         [Command("test")]
