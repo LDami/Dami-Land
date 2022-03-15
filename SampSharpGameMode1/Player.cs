@@ -87,6 +87,9 @@ namespace SampSharpGameMode1
                 pathObjectsTimer = new SampSharp.GameMode.SAMP.Timer(10000, true);
                 //pathObjectsTimer.Tick += PathObjectsTimer_Tick;
 
+                SampSharp.Streamer.Streamer s = new SampSharp.Streamer.Streamer();
+                s.ToggleIdleUpdate(this, true);
+
                 if (this.IsRegistered())
                     ShowLoginForm();
                 else
