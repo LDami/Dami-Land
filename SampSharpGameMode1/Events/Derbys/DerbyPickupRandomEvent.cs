@@ -4,7 +4,6 @@ using SampSharp.GameMode.World;
 using SampSharp.Streamer.World;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 
 namespace SampSharpGameMode1.Events.Derbys
@@ -145,58 +144,49 @@ namespace SampSharpGameMode1.Events.Derbys
 				}
 				else if(this.Event == AvailableEvents.GiveMissile)
 				{
-					System.Numerics.Vector3 playerPos = new System.Numerics.Vector3(this.Player.Position.X, this.Player.Position.Y, this.Player.Position.Z);
-					/*
-					System.Numerics.Vector3 direction = new System.Numerics.Vector3(
-						2 * vehQ.X * vehQ.Y - 2 * vehQ.Z * vehQ.W,
-						(float)(1 - 2 * Math.Pow(vehQ.X, 2) - 2 * Math.Pow(vehQ.Z, 2)),
-						2 * vehQ.Y * vehQ.W + 2 * vehQ.X * vehQ.W
-					);
-					System.Numerics.Vector3 direction = new System.Numerics.Vector3(
-						vehE.X, vehE.Y, vehE.Z
-					);
-					Single dist = 100.0f;
-					Player.SendClientMessage("direction.X=" + direction.X + " ; direction.Y=" + direction.Y + " ; direction.Z=" + direction.Z);
-					System.Numerics.Vector3 endPos = System.Numerics.Vector3.Add(playerPos, new System.Numerics.Vector3(direction.X * dist, direction.Y * dist, direction.Z));
-					Vector3 objPos = new Vector3(endPos.X, endPos.Y, endPos.Z);
-					Player.SendClientMessage("objPos.X=" + objPos.X + " ; objPos.Y=" + objPos.Y + " ; objPos.Z=" + objPos.Z);
-					marker = new DynamicObject(18728, objPos, Vector3.Zero, 0);
-					*/
-					/*
-					endPos.X = playerPos.Position.X + (dist * Math.Sin(Math.PI*playerPos.Rotation/180.0));
-					endPos.Y = playerPos.Position.Y + (dist * Math.Cos(Math.PI * playerPos.Rotation / 180.0));
-					Physics.RayCastCollisionTarget target = Physics.ColAndreas.RayCastLine(playerPos.Position, this.Player.Get)
-						CA_RayCastLine(
-							playerPos.Position.X + (maxDistance * floatsin(-r, degrees)), playerPos.Position.Y + (maxDistance * floatcos(-r, degrees)), playerPos.Position.Z, playerPos.Position.X + (maxDistance * floatsin(-r, degrees)), playerPos.Position.Y + (maxDistance * floatcos(-r, degrees)), playerPos.Position.Z, tmp, tmp, tmp)
-					this.EventConsumed = true;
-					this.Player.KeyStateChanged -= OnPlayerKeyStateChanged;
-					*/
-
+					// Creating missile
 					float roofZ = BaseVehicle.GetModelInfo(this.Player.Vehicle.Model, SampSharp.GameMode.Definitions.VehicleModelInfoType.Size).Z / 2;
 					DynamicObject box = new DynamicObject(3788, this.Player.Vehicle.Position, new Vector3(0.0, 0.0, 90.0));
 					box.AttachTo(this.Player.Vehicle, new Vector3(0.0, 0.0, roofZ+0.2), new Vector3(0.0, 0.0, 90.0));
-					DynamicObject missile = new DynamicObject(3790, this.Player.Vehicle.Position, new Vector3(0.0, 0.0, 90.0));
-					missile.AttachTo(this.Player.Vehicle, new Vector3(0.0, 0.0, roofZ + 0.2), new Vector3(0.0, 0.0, 90.0));
+					DynamicObject missile = new DynamicObject(3790, this.Player.Vehicle.Position, new Vector3(0.0, 0.0, -90.0));
+					missile.AttachTo(this.Player.Vehicle, new Vector3(0.0, 0.0, roofZ + 0.2), new Vector3(0.0, 0.0, -90.0));
 					DynamicObject sparks = new DynamicObject(18718, missile.Position, new Vector3(0.0, 90.0, 90.0));
-					sparks.AttachTo(this.Player.Vehicle, new Vector3(0.0, -1.0, roofZ + 0.2), new Vector3(0.0, 90.0, 90.0));
+					sparks.AttachTo(this.Player.Vehicle, new Vector3(0.0, -0.4, roofZ + 0.2), new Vector3(0.0, 90.0, -90.0));
+
+					missile.ToggleUpdate(this.Player, true);
+					sparks.ToggleUpdate(this.Player, true);
 
 					SampSharp.GameMode.SAMP.Timer.RunOnce(1000, () =>
 					{
+						// Bringing up missile
 						if(this.Player.InAnyVehicle) // Need to be recheck because of timer
 						{
-							Vector3 missilePos = this.Player.Vehicle.Position + new Vector3(0.0, 0.0, roofZ + 0.75);
+							Quaternion vehQ = this.Player.Vehicle.GetRotationQuat();
+
+							Vector3 vehE = Physics.ColAndreas.QuatToEuler(vehQ);
+
+							Vector3 missilePos = this.Player.Vehicle.Position + new Vector3(0.0, 0.0, roofZ + 0.2);
 							missile.Dispose();
-							missile = new DynamicObject(3790, missilePos, new Vector3(0.0, 0.0, 90.0));
-							missile.Move(missile.Position + new Vector3(0.0, 0.0, 1.0), 3f);
+							missile = new DynamicObject(3790, missilePos, new Vector3(vehE.X, vehE.Y, this.Player.Vehicle.Angle -90));
+							missile.SetNoCameraCollision();
+							missile.Move(missile.Position + new Vector3(0.0, 0.0, 1.0), 1f);
 							sparks.Dispose();
-							sparks = new DynamicObject(18718, this.Player.Vehicle.Position + new Vector3(0.0, 0.0, roofZ + 0.5), new Vector3(0.0, 90.0, 90.0));
-							sparks.Move(sparks.Position + new Vector3(0.0, 0.0, 0.5), 2.0f);
+							sparks = new DynamicObject(18718, missilePos, new Vector3(0, 90, this.Player.Vehicle.Angle - 90));
+							sparks.SetNoCameraCollision();
+							sparks.Move(sparks.Position + new Vector3(0.0, 0.0, 1.0), 1.0f);
+							DynamicObject smoke = null;
+							SampSharp.GameMode.SAMP.Timer.RunOnce(500, () =>
+							{
+								smoke = new DynamicObject(18694, missilePos + new Vector3(0, -0.15, 2.65), vehE + new Vector3(180, 0, 0));
+								smoke.AttachTo(missile, new Vector3(1.2, -0.015, -1.6), new Vector3(0, 0, -90));
+								smoke.SetNoCameraCollision();
+								sparks.Dispose();
+							});
 							SampSharp.GameMode.SAMP.Timer.RunOnce(1000, () =>
 							{
+								// Launching missile on target
 								if (this.Player.InAnyVehicle) // Need to be recheck because of timer
 								{
-									Quaternion vehQ = this.Player.Vehicle.GetRotationQuat();
-									Vector3 vehE = Physics.ColAndreas.QuatToEuler(vehQ);
 									missilePos += new Vector3(0.0, 0.0, 1.0); // Last move
 									Vector3 dest = missilePos + new Vector3(
 										-MissileRange * Math.Sin(Math.PI * vehE.Z / 180.0),
@@ -206,28 +196,25 @@ namespace SampSharpGameMode1.Events.Derbys
 									Physics.ColAndreas.FindZ_For2DCoord(dest.X, dest.Y, out float z);
 									dest = new Vector3(dest.X, dest.Y, z);
 
-									missile.Dispose();
-									missile = new DynamicObject(3790, missilePos, vehE);
 									missile.Move(dest, MissileSpeed);
-									DynamicObject smoke = new DynamicObject(18694, missilePos, vehE);
-									smoke.Move(dest, MissileSpeed);
+									//if(!(smoke is null)) smoke.Move(dest, MissileSpeed);
 									missile.Disposed += (sender, args) =>
 									{
-										smoke.Dispose();
+										if (!(smoke is null)) smoke.Dispose();
 									};
 									Physics.CollisionManager.ExplodeOnCollision(missile, dest, this.Player);
-									sparks.Dispose();
 								}
 							});
 						}
 					});
-					SampSharp.GameMode.SAMP.Timer.RunOnce(15000, () =>
+					SampSharp.GameMode.SAMP.Timer.RunOnce(10000, () =>
 					{
 						box.Dispose();
 						missile.Dispose();
 						sparks.Dispose();
 					});
-
+					this.EventConsumed = true;
+					this.Player.KeyStateChanged -= OnPlayerKeyStateChanged;
 				}
 			}
 		}
