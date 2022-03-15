@@ -13,12 +13,13 @@ namespace SampSharpGameMode1
 		private int? dbid;
 		public int? DbId { get { return dbid; } set { dbid = value; } }
 	}
-	class MapCreator
+	public class MapCreator
 	{
 		const int MAX_OBJECTS_PER_MAP = 1000;
 
 		private Player player;
 		private List<int> playerObjectIds;
+		private PlayerObject[] markers;
 		private int editingId;
 		private MySQLConnector mySQLConnector = MySQLConnector.Instance();
 
@@ -28,6 +29,7 @@ namespace SampSharpGameMode1
 			{
 				player = p;
 				playerObjectIds = new List<int>();
+				markers = new PlayerObject[2];
 				p.SendClientMessage("Map creator initialized");
 				p.SendClientMessage("/mapping [addo|delo|replace|edit|save]");
 			}
@@ -132,6 +134,30 @@ namespace SampSharpGameMode1
 		public void EditObject(int objectid)
 		{
 			PlayerObject.Find(player, objectid)?.Edit();
+		}
+
+		public void EditMarker(int marker)
+		{
+			if(marker > 0 && marker < markers.Length + 1)
+			{
+				marker --;
+				markers[marker] ??= new PlayerObject(player, 19133, player.Position + new Vector3(5.0, 0.0, 0.0), Vector3.Zero);
+				markers[marker].Edit();
+				markers[marker].Edited += (object sender, SampSharp.GameMode.Events.EditPlayerObjectEventArgs e) =>
+				{
+					markers[marker].Position = e.Position;
+				};
+			}
+		}
+
+		public void GetMarkersDistance()
+		{
+			if(markers[0] is null || markers[1] is null)
+				player.SendClientMessage("You must set 2 markers to use this command");
+			else
+			{
+				player.SendClientMessage("Distance: " + (markers[0].Position - markers[1].Position).ToString());
+			}
 		}
 
 		public static void ShowMapList(Player p, string[] keywords)

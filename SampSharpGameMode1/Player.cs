@@ -42,7 +42,7 @@ namespace SampSharpGameMode1
 
         //Creators
         public TextdrawCreator textdrawCreator;
-        PlayerMapping playerMapping;
+        public MapCreator mapCreator;
         public EventCreator eventCreator;
         public CameraController cameraController;
 
@@ -115,7 +115,7 @@ namespace SampSharpGameMode1
                 Adminlevel = 0;
 
                 mySQLConnector = null;
-                playerMapping = null;
+                mapCreator = null;
                 eventCreator = null;
 
                 pathObjectsTimer.IsRunning = false;
@@ -686,13 +686,6 @@ namespace SampSharpGameMode1
                 Console.WriteLine("vehicleAI is null !");
         }
 
-        [Command("map")]
-        private void MapCommand(string keywords)
-		{
-            MapCreator mapCreator = new MapCreator(this);
-            //mapCreator.ShowMapList(keywords);
-		}
-
         [Command("select-td")]
         private void SelectTDCommand()
         {
@@ -782,72 +775,6 @@ namespace SampSharpGameMode1
 		{
             this.SpecialAction = SpecialAction.Usejetpack;
 		}
-        [CommandGroup("mapping")]
-        class MappingCommandClass
-        {
-            private static MapCreator mapCreator;
-
-            [Command("init")]
-            private static void MappingCommand(Player player)
-            {
-                if (mapCreator is null)
-                    mapCreator = new MapCreator(player);
-            }
-            [Command("list")]
-            private static void ListCommand(Player player)
-            {
-                InputDialog dialog = new InputDialog("Map list", "Enter keywords (separated with space) if you want to search a specific map, otherwise let the field empty", false, "Search", "Cancel");
-                dialog.Response += (object sender, DialogResponseEventArgs e) =>
-                {
-                    if(e.DialogButton == DialogButton.Left)
-					{
-                        string[] keywords = e.InputText.Split(" ");
-                        MapCreator.ShowMapList(player, keywords);
-					}
-                };
-                dialog.Show(player);
-            }
-            [Command("addo")]
-            private static void AddObjectCommand(Player player, int modelid)
-            {
-                if (!(mapCreator is null))
-                    mapCreator.AddObject(modelid);
-                else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
-            }
-            [Command("delo")]
-            private static void DelObjectCommand(Player player, int objectid)
-            {
-                if (!(mapCreator is null))
-                    mapCreator.DelObject(objectid);
-                else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
-            }
-            [Command("replace")]
-            private static void ReplaceCommand(Player player, int objectid, int modelid)
-            {
-                if (!(mapCreator is null))
-                    mapCreator.ReplaceObject(objectid, modelid);
-                else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
-            }
-            [Command("edit")]
-            private static void EditCommand(Player player, int objectid)
-            {
-                if (!(mapCreator is null))
-                    mapCreator.EditObject(objectid);
-                else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
-            }
-            [Command("save")]
-            private static void SaveCommand(Player player)
-            {
-                if (!(mapCreator is null))
-                    mapCreator.Save();
-                else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
-            }
-        }
 
         class GroupedCommandClass
         {
