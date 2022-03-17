@@ -807,12 +807,6 @@ namespace SampSharpGameMode1
             }
         }
 
-        [Command("event")]
-        private void EventCommand()
-        {
-            GameMode.eventManager.ShowManagerDialog(this);
-        }
-
         [Command("jet")]
         private void JetpackCommand()
 		{

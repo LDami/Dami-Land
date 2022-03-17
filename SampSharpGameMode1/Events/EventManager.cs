@@ -31,14 +31,33 @@ namespace SampSharpGameMode1.Events
             eventList = new List<Event>();
         }
 
-        public void ShowManagerDialog(Player player)
+        public void PurgeEvents(Player player)
+		{
+            MessageDialog confirmation = new MessageDialog("Confirmation", "Are you sure you want to delete upcoming events ?", "Yes", "No/Cancel");
+			confirmation.Response += (object sender, SampSharp.GameMode.Events.DialogResponseEventArgs e) =>
+            {
+                if(e.DialogButton == DialogButton.Left)
+                {
+                    int nbr = eventList.RemoveAll(ev => ev.Status == EventStatus.Loaded);
+                    player.Notificate(nbr + " event(s) removed");
+                }
+            };
+            confirmation.Show(player);
+		}
+
+		public void ShowManagerDialog(Player player)
         {
             ListDialog managerDialog = new ListDialog("Event manager", "Select", "Cancel");
             managerDialog.AddItem(Color.Green + "Create event");
-            foreach (Event evt in eventList)
+            if (player.Adminlevel > 0)
             {
-                managerDialog.AddItem(Color.White + "[" + evt.Status.ToString() + "]" + evt.Name);
+                foreach (Event evt in eventList)
+                {
+                    managerDialog.AddItem(Color.White + "[" + evt.Status.ToString() + "]" + evt.Name);
+                }
             }
+            else
+                managerDialog.AddItem(Color.Red + "Only admins can manage already opened events");
 
             managerDialog.Show(player);
             managerDialog.Response += (sender, eventArgs) =>
@@ -50,7 +69,7 @@ namespace SampSharpGameMode1.Events
                         ShowCreateEventTypeDialog(player);
                     }
                     else
-                        ShowEventOptionDialog(player, eventList.ElementAt(eventArgs.ListItem - 1));
+                        if (player.Adminlevel > 0) ShowEventOptionDialog(player, eventList.ElementAt(eventArgs.ListItem - 1));
                 }
                 else
                 {
@@ -67,7 +86,7 @@ namespace SampSharpGameMode1.Events
                 if(t.ToString() != "Unknown")
                 {
                     if (t.ToString() == "Derby")
-                        createEventDialog.AddItem("Derby [Not available now]");
+                        createEventDialog.AddItem("Derby [Will be available soon]");
                     else
                         createEventDialog.AddItem(t.ToString());
                 }
@@ -115,13 +134,20 @@ namespace SampSharpGameMode1.Events
                         {
                             if (evt.Status == EventStatus.Loaded)
                             {
-                                evt.Open();
-                                player.Notificate("Event opened");
+                                if(openedEvent == null)
+                                {
+                                    evt.Open();
+                                    player.Notificate("Event opened");
+                                }
+                                else
+								{
+                                    player.SendClientMessage(Color.Red + "You cannot open this event because there is already an event in Waiting status");
+								}
                             }
-                            if (evt.Status == EventStatus.Waiting)
+                            else if (evt.Status == EventStatus.Waiting)
                             {
                                 if (evt.Start(evt.Slots)) player.Notificate("Event started");
-                                else player.SendClientMessage("The event cannot be started (there are maybe no player)");
+                                else player.SendClientMessage(Color.Red + "The event cannot be started (there are maybe no player)");
                             }
                         }
                         else if (eventArgs.ListItem == 1) // Abort
@@ -242,7 +268,7 @@ namespace SampSharpGameMode1.Events
                         {
                             if (eventArgs.ErrorMessage == null)
                             {
-                                if (player.IsConnected) player.SendClientMessage(Color.Green, "Event " + Display.ColorPalette.Primary.Main + eventArgs.EventLoaded.Id + Color.Green + " loaded ! (Race)");
+                                if (player.IsConnected) player.SendClientMessage(Display.ColorPalette.Primary.Main + $"Race {eventArgs.EventLoaded.Id} {Color.Green}loaded ! (Race)");
                                 eventList.Add(eventArgs.EventLoaded);
                                 if (openedEvent == null)
                                 {
@@ -255,7 +281,7 @@ namespace SampSharpGameMode1.Events
                             else
                                 if (player.IsConnected) player.SendClientMessage(Color.Red, "Cannot load the race: " + eventArgs.ErrorMessage);
                         };
-                        player.SendClientMessage(Color.Green, "Loading Race #" + id);
+                        player.SendClientMessage(Display.ColorPalette.Primary.Main + $"Loading Race #{id}");
                         newEvent.Load();
                         break;
                     }
@@ -266,7 +292,8 @@ namespace SampSharpGameMode1.Events
                         {
                             if (eventArgs.ErrorMessage == null)
                             {
-                                if (player.IsConnected) player.SendClientMessage(Color.Green, "Event " + Display.ColorPalette.Primary.Main + eventArgs.EventLoaded.Id + Color.Green + " loaded ! (Derby)");
+                                if (player.IsConnected) player.SendClientMessage(Display.ColorPalette.Primary.Main + $"Race {eventArgs.EventLoaded.Id} {Color.Green}loaded ! (Derby)");
+                                eventList.Add(eventArgs.EventLoaded);
                                 eventList.Add(eventArgs.EventLoaded);
                                 if (openedEvent == null)
                                 {
@@ -279,7 +306,7 @@ namespace SampSharpGameMode1.Events
                             else
                                 if (player.IsConnected) player.SendClientMessage(Color.Red, "Cannot load the derby: " + eventArgs.ErrorMessage);
                         };
-                        player.SendClientMessage(Color.Green, "Loading Derby #" + id);
+                        player.SendClientMessage(Display.ColorPalette.Primary.Main + $"Loading Derby #{id}");
                         newEvent.Load();
                         break;
                     }
