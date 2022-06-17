@@ -16,16 +16,20 @@ namespace SampSharpGameMode1.Commands
         private static void MappingCommand(Player player)
         {
             player.SendClientMessage($"Usage: {ColorPalette.Secondary.Main}/mapping [action]");
-            player.SendClientMessage($"Actions: {ColorPalette.Secondary.Main}help, init, list, addo, delo, replace, marker, dist, edit, save");
+            player.SendClientMessage($"Global Actions: {ColorPalette.Secondary.Main}help, create, loadc, exit");
+            player.SendClientMessage($"On map editing Actions: {ColorPalette.Secondary.Main}help, save, exit, list, addo, delo, replace, marker, dist, edit");
         }
-        [CommandGroup("mapping")]
+        [CommandGroup("mapping", "map")]
         class MappingCommandClass
         {
             [Command("help")]
             private static void HelpCommand(Player player)
             {
                 string list =
-                    $"{ColorPalette.Primary.Main}/mapping init {ColorPalette.Primary.Darken}Initialize the editor" + "\n" +
+                    $"{ColorPalette.Primary.Main}/mapping create {ColorPalette.Primary.Darken}Create a new map" + "\n" +
+                    $"{ColorPalette.Primary.Main}/mapping loadc [id] {ColorPalette.Primary.Darken}Load a map" + "\n" +
+                    $"{ColorPalette.Primary.Main}/mapping save {ColorPalette.Primary.Darken}Save the map" + "\n" +
+                    $"{ColorPalette.Primary.Main}/mapping exit {ColorPalette.Primary.Darken}Close the editor without saving the map" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping list {ColorPalette.Primary.Darken}List all your races" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping addo [modelid] {ColorPalette.Primary.Darken}Add an object with specified modelid" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping delo [objectid] {ColorPalette.Primary.Darken}Delete the object" + "\n" +
@@ -33,16 +37,85 @@ namespace SampSharpGameMode1.Commands
                     $"{ColorPalette.Primary.Main}/mapping marker [1-2] {ColorPalette.Primary.Darken}Edit the marker position to get distance" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping dist {ColorPalette.Primary.Darken}Displays the distance between the markers" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping edit [objectid] {ColorPalette.Primary.Darken}Edit position/rotation of object" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping save {ColorPalette.Primary.Darken}Save the map" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping exit {ColorPalette.Primary.Darken}Close the editor"
                     ;
                 MessageDialog dialog = new MessageDialog("Command list", list, "Close");
                 dialog.Show(player);
             }
-            [Command("init")]
-            private static void InitCommand(Player player)
+            [Command("create")]
+            private static void CreateCommand(Player player)
             {
                 player.mapCreator ??= new MapCreator(player);
+                player.mapCreator.CreateMap();
+            }
+            [Command("loadc")]
+            private static void LoadCommand(Player player, int id)
+            {
+                player.mapCreator ??= new MapCreator(player);
+                if(player.mapCreator.editingMap != null)
+				{
+                    MessageDialog msg = new MessageDialog("Confirm", "You are currently editing a map, do you want to close and lost all unsaved data to load the next map ?", "Yes, load", "No, I will save");
+                    msg.Response += (object sender, DialogResponseEventArgs e) =>
+                    {
+                        if (e.DialogButton == DialogButton.Left)
+                        {
+                            player.mapCreator.Unload();
+                            player.mapCreator.Load(id);
+                        }
+                    };
+                    msg.Show(player);
+				}
+                else
+                    player.mapCreator.Load(id);
+            }
+            [Command("save")]
+            private static void SaveCommand(Player player)
+            {
+                if (!(player.mapCreator is null))
+                {
+                    if(player.mapCreator.editingMap.Name == "[Untitled]")
+					{
+                        InputDialog nameDialog = new InputDialog("Name of the map", "Please enter the name of the map", false, "Save", "Cancel");
+                        nameDialog.Response += (object sender, DialogResponseEventArgs e) => {
+                            if (e.DialogButton == DialogButton.Left)
+                            {
+                                if (e.InputText.Length < 100 && e.InputText.Length > 3)
+                                {
+                                    if (player.mapCreator.Save(e.InputText))
+                                        player.SendClientMessage(Color.Green, "Map saved");
+                                    else
+                                        player.SendClientMessage(Color.Red, "Error saving map");
+                                }
+                                else
+                                {
+                                    nameDialog.Message = "Map name must have at least 3 characters and cannot exceed 100 characters";
+                                    nameDialog.Show(player);
+                                }
+                            }
+                        };
+                        nameDialog.Show(player);
+                    }
+                    else
+                    {
+                        if (player.mapCreator.Save())
+                            player.SendClientMessage(Color.Green, "Map saved");
+                        else
+                            player.SendClientMessage(Color.Red, "Error saving map");
+                    }
+                }
+                else
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+            }
+
+            [Command("exit")]
+            private static void Exit(Player player)
+            {
+                if (player.mapCreator != null)
+                {
+                    player.mapCreator.Unload();
+                    player.mapCreator = null;
+                    player.SendClientMessage("Map creator closed");
+                }
             }
             [Command("list")]
             private static void ListCommand(Player player)
@@ -64,7 +137,7 @@ namespace SampSharpGameMode1.Commands
                 if (!(player.mapCreator is null))
                     player.mapCreator.AddObject(modelid);
                 else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
             }
             [Command("delo")]
             private static void DelObjectCommand(Player player, int objectid)
@@ -72,7 +145,7 @@ namespace SampSharpGameMode1.Commands
                 if (!(player.mapCreator is null))
                     player.mapCreator.DelObject(objectid);
                 else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
             }
             [Command("replace")]
             private static void ReplaceCommand(Player player, int objectid, int modelid)
@@ -80,7 +153,7 @@ namespace SampSharpGameMode1.Commands
                 if (!(player.mapCreator is null))
                     player.mapCreator.ReplaceObject(objectid, modelid);
                 else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
             }
             [Command("marker")]
             private static void MarkerCommand(Player player, int marker)
@@ -88,7 +161,7 @@ namespace SampSharpGameMode1.Commands
                 if (!(player.mapCreator is null))
                     player.mapCreator.EditMarker(marker);
                 else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
             }
             [Command("dist")]
             private static void DistCommand(Player player)
@@ -96,7 +169,7 @@ namespace SampSharpGameMode1.Commands
                 if (!(player.mapCreator is null))
                     player.mapCreator.GetMarkersDistance();
                 else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
             }
             [Command("edit")]
             private static void EditCommand(Player player, int objectid)
@@ -104,15 +177,7 @@ namespace SampSharpGameMode1.Commands
                 if (!(player.mapCreator is null))
                     player.mapCreator.EditObject(objectid);
                 else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
-            }
-            [Command("save")]
-            private static void SaveCommand(Player player)
-            {
-                if (!(player.mapCreator is null))
-                    player.mapCreator.Save();
-                else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, type {ColorPalette.Secondary.Main}/mapping init {Color.Red}first");
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
             }
         }
     }
