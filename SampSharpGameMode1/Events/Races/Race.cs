@@ -623,14 +623,20 @@ namespace SampSharpGameMode1.Events.Races
                     GameMode.mySQLConnector.Execute("INSERT INTO race_records (race_id, player_id, record_duration) VALUES (@race_id, @player_id, @record_duration)", param);
                 }
             }
+            else if (reason.Equals("Leave"))
+            {
+                Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} leaved the race {this.Name}");
+                player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You leaved the race");
+                player.GameText("GAME OVER", 5000, 4);
+            }
             else
-			{
+            {
                 Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} has been ejected from the race {this.Name} (reason: {reason})");
                 player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You lost (reason: " + reason + ")");
                 player.GameText("GAME OVER", 5000, 4);
             }
 
-            if(player.InAnyVehicle)
+            if (player.InAnyVehicle)
             {
                 BaseVehicle vehicle = player.Vehicle;
                 player.RemoveFromVehicle();

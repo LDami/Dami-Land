@@ -86,7 +86,7 @@ namespace SampSharpGameMode1.Events
 		{
             if (player.IsConnected && Slots.Find(x => x.Player.Equals(player)) != null)
 			{
-                this.Source.Eject(player);
+                this.Source.OnPlayerFinished(player, "Leave");
             }
 
         }
