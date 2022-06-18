@@ -96,6 +96,7 @@ namespace SampSharpGameMode1.Commands
                     "/race addcp                Add a checkpoint" + "\n" +
                     "/race set current          Move the current checkpoint to your position" + "\n" +
                     "/race teleport             Teleport yourself to the current checkpoint" + "\n" +
+                    "/race addsg                Add a spectator group" + "\n" +
                     "/race save                 Save the editing race" + "\n" +
                     "/race exit                 Close the editor"
                     ;
@@ -209,6 +210,15 @@ namespace SampSharpGameMode1.Commands
                 if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
                 {
                     (player.eventCreator as RaceCreator).AddCheckpoint(player.Position);
+                }
+            }
+
+            [Command("addsg")]
+            private static void AddSG(Player player)
+            {
+                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
+                {
+                    (player.eventCreator as RaceCreator).AddSpectatorGroup(player.Position);
                 }
             }
 

@@ -126,6 +126,8 @@ namespace SampSharpGameMode1.Events.Races
         SpawnerCreator spawnerCreator;
         BaseVehicle? playerVehicle;
 
+        List<Civilisation.SpectatorGroup> spectatorGroups;
+
         PlayerObject moverObject;
         const int moverObjectModelID = 19133;
         Vector3 moverObjectOffset = new Vector3(0.0f, 0.0f, 1.0f);
@@ -138,6 +140,7 @@ namespace SampSharpGameMode1.Events.Races
             editingRace = null;
             checkpointIndex = 0;
             spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
+            spectatorGroups = new List<Civilisation.SpectatorGroup>();
         }
 
         public void Create()
@@ -148,6 +151,7 @@ namespace SampSharpGameMode1.Events.Races
             checkpointIndex = 0;
             editingRace.StartingVehicle = VehicleModelType.Infernus;
             spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
+            spectatorGroups = new List<Civilisation.SpectatorGroup>();
             isNew = true;
             this.SetPlayerInEditor();
         }
@@ -246,6 +250,14 @@ namespace SampSharpGameMode1.Events.Races
                 spawnerCreator = null;
             }
             spawnVehicles = null;
+
+            if(spectatorGroups != null)
+            {
+                foreach (Civilisation.SpectatorGroup spectatorGroup in spectatorGroups)
+                    spectatorGroup.Dispose();
+            }
+            spectatorGroups = null;
+
             if (player != null)
             {
                 player.VirtualWorld = 0;
@@ -405,6 +417,10 @@ namespace SampSharpGameMode1.Events.Races
                 player.SendClientMessage(Color.Red, "Error, place a checkpoint first ! (/race addcp)");
             }
 		}
+        public void AddSpectatorGroup(Vector3 position)
+        {
+            spectatorGroups.Add(new Civilisation.SpectatorGroup(player, position + new Vector3(0.0, 5.0, 0.0), player.VirtualWorld));
+        }
         private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
         {
             //if (e.NewKeys.ToString() != "0") player.GameText(e.NewKeys.ToString(), 100, 3);
