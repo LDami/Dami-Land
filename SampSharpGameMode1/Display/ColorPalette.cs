@@ -18,13 +18,13 @@ namespace SampSharpGameMode1.Display
 		}
 		public static class Primary
 		{
-			public static SAMPColor Main = new SAMPColor(Color.FromArgb(76, 117, 183));
+			public static SAMPColor Main = new SAMPColor(Color.FromArgb(231, 213, 164));
 			public static SAMPColor Lighten = new SAMPColor(Color.FromArgb(112, 145, 197));
 			public static SAMPColor Darken = new SAMPColor(Color.FromArgb(53, 82, 128));
 		}
 		public static class Secondary
 		{
-			public static SAMPColor Main = new SAMPColor(Color.FromArgb(231, 236, 239));
+			public static SAMPColor Main = new SAMPColor(Color.FromArgb(56, 106, 98));
 			public static SAMPColor Lighten = new SAMPColor(Color.FromArgb(243, 245, 247));
 			public static SAMPColor Darken = new SAMPColor(Color.FromArgb(194, 207, 214));
 		}
