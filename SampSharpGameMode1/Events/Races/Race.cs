@@ -1,5 +1,6 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
+using SampSharp.GameMode.Events;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using SampSharpGameMode1.Display;
@@ -62,6 +63,7 @@ namespace SampSharpGameMode1.Events.Races
         private SampSharp.GameMode.SAMP.Timer countdownTimer;
         private int countdown;
         public DateTime startedTime;
+        private SampSharp.GameMode.SAMP.Timer stopWatchTimer;
 
         public struct PlayerCheckpointData
         {
@@ -277,6 +279,7 @@ namespace SampSharpGameMode1.Events.Races
                     playersData.Add(slot.Player, playerData);
 
                     playersLiveInfoHUD[slot.Player] = new HUD(slot.Player, "racelive.json");
+                    playersLiveInfoHUD[slot.Player].SetText("stopwatch", "00:00:00.000");
                     playersLiveInfoHUD[slot.Player].Hide("checkpointtime");
                     playersLiveInfoHUD[slot.Player].Hide("checkpointdelta");
                     playersLiveInfoHUD[slot.Player].Hide("nitro");
@@ -312,6 +315,9 @@ namespace SampSharpGameMode1.Events.Races
                     players.Add(slot.Player);
                 }
 
+                stopWatchTimer = new SampSharp.GameMode.SAMP.Timer(10, true);
+                stopWatchTimer.Tick += RaceStopWatch;
+
                 if (!isAborted)
                 {
                     SampSharp.GameMode.SAMP.Timer preparationTimer = new SampSharp.GameMode.SAMP.Timer(3000, false);
@@ -325,6 +331,18 @@ namespace SampSharpGameMode1.Events.Races
                 else
                 {
                     //TODO: remettre les joueurs dans leurs vw et positions initiales
+                }
+            }
+        }
+
+        private void RaceStopWatch(object sender, EventArgs e)
+        {
+            // TODO: upgrade with making global HUD instead of per-player HUD for stopwatch
+            if(this.isStarted)
+            {
+                foreach (Player p in players)
+                {
+                    playersLiveInfoHUD[p].SetText("stopwatch", (DateTime.Now - startedTime).ToString(@"hh\:mm\:ss\.fff"));
                 }
             }
         }
