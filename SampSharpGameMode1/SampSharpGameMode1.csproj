@@ -14,13 +14,13 @@
 
   <ItemGroup>
     <Reference Include="SampSharp.Core">
-      <HintPath>..\..\..\..\Documents\Dev\SampSharp\bin\Release\netstandard2.1\SampSharp.Core.dll</HintPath>
+      <HintPath>..\..\..\..\Documents\Dev\SampSharp.Core.dll</HintPath>
     </Reference>
     <Reference Include="SampSharp.GameMode">
-      <HintPath>..\..\..\..\Documents\Dev\SampSharp\bin\Release\netstandard2.1\SampSharp.GameMode.dll</HintPath>
+      <HintPath>..\..\..\..\Documents\Dev\SampSharp.GameMode.dll</HintPath>
     </Reference>
     <Reference Include="SampSharp.Streamer">
-      <HintPath>..\..\..\..\Documents\Dev\SampSharp-streamer\src\SampSharp.Streamer\bin\Debug\netstandard2.1\SampSharp.Streamer.dll</HintPath>
+      <HintPath>..\..\..\..\Documents\Dev\SampSharp.Streamer.dll</HintPath>
     </Reference>
   </ItemGroup>
 
