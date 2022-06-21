@@ -40,14 +40,21 @@ namespace SampSharpGameMode1.Commands
                 GameMode.eventManager.PurgeEvents(player);
             }
 
-            [Command("join", Shortcut = "join")]
-            private static void JoinEvent(Player player)
-            {
-                if (GameMode.eventManager.openedEvent == null)
-                    player.SendClientMessage(Color.Wheat, "[Event]" + Color.Red + " There is no opened event !");
-                else
-                    GameMode.eventManager.openedEvent.Join(player);
-            }
+			[Command("join", Shortcut = "join")]
+			private static void JoinEvent(Player player)
+			{
+				if (player.eventCreator is null)
+				{
+					if (GameMode.eventManager.openedEvent == null)
+						player.SendClientMessage(Color.Wheat, "[Event]" + Color.Red + " There is no opened event !");
+					else
+						GameMode.eventManager.openedEvent.Join(player);
+				}
+				else
+                {
+					player.SendClientMessage(Color.Wheat, "[Event]" + Color.Red + " Close your editor first");
+                }
+			}
 
             [Command("leave", Shortcut = "leave")]
             private static void LeaveEvent(Player player)
