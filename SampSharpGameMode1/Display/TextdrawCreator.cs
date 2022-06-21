@@ -139,6 +139,7 @@ namespace SampSharpGameMode1.Display
 
         Player player;
 
+        public Boolean IsEditing { get { return isEditing; } }
         private Boolean isEditing;
 
         private float moveSpeed;

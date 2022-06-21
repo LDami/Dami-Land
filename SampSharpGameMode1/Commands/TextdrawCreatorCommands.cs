@@ -46,7 +46,10 @@ namespace SampSharpGameMode1.Commands
             {
                 if (player.textdrawCreator != null)
                 {
-                    player.textdrawCreator.Load(name);
+                    if (!player.textdrawCreator.IsEditing)
+                        player.textdrawCreator.Load(name);
+                    else
+                        player.SendClientMessage("You must close the opened editor before loading a new one");
                 }
             }
             [Command("save", UsageMessage = "Usage: /td save [name (without .json)]")]
