@@ -504,6 +504,8 @@ namespace SampSharpGameMode1.Display
                                 layers[layerIndex].SetTextdrawText(textdraw.Name, textdraw.Text);
                                 layers[layerIndex].SetTextdrawFont(textdraw.Name, textdraw.Font);
                                 layers[layerIndex].SetTextdrawAlignment(textdraw.Name, textdraw.Alignment);
+                                if(textdraw.Width > 0 && textdraw.Height > 0)
+                                    layers[layerIndex].SetTextdrawLetterSize(textdraw.Name, textdraw.Width, textdraw.Height);
                             }
                             if (!layers[layerIndex].SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY)))
                                 player.SendClientMessage(Color.Red, "Cannot set position for '" + textdraw.Name + "'");
@@ -606,12 +608,13 @@ namespace SampSharpGameMode1.Display
         {
             if (layers.Count > 0)
             {
-                if (layers[layerIndex].SelectTextdraw(name))
+                try
                 {
+                    layers[layerIndex].SelectTextdraw(name);
                     tdHUD.SetSelectedTextdrawName(name);
                     editingTDName = name;
                 }
-                else
+                catch(TextdrawNameNotFoundException ex)
                 {
                     tdHUD.SetSelectedTextdrawName("None");
                     player.SendClientMessage(Color.Red, "The following textdraw does not exists: " + name);

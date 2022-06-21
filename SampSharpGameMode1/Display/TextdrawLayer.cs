@@ -106,6 +106,13 @@ namespace SampSharpGameMode1.Display
             textdrawList[name].Height = height;
             return true;
         }
+        public Boolean SetTextdrawLetterSize(string name, float width, float height)
+        {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFoundException();
+            textdrawList[name].LetterSize = new Vector2(width, height);
+            return true;
+        }
 
         public void Move(string name, Vector2 offset)
         {
