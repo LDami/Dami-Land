@@ -62,7 +62,10 @@ namespace SampSharpGameMode1.Events._Tools
 				player.PutInVehicle(vehicles[selectionIndex]);
 			}
 			else
+            {
+				Logger.WriteLineAndClose("SpawnerCreator - SpawnerCreator._:W: SpawnerCreator initialized but no vehicles found. OnQuit called");
 				OnQuit(new SpawnCreatorQuitEventArgs(new List<Vector3R>()));
+			}
 		}
 
 		public void Unload()
@@ -125,7 +128,7 @@ namespace SampSharpGameMode1.Events._Tools
 		private BaseVehicle Vector3RToBaseVehicle(Vector3R v)
 		{
 			BaseVehicle veh = BaseVehicle.Create(this.model, v.Position, v.Rotation, 0, 0);
-			//veh.VirtualWorld = world;
+			veh.VirtualWorld = world;
 			return veh;
 		}
 
