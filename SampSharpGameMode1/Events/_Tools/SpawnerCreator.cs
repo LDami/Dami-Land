@@ -102,14 +102,18 @@ namespace SampSharpGameMode1.Events._Tools
 					}
 					if (selectionIndex == vehicles.Count) // Create a new spawn position
 					{
+						BaseVehicle veh;
 						if(selectionIndex % 2 == 0)
 						{
-							vehicles.Add(BaseVehicle.Create(model, vehicles[selectionIndex - 2].Position + new Vector3(vehicleWidth + 5.0, 0.0, 2.0), vehicles[selectionIndex - 2].Angle, 0, 0));
+							veh = BaseVehicle.Create(model, vehicles[selectionIndex - 2].Position + new Vector3(vehicleWidth + 5.0, 0.0, 2.0), vehicles[selectionIndex - 2].Angle, 0, 0);
+							veh.VirtualWorld = player.VirtualWorld;
 						}
 						else
 						{
-							vehicles.Add(BaseVehicle.Create(model, vehicles[selectionIndex - 1].Position + new Vector3(vehicleWidth / 2, 5.0, 2.0), vehicles[selectionIndex - 1].Angle, 0, 0));
+							veh = BaseVehicle.Create(model, vehicles[selectionIndex - 1].Position + new Vector3(vehicleWidth / 2, 5.0, 2.0), vehicles[selectionIndex - 1].Angle, 0, 0);
+							veh.VirtualWorld = player.VirtualWorld;
 						}
+						vehicles.Add(veh);
 					}
 					vehicles[selectionIndex].ChangeColor(1, 1);
 					player.PutInVehicle(vehicles[selectionIndex]);

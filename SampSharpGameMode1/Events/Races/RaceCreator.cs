@@ -577,7 +577,7 @@ namespace SampSharpGameMode1.Events.Races
                                             spawns = editingRace.SpawnPoints;
                                         }
                                         playerVehicle = player.Vehicle;
-                                        spawnerCreator = new SpawnerCreator(player, 0, editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus), spawns);
+                                        spawnerCreator = new SpawnerCreator(player, player.VirtualWorld, editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus), spawns);
                                         spawnerCreator.Quit += (object sender, SpawnCreatorQuitEventArgs e) => {
                                             editingRace.SpawnPoints = e.spawnPoints;
                                             editingMode = EditingMode.Checkpoints;
