@@ -69,7 +69,7 @@ namespace SampSharpGameMode1
 					textLabels.Clear();
 					foreach(MapObject obj in e.map.Objects)
                     {
-						textLabels.Add(obj.Id, new PlayerTextLabel(player, $"Object #{obj.Id}", Color.White, obj.Position, 50.0f));
+						textLabels.Add(obj.Id, new PlayerTextLabel(player, $"Object #{obj.Id}", Color.White, obj.Position, 50.0f, false));
                     }
 				}
 				else
@@ -146,7 +146,8 @@ namespace SampSharpGameMode1
 			param.Clear();
 			param.Add("@name", editingMap.Name);
 			param.Add("@lastedit", DateTime.Now);
-			mySQLConnector.Execute("UPDATE maps SET map_name=@name, map_lasteditdate=@lastedit", param);
+			param.Add("@id", editingMap.Id);
+			mySQLConnector.Execute("UPDATE maps SET map_name=@name, map_lasteditdate=@lastedit WHERE map_id=@id", param);
 			return mySQLConnector.RowsAffected > 0;
 		}
 
@@ -210,7 +211,7 @@ namespace SampSharpGameMode1
 				textLabels[mapObject.Id].Position = e.Position;
 			};
 			editingMap.Objects.Add(mapObject);
-			textLabels.Add(mapObject.Id, new PlayerTextLabel(player, $"Object #{mapObject.Id}", Color.White, mapObject.Position, 50.0f));
+			textLabels.Add(mapObject.Id, new PlayerTextLabel(player, $"Object #{mapObject.Id}", Color.White, mapObject.Position, 50.0f, false));
 			player.SendClientMessage($"Object #{mapObject.Id} created with model {modelid}");
 			hud.SetText("totalobj", "Total: " + editingMap.Objects.Count.ToString() + " objects");
 		}
