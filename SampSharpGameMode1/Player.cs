@@ -167,7 +167,6 @@ namespace SampSharpGameMode1
         public override void OnEnterVehicle(EnterVehicleEventArgs e)
         {
             base.OnEnterVehicle(e);
-            Logger.WriteLineAndClose(e.Player.Name + " entered vehicle id " + e.Vehicle.Id + " as " + (e.IsPassenger ? "passenger" : "driver"));
             /*
             vehicleHUD = new HUD(this, "speedometer.json");
             vehicleHUD.SetText("speed", "0");
@@ -628,10 +627,11 @@ namespace SampSharpGameMode1
         [Command("beta")]
         private void BetaCommand()
         {
-            this.SendClientMessage(ColorPalette.Secondary.Main + "These features are still in development and will be ready to test soon:");
-            this.SendClientMessage(ColorPalette.Primary.Main + "Derby creator and Derby games (need to implement Map creator first)");
-            this.SendClientMessage(ColorPalette.Primary.Main + "AI / NPC to play with !");
-            this.SendClientMessage(ColorPalette.Secondary.Main + "Tell us what you want to be implemented here :)");
+            this.SendClientMessage(ColorPalette.Primary.Main + "These features are still in development and will be ready to test soon:");
+            this.SendClientMessage(ColorPalette.Secondary.Main + " - Map creator (in progress)");
+            this.SendClientMessage(ColorPalette.Secondary.Main + " - Derby creator and Derby events (need to implement Map creator first)");
+            this.SendClientMessage(ColorPalette.Secondary.Main + " - AI / NPC to play with");
+            this.SendClientMessage(ColorPalette.Secondary.Main + " - More event types");
         }
 
         [CommandGroup("time")]
