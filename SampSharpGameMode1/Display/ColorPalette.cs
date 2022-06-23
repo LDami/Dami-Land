@@ -24,7 +24,7 @@ namespace SampSharpGameMode1.Display
 		}
 		public static class Secondary
 		{
-			public static SAMPColor Main = new SAMPColor(Color.FromArgb(56, 106, 98));
+			public static SAMPColor Main = new SAMPColor(Color.FromArgb(93, 183, 222));
 			public static SAMPColor Lighten = new SAMPColor(Color.FromArgb(243, 245, 247));
 			public static SAMPColor Darken = new SAMPColor(Color.FromArgb(194, 207, 214));
 		}
