@@ -34,9 +34,7 @@ namespace SampSharpGameMode1
 
             Logger.Init();
 
-            Logger logger = new Logger();
-
-            logger.Write("GameMode.cs - GameMode.OnInitialized:I: Connecting to MySQL Server ... ");
+            Logger.WriteLineAndClose("GameMode.cs - GameMode.OnInitialized:I: Connecting to MySQL Server ... ");
             mySQLConnector = MySQLConnector.Instance();
             Boolean isConnected = false;
             while (!isConnected)
@@ -44,8 +42,8 @@ namespace SampSharpGameMode1
                 Thread.Sleep(1000);
                 if (mySQLConnector.Connect())
                 {
-                    logger.WriteLine("Done !");
-                    logger.WriteLine($"GameMode.cs - GameMode.OnInitialized:I: MySql State: {mySQLConnector.GetState()}");
+                    Logger.WriteLineAndClose("Done !");
+                    Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: MySql State: {mySQLConnector.GetState()}");
                     isConnected = true;
                 }
             }
@@ -54,7 +52,6 @@ namespace SampSharpGameMode1
             //npc.Create();
             //Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: NPC Created !");
 
-            logger.Close();
             Civilisation.PathExtractor.Load();
             //Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths", 54);
             
@@ -75,7 +72,7 @@ namespace SampSharpGameMode1
             //Civilisation.PathExtractor.CheckLinks(54);
             Civilisation.PathExtractor.ValidateNaviLink();
 
-            logger = new Logger();
+            Logger logger = new Logger();
             logger.WriteLine($"GameMode.cs - GameMode.OnInitialized:I: Total path points: {PathExtractor.pathPoints.Count}");
 
             logger.Write("GameMode.cs - GameMode.OnInitialized:I: Initializing ColAndreas ... ");

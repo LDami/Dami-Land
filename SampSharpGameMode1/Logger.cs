@@ -48,8 +48,8 @@ namespace SampSharpGameMode1
         {
             try
             {
-                if (File.Exists(filename))
-                    File.Delete(filename);
+                FileStream fs = File.Open(filename, FileMode.Create, FileAccess.Write);
+                fs.Close();
                 Logger.WriteLineAndClose("Logger.cs - Logger.Init:I: Logger initialized at " + DateTime.Now.ToString(), false);
                 Console.WriteLine("Logger.cs - Logger.Init:I: Logger initialized");
             }
