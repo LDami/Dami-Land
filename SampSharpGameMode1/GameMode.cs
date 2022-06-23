@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.Diagnostics;
 using System.Threading;
 using SampSharp.Core.Natives;
 using SampSharp.GameMode;
@@ -52,29 +54,45 @@ namespace SampSharpGameMode1
             //npc.Create();
             //Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: NPC Created !");
 
-            Civilisation.PathExtractor.Load();
-            //Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths", 54);
             
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            Civilisation.PathExtractor.Load();
+            sw.Stop();
+            Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: PathExtractor.Load => {sw.ElapsedMilliseconds} ms");
+            sw.Restart();
+            //Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths", 54);
             for (int i = 0; i < 64; i++)
             {
-                Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths", i);
+                Civilisation.PathExtractor.Extract(ConfigurationManager.AppSettings["gta_basefolder"] + "\\data\\Paths", i);
             }
+            sw.Stop();
+            Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: PathExtractor.Extract => {sw.ElapsedMilliseconds} ms");
+            sw.Restart();
             for (int i = 0; i < 64; i++)
             {
                 Civilisation.PathExtractor.CheckLinks(i);
             }
+            sw.Stop();
+            Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: PathExtractor.CheckLinks => {sw.ElapsedMilliseconds} ms");
+            sw.Restart();
             for (int i = 0; i < 64; i++)
             {
                 Civilisation.PathExtractor.SeparateNodes(i);
             }
+            sw.Stop();
+            Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: PathExtractor.SeparateNodes => {sw.ElapsedMilliseconds} ms");
+            sw.Restart();
             //Civilisation.PathExtractor.SeparateNodes(16);
             //Civilisation.PathExtractor.SeparateNodes(54);
             //Civilisation.PathExtractor.CheckLinks(54);
             Civilisation.PathExtractor.ValidateNaviLink();
+            sw.Stop();
+            Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: PathExtractor.ValidateNaviLink => {sw.ElapsedMilliseconds} ms");
 
             Logger logger = new Logger();
             logger.WriteLine($"GameMode.cs - GameMode.OnInitialized:I: Total path points: {PathExtractor.pathPoints.Count}");
-
+            
             logger.Write("GameMode.cs - GameMode.OnInitialized:I: Initializing ColAndreas ... ");
             Physics.ColAndreas.Init();
             logger.WriteLine("Done !");
