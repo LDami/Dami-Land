@@ -132,6 +132,7 @@ namespace SampSharpGameMode1.Events.Races
         const int moverObjectModelID = 19133;
         Vector3 moverObjectOffset = new Vector3(0.0f, 0.0f, 1.0f);
 
+        Map map = null;
 
         BaseVehicle[] spawnVehicles;
         public RaceCreator(Player _player)
@@ -448,8 +449,7 @@ namespace SampSharpGameMode1.Events.Races
                                 }
                             case EditingMode.SpawnPos:
                                 {
-                                    if (spawnIndex > 0) spawnIndex--;
-                                    hud.SetSelectedIdx(spawnIndex.ToString(), editingMode);
+                                    // Managed by SpawnCreator
                                     break;
                                 }
                         }
@@ -477,8 +477,7 @@ namespace SampSharpGameMode1.Events.Races
                                 }
                             case EditingMode.SpawnPos:
                                 {
-                                    if (spawnIndex < Race.MAX_PLAYERS_IN_RACE) spawnIndex++;
-                                    hud.SetSelectedIdx(spawnIndex.ToString(), editingMode);
+                                    // Managed by SpawnCreator
                                     break;
                                 }
                         }
@@ -505,6 +504,7 @@ namespace SampSharpGameMode1.Events.Races
 
             raceDialog.AddItem("Laps: " + editingRace.Laps);
             raceDialog.AddItem("Open current checkpoint menu");
+            raceDialog.AddItem("Load a map ...");
 
             raceDialog.Show(player);
             raceDialog.Response += RaceDialog_Response;
@@ -639,12 +639,74 @@ namespace SampSharpGameMode1.Events.Races
                                 ShowCheckpointDialog();
                                 break;
                             }
+                        case 5: // Load a map ...
+                            {
+                                InputDialog findMapDialog = new InputDialog("Find a map", "Type the name of the map you want to load, or empty for full list", false, "Search", "Cancel");
+                                findMapDialog.Show(player);
+                                findMapDialog.Response += (sender, eventArgs) =>
+                                {
+                                    if (eventArgs.DialogButton == DialogButton.Left)
+                                    {
+                                        ShowLoadMapDialog(eventArgs.InputText);
+                                    }
+                                    else
+                                    {
+                                        player.Notificate("Cancelled");
+                                        ShowRaceDialog();
+                                    }
+                                };
+                                break;
+                            }
                     }
                 }
             }
         }
 
-		private void Player_EnterCheckpoint(object sender, EventArgs e)
+        private void ShowLoadMapDialog(string text)
+        {
+            Dictionary<int, string> maps = Map.FindAll(text);
+            if (maps.Count == 0)
+            {
+                player.Notificate("No results");
+                GameMode.mySQLConnector.CloseReader();
+                ShowRaceDialog();
+            }
+            else
+            {
+                List<int> mapList = new List<int>();
+                ListDialog mapListDialog = new ListDialog(maps.Count + " maps found", "Load", "Cancel");
+                foreach(var map in maps)
+                {
+                    mapList.Add(Convert.ToInt32(map.Key));
+                    mapListDialog.AddItem(map.Key + "_" + map.Value);
+                }
+                mapListDialog.Show(player);
+                mapListDialog.Response += (sender, eventArgs) =>
+                {
+                    if (eventArgs.DialogButton == DialogButton.Left)
+                    {
+                        if (map != null)
+                            map.Unload();
+                        else
+                            map = new Map();
+
+                        map.Loaded += (sender, eventArgs) =>
+                        {
+                            player.SendClientMessage(ColorPalette.Primary.Main + "The map " + Color.White + eventArgs.map.Name + ColorPalette.Primary.Main + " has been loaded");
+                        };
+                        map.Load(mapList[eventArgs.ListItem], player.VirtualWorld);
+                    }
+                    else
+                    {
+                        player.Notificate("Cancelled");
+                        ShowRaceDialog();
+                    }
+                };
+            }
+        }
+
+
+        private void Player_EnterCheckpoint(object sender, EventArgs e)
         {
             ShowCheckpointDialog();
         }

@@ -94,5 +94,38 @@ namespace SampSharpGameMode1
                 t.Start();
             }
         }
+
+        public void Unload()
+        {
+            if(this.Objects.Count > 0)
+            {
+                this.Objects.ForEach(map => map.Dispose());
+                this.Objects.Clear();
+                this.Id = -1;
+                this.Name = "";
+                this.IsLoaded = false;
+            }
+        }
+
+        public static Dictionary<int, string> FindAll(string str)
+        {
+            Dictionary<int, string> results = new Dictionary<int, string>();
+
+            MySQLConnector mySQLConnector = MySQLConnector.Instance();
+            Dictionary<string, object> param = new Dictionary<string, object>
+                {
+                    { "@name", str }
+                };
+            mySQLConnector.OpenReader("SELECT map_id, map_name FROM maps WHERE map_name LIKE @name", param);
+            Dictionary<string, string> row = mySQLConnector.GetNextRow();
+
+            while(row.Count > 0)
+            {
+                results.Add(Convert.ToInt32(row["map_id"]), row["map_name"]);
+                row = mySQLConnector.GetNextRow();
+            }
+            mySQLConnector.CloseReader();
+            return results;
+        }
     }
 }
