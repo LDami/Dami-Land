@@ -295,6 +295,7 @@ namespace SampSharpGameMode1.Events.Races
                     slot.Player.VirtualWorld = virtualWorld;
                     slot.Player.ToggleControllable(true);
                     slot.Player.ResetWeapons();
+                    Thread.Sleep(10); // Used to prevent AntiCheat to detect weapon before player enters in vehicle
 
                     slot.Player.EnterCheckpoint += checkpointEventHandler;
                     slot.Player.EnterRaceCheckpoint += checkpointEventHandler;
