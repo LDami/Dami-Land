@@ -234,7 +234,10 @@ CREATE TABLE `races` (
   `race_type` int(11) NOT NULL DEFAULT 0,
   `race_laps` int(11) NOT NULL DEFAULT 0,
   `race_startvehicle` int(11) NOT NULL DEFAULT 509,
-  PRIMARY KEY (`race_id`)
+  `race_map` int(11) DEFAULT NULL,
+  PRIMARY KEY (`race_id`),
+  KEY `races_FK` (`race_map`),
+  CONSTRAINT `races_FK` FOREIGN KEY (`race_map`) REFERENCES `maps` (`map_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

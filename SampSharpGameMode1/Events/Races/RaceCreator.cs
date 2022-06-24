@@ -323,6 +323,12 @@ namespace SampSharpGameMode1.Events.Races
                         "(@id, @spawn_index, @spawn_pos_x, @spawn_pos_y, @spawn_pos_z, @spawn_rot)", param);
 
                 }
+                param = new Dictionary<string, object>
+                {
+                    { "@mapid", editingRace.MapId },
+                    { "@id", editingRace.Id }
+                };
+                mySQLConnector.Execute("UPDATE races SET race_map=@mapid WHERE race_id=@id", param);
                 isNew = false;
                 return (mySQLConnector.RowsAffected > 0);
             }
@@ -692,6 +698,7 @@ namespace SampSharpGameMode1.Events.Races
 
                         map.Loaded += (sender, eventArgs) =>
                         {
+                            editingRace.MapId = eventArgs.map.Id;
                             player.SendClientMessage(ColorPalette.Primary.Main + "The map " + Color.White + eventArgs.map.Name + ColorPalette.Primary.Main + " has been loaded");
                         };
                         map.Load(mapList[eventArgs.ListItem], player.VirtualWorld);

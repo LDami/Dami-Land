@@ -33,6 +33,7 @@ namespace SampSharpGameMode1.Events.Races
         public int Laps { get; set; }
         public VehicleModelType? StartingVehicle { get; set; }
         public List<Vector3R> SpawnPoints { get; set; }
+        public int MapId { get; set; }
         public bool IsLoaded { get; private set; }
         public string Creator { get; set; }
 
@@ -64,6 +65,7 @@ namespace SampSharpGameMode1.Events.Races
         private int countdown;
         public DateTime startedTime;
         private SampSharp.GameMode.SAMP.Timer stopWatchTimer;
+        private Map map;
 
         public struct PlayerCheckpointData
         {
@@ -123,6 +125,7 @@ namespace SampSharpGameMode1.Events.Races
                         this.Name = row["race_name"].ToString();
                         this.Creator = row["race_creator"].ToString();
                         this.Laps = Convert.ToInt32(row["race_laps"]);
+                        this.MapId = Convert.ToInt32(row["race_map"] == "[null]" ? "-1" : row["race_map"]);
                         if (Convert.ToInt32(row["race_startvehicle"]) >= 400 && Convert.ToInt32(row["race_startvehicle"]) <= 611)
                         {
                             this.StartingVehicle = (VehicleModelType)Convert.ToInt32(row["race_startvehicle"]);
@@ -321,13 +324,31 @@ namespace SampSharpGameMode1.Events.Races
 
                 if (!isAborted)
                 {
-                    SampSharp.GameMode.SAMP.Timer preparationTimer = new SampSharp.GameMode.SAMP.Timer(3000, false);
-                    preparationTimer.Tick += (object sender, EventArgs e) =>
+                    if(this.MapId > -1)
                     {
-                        countdown = 3;
-                        countdownTimer = new SampSharp.GameMode.SAMP.Timer(1000, true);
-                        countdownTimer.Tick += CountdownTimer_Tick;
-                    };
+                        this.map = new Map();
+                        this.map.Loaded += (sender, eventArgs) =>
+                        {
+                            SampSharp.GameMode.SAMP.Timer preparationTimer = new SampSharp.GameMode.SAMP.Timer(3000, false);
+                            preparationTimer.Tick += (object sender, EventArgs e) =>
+                            {
+                                countdown = 3;
+                                countdownTimer = new SampSharp.GameMode.SAMP.Timer(1000, true);
+                                countdownTimer.Tick += CountdownTimer_Tick;
+                            };
+                        };
+                        this.map.Load(this.MapId, virtualWorld);
+                    }
+                    else
+                    {
+                        SampSharp.GameMode.SAMP.Timer preparationTimer = new SampSharp.GameMode.SAMP.Timer(3000, false);
+                        preparationTimer.Tick += (object sender, EventArgs e) =>
+                        {
+                            countdown = 3;
+                            countdownTimer = new SampSharp.GameMode.SAMP.Timer(1000, true);
+                            countdownTimer.Tick += CountdownTimer_Tick;
+                        };
+                    }
                 }
                 else
                 {
@@ -674,6 +695,8 @@ namespace SampSharpGameMode1.Events.Races
                     {
                         Eject(p);
                     }
+                    if(map != null)
+                        map.Unload();
                     spectatingPlayers.Clear();
                     RaceEventArgs args = new RaceEventArgs();
                     args.race = this;
