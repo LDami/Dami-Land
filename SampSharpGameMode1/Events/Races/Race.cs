@@ -300,6 +300,7 @@ namespace SampSharpGameMode1.Events.Races
                     slot.Player.ResetWeapons();
                     Thread.Sleep(10); // Used to prevent AntiCheat to detect weapon before player enters in vehicle
 
+                    slot.Player.Disconnected += OnPlayerDisconnect;
                     slot.Player.EnterCheckpoint += checkpointEventHandler;
                     slot.Player.EnterRaceCheckpoint += checkpointEventHandler;
                     slot.Player.KeyStateChanged += OnPlayerKeyStateChanged;
@@ -453,6 +454,21 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     p.Vehicle.Engine = true;
                 }
+            }
+        }
+
+        public void OnPlayerDisconnect(object sender, DisconnectEventArgs e)
+        {
+            Player p = (Player)sender;
+            players.Remove(p);
+            if(players.Count == 0)
+            {
+                if (map != null)
+                    map.Unload();
+                spectatingPlayers.Clear();
+                RaceEventArgs args = new RaceEventArgs();
+                args.race = this;
+                OnFinished(args);
             }
         }
 
