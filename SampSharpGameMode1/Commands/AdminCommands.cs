@@ -42,7 +42,7 @@ namespace SampSharpGameMode1.Commands
             new MessageDialog("Admin command list", cmdList, "Close").Show(player);
         }
 
-        [Command("clearveh")]
+        [Command("clearveh", PermissionChecker = typeof(AdminPermissionChecker))]
         private static void ClearVehCommand(Player player)
         {
             foreach (BaseVehicle veh in BaseVehicle.All)
