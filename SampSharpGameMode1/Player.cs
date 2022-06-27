@@ -209,20 +209,17 @@ namespace SampSharpGameMode1
 
 		public override void OnKeyStateChanged(KeyStateChangedEventArgs e)
 		{
-			base.OnKeyStateChanged(e);  
-            switch(e.NewKeys)
-			{
-                case Keys.Fire:
-                    if(this.InAnyVehicle && this.NitroEnabled && !this.IsInEvent)
-					{
-                        if(VehicleComponents.Get(1010).IsCompatibleWithVehicle(this.Vehicle))
-                        {
-                            this.Vehicle.RemoveComponent(1010);
-                            this.Vehicle.AddComponent(1010);
-						}
+			base.OnKeyStateChanged(e);
+            if (e.NewKeys.HasFlag(Keys.Fire) || e.NewKeys.HasFlag(Keys.Action))
+            {
+                if (this.InAnyVehicle && this.State == PlayerState.Driving && this.NitroEnabled && !this.IsInEvent)
+                {
+                    if (VehicleComponents.Get(1010).IsCompatibleWithVehicle(this.Vehicle))
+                    {
+                        this.Vehicle.AddComponent(1010);
                     }
-                    break;
-			}
+                }
+            }
 		}
 		#endregion
 
