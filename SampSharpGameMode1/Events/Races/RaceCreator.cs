@@ -180,6 +180,19 @@ namespace SampSharpGameMode1.Events.Races
                     spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
                     UpdatePlayerCheckpoint();
                     player.SendClientMessage(Color.Green, "Race #" + e.race.Id + " loaded successfully in creation mode");
+
+                    if (map != null)
+                        map.Unload();
+                    else
+                        map = new Map();
+
+                    map.Loaded += (sender, eventArgs) =>
+                    {
+                        editingRace.MapId = eventArgs.map.Id;
+                        player.SendClientMessage(ColorPalette.Primary.Main + "The map " + Color.White + eventArgs.map.Name + ColorPalette.Primary.Main + " has been loaded");
+                    };
+                    map.Load(editingRace.MapId, (int)VirtualWord.EventCreators + player.Id);
+
                     this.SetPlayerInEditor();
                 }
                 else
@@ -271,7 +284,10 @@ namespace SampSharpGameMode1.Events.Races
                     veh.Dispose();
             }
 
-            if(spectatorGroups != null)
+            if (map != null)
+                map.Unload();
+
+            if (spectatorGroups != null)
             {
                 foreach (Civilisation.SpectatorGroup spectatorGroup in spectatorGroups)
                     spectatorGroup.Dispose();
