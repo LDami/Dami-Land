@@ -57,6 +57,8 @@ namespace SampSharpGameMode1.Events.Races
         private EventHandler<EventArgs> checkpointEventHandler;
         private Dictionary<Player, HUD> playersRecordsHUD = new Dictionary<Player, HUD>();
         private Dictionary<Player, HUD> playersLiveInfoHUD = new Dictionary<Player, HUD>();
+        private Dictionary<Player, HUD> playerCPLiveHUD = new Dictionary<Player, HUD>();
+        private List<CheckpointLiveInfo> checkpointLiveInfos = new List<CheckpointLiveInfo>();
         private Dictionary<Player, TimeSpan> playersTimeSpan = new Dictionary<Player, TimeSpan>();
         private Dictionary<string, TimeSpan> records = new Dictionary<string, TimeSpan>();
         public Player winner;
@@ -244,6 +246,9 @@ namespace SampSharpGameMode1.Events.Races
                 this.players = new List<Player>();
                 this.spectatingPlayers = new List<Player>();
                 this.virtualWorld = virtualWorld;
+                this.checkpointLiveInfos = new List<CheckpointLiveInfo>();
+                for(int i = 0; i < this.checkpoints.Count; i ++)
+                    this.checkpointLiveInfos.Add(new CheckpointLiveInfo());
 
                 Random rdm = new Random();
                 List<int> generatedPos = new List<int>();
@@ -294,6 +299,10 @@ namespace SampSharpGameMode1.Events.Races
                         displayedRecord = (record.Value.Hours > 0) ? record.Value.ToString(@"hh\:mm\:ss\.fff") : record.Value.ToString(@"mm\:ss\.fff");
                         playersRecordsHUD[slot.Player].SetText("localRecord" + (recordIdx++) + "Label", "~W~" + record.Key + "~R~ - ~G~" + displayedRecord);
                     }
+
+                    playerCPLiveHUD[slot.Player] = new HUD(slot.Player, "racecplive.json");
+                    playerCPLiveHUD[slot.Player].Hide();
+
 
                     slot.Player.VirtualWorld = virtualWorld;
                     slot.Player.ToggleControllable(true);
@@ -489,6 +498,8 @@ namespace SampSharpGameMode1.Events.Races
                     else
                         displayedCPTime = cpTime.ToString(@"mm\:ss\.fff");
 
+                    checkpointLiveInfos[playersData[player].nextCheckpoint.Idx].Add(player, cpTime);
+
                     playersLiveInfoHUD[player].SetText("checkpointtime", displayedCPTime);
                     playersLiveInfoHUD[player].Show("checkpointtime");
                     Player playerInFront;
@@ -529,6 +540,9 @@ namespace SampSharpGameMode1.Events.Races
                     playersData[player].nextCheckpoint = this.checkpoints[cpidx+1];
                     UpdatePlayerCheckpoint(player);
 
+                    foreach (Player p in this.players)
+                        UpdatePlayerCPLiveDisplay(p, playersData[player].nextCheckpoint.Idx -1);
+
                     playerLastCheckpointData[player] = new PlayerCheckpointData(this.checkpoints[cpidx], cpTime, player.Vehicle.Model, player.Vehicle.Velocity, player.Vehicle.Angle);
 
                     this.checkpoints[cpidx].ExecuteEvents(player);
@@ -537,6 +551,68 @@ namespace SampSharpGameMode1.Events.Races
                     if (this.checkpoints[cpidx].NextNitro == Checkpoint.NitroEvent.Remove)
                         playersLiveInfoHUD[player].Hide("nitro");
                 }
+            }
+        }
+
+        private void UpdatePlayerCPLiveDisplay(Player player, int cpidx)
+        {
+            if (cpidx != playersData[player].nextCheckpoint.Idx - 1)
+                return;
+
+            playerCPLiveHUD[player].Show("localCheckpointsBox");
+            playerCPLiveHUD[player].Show("localCheckpointsBoxLabel");
+            for(int i = 1; i <= 5; i ++)
+            {
+                playerCPLiveHUD[player].Hide($"localCheckpoint{i}");
+                playerCPLiveHUD[player].Hide($"localCheckpoint{i}Label");
+            }
+            int idx = 1;
+            string displayedCPPos;
+            string displayedCPTime;
+            bool isPlayerDisplayed = false; // Used to force display of player even if he's not in the 5 first players
+            foreach (KeyValuePair<Player, CheckpointLiveInfo.Rank> kvp in checkpointLiveInfos[cpidx].Ranking) // Ranking is already ordered
+            {
+                if (kvp.Key == player)
+                    isPlayerDisplayed = true;
+
+                switch(kvp.Value.Pos)
+                {
+                    case 1:
+                        displayedCPPos = "1st";
+                        break;
+                    case 2:
+                        displayedCPPos = "2nd";
+                        break;
+                    case 3:
+                        displayedCPPos = "3rd";
+                        break;
+                    default:
+                        displayedCPPos = $"{kvp.Value.Pos}th";
+                        break;
+                }
+
+                if (kvp.Value.Time.Hours > 0)
+                    displayedCPTime = kvp.Value.Time.ToString(@"hh\:mm\:ss\.fff");
+                else
+                    displayedCPTime = kvp.Value.Time.ToString(@"mm\:ss\.fff");
+
+                if (idx == 5 && !isPlayerDisplayed)
+                {
+                    CheckpointLiveInfo.Rank rank = checkpointLiveInfos[cpidx].GetRankForPlayer(player);
+                    displayedCPPos = "5th";
+                    if (rank.Time.Hours > 0)
+                        displayedCPTime = rank.Time.ToString(@"hh\:mm\:ss\.fff");
+                    else
+                        displayedCPTime = rank.Time.ToString(@"mm\:ss\.fff");
+                }
+                if (idx == 1 || idx < 5) // Always display first player
+                {
+                    playerCPLiveHUD[player].SetText($"localCheckpoint{idx}Label", $"{displayedCPPos} {kvp.Key.Name} - {displayedCPTime}");
+                    playerCPLiveHUD[player].Show($"localCheckpoint{idx}");
+                    playerCPLiveHUD[player].Show($"localCheckpoint{idx}Label");
+                }
+
+                idx++;
             }
         }
 
@@ -736,6 +812,7 @@ namespace SampSharpGameMode1.Events.Races
         {
             playersLiveInfoHUD[player].Hide();
             playersRecordsHUD[player].Hide();
+            playerCPLiveHUD[player].Hide();
             players.RemoveAll(x => x.Equals(player));
             spectatingPlayers.RemoveAll(x => x.Equals(player));
 
