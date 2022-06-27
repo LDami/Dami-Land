@@ -27,17 +27,35 @@ namespace SampSharpGameMode1.Commands
 #endif
         [Command("acmds")]
         private static void AdminCommandsListCommand(Player player)
-		{
-            string cmdList = 
-                $"{Display.ColorPalette.Primary.Main}/vmenu [vehicleid] {Display.ColorPalette.Primary.Darken} Open Vehicle menu\n" +
-                $"{Display.ColorPalette.Primary.Main}/kick /ban [player] [reason] {Display.ColorPalette.Primary.Darken} Kick or Ban player\n" +
-                $"{Display.ColorPalette.Primary.Main}/freeze /unfreeze [player] {Display.ColorPalette.Primary.Darken} Freeze/Unfreeze player\n" +
-                $"{Display.ColorPalette.Primary.Main}/kill [player] {Display.ColorPalette.Primary.Darken} Kill player\n" +
-                $"{Display.ColorPalette.Primary.Main}/get [player] {Display.ColorPalette.Primary.Darken} Teleport player to your position\n" +
-                $"{Display.ColorPalette.Primary.Main}/goto [player] {Display.ColorPalette.Primary.Darken} Teleport yourself to player\n"
+        {
+            Display.ColorPalette.SAMPColor color1 = Display.ColorPalette.Primary.Main;
+            Display.ColorPalette.SAMPColor color2 = new Display.ColorPalette.SAMPColor(Color.White);
+            string cmdList =
+                $"{color1}/vmenu [vehicleid] {color2} Open Vehicle menu\n" +
+                $"{color1}/kick /ban [player] [reason] {color2} Kick or Ban player\n" +
+                $"{color1}/freeze /unfreeze [player] {color2} Freeze/Unfreeze player\n" +
+                $"{color1}/kill [player] {color2} Kill player\n" +
+                $"{color1}/get [player] {color2} Teleport player to your position\n" +
+                $"{color1}/goto [player] {color2} Teleport yourself to player\n" +
+                $"{color1}/clearveh {color2} Respawn all vehicles\n"
                 ;
             new MessageDialog("Admin command list", cmdList, "Close").Show(player);
-		}
+        }
+
+        [Command("clearveh")]
+        private static void ClearVehCommand(Player player)
+        {
+            foreach (BaseVehicle veh in BaseVehicle.All)
+            {
+                if(veh.Driver == null)
+                {
+                    if (StoredVehicle.GetVehicleDbId(veh.Id) == -1)
+                        veh.Dispose();
+                    else
+                        veh.Respawn();
+                }
+            }
+        }
 
         private static BaseVehicle vMenuDialogVehicle;
         [Command("vmenu", PermissionChecker = typeof(AdminPermissionChecker))]
