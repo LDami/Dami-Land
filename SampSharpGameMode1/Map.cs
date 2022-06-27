@@ -20,6 +20,9 @@ namespace SampSharpGameMode1
         public bool IsLoaded { get; private set; }
         public List<MapObject> Objects { get; private set; } = new List<MapObject>();
         public Vector3 Spawn { get; set; }
+        public int VirtualWorld { get; private set; }
+
+        private static List<Map> pool = new List<Map>();
 
         // Common Events
 
@@ -41,6 +44,8 @@ namespace SampSharpGameMode1
             {
                 Thread t = new Thread(() =>
                 {
+                    this.VirtualWorld = virtualworld;
+
                     bool errorFlag = false;
                     Dictionary<string, string> row;
                     Dictionary<string, object> param = new Dictionary<string, object>
@@ -90,6 +95,7 @@ namespace SampSharpGameMode1
                     args.map = this;
                     args.loadedObjects = this.Objects.Count;
                     OnLoaded(args);
+                    Map.AddPool(this);
                 });
                 t.Start();
             }
@@ -104,7 +110,21 @@ namespace SampSharpGameMode1
                 this.Id = -1;
                 this.Name = "";
                 this.IsLoaded = false;
+                Map.RemovePool(this);
             }
+        }
+
+        protected static void AddPool(Map map)
+        {
+            Map.pool.Add(map);
+        }
+        protected static void RemovePool(Map map)
+        {
+            Map.pool.Remove(map);
+        }
+        public static List<Map> GetAllLoadedMaps()
+        {
+            return pool;
         }
 
         public static Dictionary<int, string> FindAll(string str)

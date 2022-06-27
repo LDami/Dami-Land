@@ -131,6 +131,37 @@ namespace SampSharpGameMode1.Commands
                 };
                 dialog.Show(player);
             }
+            [Command("loaded", PermissionChecker = typeof(AdminPermissionChecker))]
+            private static void ListLoadedCommand(Player player)
+            {
+                List<Map> maps = Map.GetAllLoadedMaps();
+                ListDialog dialog = new ListDialog("List of loaded maps", "Select", "Cancel");
+                if (maps.Count > 0)
+                {
+                    foreach (Map map in maps)
+                    {
+                        Console.WriteLine("Showing:" + map.Name + " " + map.VirtualWorld);
+                        dialog.AddItem(map.Name + " " + map.VirtualWorld);
+                    }
+                    dialog.Response += (object sender, DialogResponseEventArgs e) =>
+                    {
+                        if (e.DialogButton == DialogButton.Left)
+                        {
+                            ListDialog mapMenuDialog = new ListDialog("Map menu", "Select", "Cancel");
+                            mapMenuDialog.AddItem(Color.Red + "Unload");
+                            mapMenuDialog.Response += (object sender, DialogResponseEventArgs e) =>
+                            {
+                                maps[e.ListItem].Unload();
+                                player.SendClientMessage("The map has been unloaded");
+                            };
+                            mapMenuDialog.Show(player);
+                        }
+                    };
+                    dialog.Show(player);
+                }
+                else
+                    player.SendClientMessage("There is no loaded map");
+            }
             [Command("addo")]
             private static void AddObjectCommand(Player player, int modelid)
             {
