@@ -40,6 +40,12 @@ namespace SampSharpGameMode1
         private bool nitroEnabled;
         public bool NitroEnabled { get => nitroEnabled; set => nitroEnabled = value; }
 
+        private List<BaseVehicle> spawnedVehicles = new List<BaseVehicle>();
+        public List<BaseVehicle> SpawnedVehicles { get => spawnedVehicles; set => spawnedVehicles = value; }
+
+        private bool disableForceEnterVehicle;
+        public bool DisableForceEnterVehicle { get => disableForceEnterVehicle; set => disableForceEnterVehicle = value; }
+
         //Creators
         public TextdrawCreator textdrawCreator;
         public MapCreator mapCreator;
