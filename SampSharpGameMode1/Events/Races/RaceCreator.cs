@@ -195,17 +195,30 @@ namespace SampSharpGameMode1.Events.Races
             player.KeyStateChanged += Player_KeyStateChanged;
             player.EnterCheckpoint += Player_EnterCheckpoint;
             player.EnterRaceCheckpoint += Player_EnterRaceCheckpoint;
+
+            Vector3 pos;
+            float rot = 0;
+            if (editingRace.SpawnPoints.Count > 0)
+            {
+                pos = editingRace.SpawnPoints[0].Position;
+                rot = editingRace.SpawnPoints[0].Rotation;
+            }
+            else if (editingRace.checkpoints.Count > 0)
+                pos = editingRace.checkpoints[0].Position;
+            else
+                pos = player.Position;
+
             if (!player.InAnyVehicle)
             {
-                Vector3 pos;
-                if (editingRace.checkpoints.Count > 0)
-                    pos = editingRace.checkpoints[0].Position;
-                else
-                    pos = player.Position;
-                BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, pos, 0.0f, 1, 1);
+                BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, pos, rot, 1, 1);
                 veh.VirtualWorld = player.VirtualWorld;
                 player.DisableRemoteVehicleCollisions(true);
                 player.PutInVehicle(veh);
+            }
+            else
+            {
+                player.Vehicle.Position = pos;
+                player.Vehicle.Angle = rot;
             }
 
             hud = new HUD(player);
@@ -251,6 +264,12 @@ namespace SampSharpGameMode1.Events.Races
                 spawnerCreator = null;
             }
             spawnVehicles = null;
+
+            foreach(BaseVehicle veh in BaseVehicle.All)
+            {
+                if (veh.VirtualWorld == (int)VirtualWord.EventCreators + player.Id)
+                    veh.Dispose();
+            }
 
             if(spectatorGroups != null)
             {
