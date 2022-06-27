@@ -262,6 +262,7 @@ namespace SampSharpGameMode1.Events.Races
                 Dictionary<string, string> row;
                 foreach (EventSlot slot in slots)
                 {
+                    slot.Player.Position = slot.Player.Position;
                     RacePlayer playerData = new RacePlayer();
                     playerData.spectatePlayerIndex = -1;
                     playerData.status = RacePlayerStatus.Running;
@@ -461,7 +462,8 @@ namespace SampSharpGameMode1.Events.Races
                 this.isStarted = true;
                 foreach (Player p in players)
                 {
-                    p.Vehicle.Engine = true;
+                    if(p.Vehicle != null)
+                        p.Vehicle.Engine = true;
                 }
             }
         }
