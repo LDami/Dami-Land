@@ -477,6 +477,11 @@ namespace SampSharpGameMode1.Events.Races
                 if (map != null)
                     map.Unload();
                 spectatingPlayers.Clear();
+                foreach(BaseVehicle veh in BaseVehicle.All)
+                {
+                    if (veh.VirtualWorld == this.virtualWorld)
+                        veh.Dispose();
+                }
                 RaceEventArgs args = new RaceEventArgs();
                 args.race = this;
                 OnFinished(args);
@@ -799,6 +804,11 @@ namespace SampSharpGameMode1.Events.Races
                     if(map != null)
                         map.Unload();
                     spectatingPlayers.Clear();
+                    foreach(BaseVehicle veh in BaseVehicle.All)
+                    {
+                        if (veh.VirtualWorld == this.virtualWorld)
+                            veh.Dispose();
+                    }
                     RaceEventArgs args = new RaceEventArgs();
                     args.race = this;
                     OnFinished(args);
