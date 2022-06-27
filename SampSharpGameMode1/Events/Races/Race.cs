@@ -661,26 +661,33 @@ namespace SampSharpGameMode1.Events.Races
             {
                 if (players.Contains(player) && this.isStarted && playersData[player].nextCheckpoint.Idx < this.checkpoints.Count && playersData[player].nextCheckpoint.Idx > 0)
                 {
-                    if (!player.InAnyVehicle)
+                    try
                     {
-                        BaseVehicle veh = BaseVehicle.Create(
-                            playerLastCheckpointData[player].VehicleModel,
-                            playerLastCheckpointData[player].Checkpoint.Position,
-                            playerLastCheckpointData[player].VehicleAngle,
-                            1, 1
-                        );
-                        veh.VirtualWorld = this.virtualWorld;
-                        veh.Engine = true;
-                        if (!safeRespawn) veh.Velocity = playerLastCheckpointData[player].VehicleVelocity;
-                        veh.Died += OnPlayerVehicleDied;
-                        player.PutInVehicle(veh);
+                        if (!player.InAnyVehicle)
+                        {
+                            BaseVehicle veh = BaseVehicle.Create(
+                                playerLastCheckpointData[player].VehicleModel,
+                                playerLastCheckpointData[player].Checkpoint.Position,
+                                playerLastCheckpointData[player].VehicleAngle,
+                                1, 1
+                            );
+                            veh.VirtualWorld = this.virtualWorld;
+                            veh.Engine = true;
+                            if (!safeRespawn) veh.Velocity = playerLastCheckpointData[player].VehicleVelocity;
+                            veh.Died += OnPlayerVehicleDied;
+                            player.PutInVehicle(veh);
+                        }
+                        else
+                        {
+                            BaseVehicle veh = player.Vehicle;
+                            veh.Position = playerLastCheckpointData[player].Checkpoint.Position;
+                            veh.Angle = playerLastCheckpointData[player].VehicleAngle;
+                            if (!safeRespawn) veh.Velocity = playerLastCheckpointData[player].VehicleVelocity;
+                        }
                     }
-                    else
+                    catch(KeyNotFoundException e)
                     {
-                        BaseVehicle veh = player.Vehicle;
-                        veh.Position = playerLastCheckpointData[player].Checkpoint.Position;
-                        veh.Angle = playerLastCheckpointData[player].VehicleAngle;
-                        if (!safeRespawn) veh.Velocity = playerLastCheckpointData[player].VehicleVelocity;
+                        Logger.WriteLineAndClose("Race.cs - Race.RespawnPlayerOnLastCheckpoint:W: A player tries to respawn but no checkpoint has been found");
                     }
                 }
                 else
