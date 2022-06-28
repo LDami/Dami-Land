@@ -390,23 +390,31 @@ namespace SampSharpGameMode1.Events.Derbys
             players.Remove(player);
             if(players.Count == 0) // Si c'est le vainqueur
             {
-                Eject(player);
-                List<Player> tmpPlayerList = new List<Player>(spectatingPlayers);
-                foreach (Player p in tmpPlayerList)
+                SampSharp.GameMode.SAMP.Timer ejectionTimer = new SampSharp.GameMode.SAMP.Timer(2000, false);
+                ejectionTimer.Tick += (object sender, EventArgs e) =>
                 {
-                    Eject(p);
-                }
-                if (map != null)
-                    map.Unload();
-                spectatingPlayers.Clear();
-                foreach (BaseVehicle veh in BaseVehicle.All)
-                {
-                    if (veh.VirtualWorld == this.virtualWorld)
-                        veh.Dispose();
-                }
-                DerbyEventArgs args = new DerbyEventArgs();
-                args.derby = this;
-                OnFinished(args);
+                    Eject(player);
+                    List<Player> tmpPlayerList = new List<Player>(spectatingPlayers);
+                    foreach (Player p in tmpPlayerList)
+                    {
+                        Eject(p);
+                    }
+                    if (map != null)
+                        map.Unload();
+                    foreach (DerbyPickup pickup in Pickups)
+                    {
+                        pickup.pickup.Dispose();
+                    }
+                    spectatingPlayers.Clear();
+                    foreach (BaseVehicle veh in BaseVehicle.All)
+                    {
+                        if (veh.VirtualWorld == this.virtualWorld)
+                            veh.Dispose();
+                    }
+                    DerbyEventArgs args = new DerbyEventArgs();
+                    args.derby = this;
+                    OnFinished(args);
+                };
             }
             else
             {
