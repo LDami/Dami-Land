@@ -192,7 +192,10 @@ namespace SampSharpGameMode1.Events.Derbys
                 map.Load(editingDerby.MapId, (int)VirtualWord.EventCreators + player.Id);
 
                 foreach (DerbyPickup pickup in editingDerby.Pickups)
+                {
                     pickup.pickup.PickedUp += OnPlayerPickUpPickup;
+                    pickup.IsEnabled = false;
+                }
                 player.SendClientMessage(Color.Green, "Derby #" + editingDerby.Id + " loaded successfully in creation mode");
                 this.SetPlayerInEditor();
                 pickupLabels.Clear();

@@ -217,6 +217,11 @@ namespace SampSharpGameMode1.Events.Derbys
                 this.spectatingPlayers = new List<Player>();
                 this.virtualWorld = virtualWorld;
 
+                foreach (DerbyPickup pickup in Pickups)
+                {
+                    pickup.IsEnabled = true;
+                }
+
                 Random rdm = new Random();
                 List<int> generatedPos = new List<int>();
                 List<int> remainingPos = new List<int>();
