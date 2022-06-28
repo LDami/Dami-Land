@@ -131,7 +131,7 @@ namespace SampSharpGameMode1.Events._Tools
 
 		private BaseVehicle Vector3RToBaseVehicle(Vector3R v)
 		{
-			BaseVehicle veh = BaseVehicle.Create(this.model, v.Position, v.Rotation, 0, 0);
+			BaseVehicle veh = BaseVehicle.Create(this.model, v.Position + Vector3.UnitZ, v.Rotation, 0, 0);
 			veh.VirtualWorld = world;
 			return veh;
 		}

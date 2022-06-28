@@ -12,6 +12,12 @@ namespace SampSharpGameMode1.Commands
 {
     class DerbyCommands
     {
+        [Command("derby")]
+        private static void DerbyCommandUsage(Player player)
+        {
+            player.SendClientMessage("Usage: /derby [action]");
+            player.SendClientMessage("Actions: create, loadc, save, exit, addp, delp, find, info");
+        }
         [CommandGroup("derby")]
         class DerbyCommandsClass
         {
@@ -20,8 +26,6 @@ namespace SampSharpGameMode1.Commands
             [Command("create")]
             private static void CreateDerby(Player player)
             {
-                player.SendClientMessage("Derby will be available soon !");
-                return;
                 if (!(player.eventCreator is DerbyCreator))
                 {
                     player.eventCreator = new DerbyCreator(player);
@@ -32,8 +36,6 @@ namespace SampSharpGameMode1.Commands
             [Command("loadc")]
             private static void LoadDerbyCreator(Player player, int id)
             {
-                player.SendClientMessage("Derby will be available soon !");
-                return;
                 if (!(player.eventCreator is DerbyCreator))
                 {
                     player.eventCreator?.Unload();
@@ -42,7 +44,6 @@ namespace SampSharpGameMode1.Commands
                 else
                     player.eventCreator.Unload();
 
-                player.eventCreator.Unload();
                 player.eventCreator.Load(id);
             }
 
@@ -101,25 +102,7 @@ namespace SampSharpGameMode1.Commands
                 if (player.eventCreator != null)
                 {
                     player.eventCreator.Unload();
-                }
-            }
-
-            // MapObjects
-            [Command("addo")]
-            private static void AddObject(Player player, int modelid)
-            {
-                if (player.eventCreator is DerbyCreator)
-                {
-                    (player.eventCreator as DerbyCreator).AddObject(modelid);
-                }
-            }
-
-            [Command("delo")]
-            private static void DeleteObject(Player player, int objectid)
-            {
-                if (player.eventCreator is DerbyCreator)
-                {
-                    (player.eventCreator as DerbyCreator).DeleteObject(objectid);
+                    player.eventCreator = null;
                 }
             }
 

@@ -85,10 +85,7 @@ namespace SampSharpGameMode1.Events
             {
                 if(t.ToString() != "Unknown")
                 {
-                    if (t.ToString() == "Derby")
-                        createEventDialog.AddItem("Derby [Will be available soon]");
-                    else
-                        createEventDialog.AddItem(t.ToString());
+                    createEventDialog.AddItem(t.ToString());
                 }
             }
 
@@ -194,8 +191,6 @@ namespace SampSharpGameMode1.Events
 
         public void ShowCreateEventSearchDialog(Player player, EventType eventType, string str)
         {
-            if (eventType == EventType.Derby) return;
-
             string query = "";
             string key_id = "", key_name = "", key_creator = "";
             switch(eventType)

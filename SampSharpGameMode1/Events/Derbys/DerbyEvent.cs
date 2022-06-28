@@ -32,6 +32,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 this.Status = EventStatus.Loaded;
                 this.Type = EventType.Race;
                 this.Source = loadedRace;
+                this.AvailableSlots = e.availableSlots;
                 OnLoaded(new EventLoadedEventArgs { EventLoaded = this, ErrorMessage = null });
             }
             else OnLoaded(new EventLoadedEventArgs { ErrorMessage = "This race is not playable !" });

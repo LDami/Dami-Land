@@ -107,6 +107,8 @@ namespace SampSharpGameMode1.Events.Derbys
         EditingMode editingMode;
         public bool isNew;
 
+        SpawnerCreator spawnerCreator;
+
         private int lastSelectedObjectId;
         private DerbyPickup? lastPickedUpPickup;
         private Dictionary<int, DynamicTextLabel> labels;
@@ -115,6 +117,8 @@ namespace SampSharpGameMode1.Events.Derbys
         const int moverObjectModelID = 3082;
         Vector3 moverObjectOffset = new Vector3(0.0f, 0.0f, 1.0f);
 
+        Map map = null;
+
         #region PlayerEvents
         private void OnPlayerKeyStateChanged(object sender, KeyStateChangedEventArgs e)
         {
@@ -122,19 +126,6 @@ namespace SampSharpGameMode1.Events.Derbys
             {
                 case Keys.Submission:
                     ShowDerbyDialog();
-                    break;
-                case Keys.No:
-                    Streamer streamer = new Streamer();
-                    DynamicObject obj = streamer.GetPlayerCameraTargetObject(player);
-                    if (obj != null)
-                    {
-                        if(lastSelectedObjectId != -1)
-                            labels[lastSelectedObjectId].Color = Color.White;
-                        labels[obj.Id].Color = Color.Red;
-                        obj.Edited += OnMapObjectEdited;
-                        obj.Edit(player);
-                        lastSelectedObjectId = obj.Id;
-                    }
                     break;
             }
         }
@@ -159,7 +150,6 @@ namespace SampSharpGameMode1.Events.Derbys
             editingDerby.IsCreatorMode = true;
             editingDerby.StartingVehicle = VehicleModelType.Infernus;
             editingDerby.SpawnPoints = new List<Vector3R>();
-            editingDerby.MapObjects = new List<DynamicObject>();
             editingDerby.Pickups = new List<DerbyPickup>();
             isNew = true;
             lastSelectedObjectId = -1;
@@ -188,10 +178,19 @@ namespace SampSharpGameMode1.Events.Derbys
                 lastPickedUpPickup = null;
                 labels = new Dictionary<int, DynamicTextLabel>();
                 editingDerby = e.derby;
-                foreach (DynamicObject obj in editingDerby.MapObjects)
+
+                if (map != null)
+                    map.Unload();
+                else
+                    map = new Map();
+
+                map.Loaded += (sender, eventArgs) =>
                 {
-                    labels.Add(obj.Id, new DynamicTextLabel("ID: " + obj.Id, Color.White, obj.Position, 100.0f));
-                }
+                    editingDerby.MapId = eventArgs.map.Id;
+                    player.SendClientMessage(ColorPalette.Primary.Main + "The map " + Color.White + eventArgs.map.Name + ColorPalette.Primary.Main + " has been loaded");
+                };
+                map.Load(editingDerby.MapId, (int)VirtualWord.EventCreators + player.Id);
+
                 foreach (DerbyPickup pickup in editingDerby.Pickups)
                     pickup.pickup.PickedUp += OnPlayerPickUpPickup;
                 player.SendClientMessage(Color.Green, "Derby #" + editingDerby.Id + " loaded successfully in creation mode");
@@ -202,12 +201,31 @@ namespace SampSharpGameMode1.Events.Derbys
         }
         private void SetPlayerInEditor()
         {
+            player.VirtualWorld = (int)VirtualWord.EventCreators + player.Id;
             player.EnablePlayerCameraTarget(true);
             player.KeyStateChanged += OnPlayerKeyStateChanged;
+
+            Vector3 pos;
+            float rot = 0;
+            if (editingDerby.SpawnPoints.Count > 0)
+            {
+                pos = editingDerby.SpawnPoints[0].Position;
+                rot = editingDerby.SpawnPoints[0].Rotation;
+            }
+            else
+                pos = player.Position;
+
             if (!player.InAnyVehicle)
             {
-                BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, player.Position + new Vector3(0.0, 5.0, 0.0), 0.0f, 1, 1);
+                BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, pos, rot, 1, 1);
+                veh.VirtualWorld = player.VirtualWorld;
+                player.DisableRemoteVehicleCollisions(true);
                 player.PutInVehicle(veh);
+            }
+            else
+            {
+                player.Vehicle.Position = pos;
+                player.Vehicle.Angle = rot;
             }
 
             hud = new HUD(player);
@@ -220,10 +238,6 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             if(editingDerby != null)
             {
-                foreach (DynamicObject obj in editingDerby.MapObjects)
-                    obj.Dispose();
-                editingDerby.MapObjects.Clear();
-                editingDerby.MapObjects = null;
                 foreach (DerbyPickup pickup in editingDerby.Pickups)
                     pickup.pickup.Dispose();
                 editingDerby.Pickups.Clear();
@@ -245,7 +259,28 @@ namespace SampSharpGameMode1.Events.Derbys
                 moverObject.Dispose();
             }
             moverObject = null;
-            //TODO: cancel edit ?
+
+            if (spawnerCreator != null)
+            {
+                spawnerCreator.Unload();
+                spawnerCreator = null;
+            }
+
+            foreach (BaseVehicle veh in BaseVehicle.All)
+            {
+                if (veh.VirtualWorld == (int)VirtualWord.EventCreators + player.Id)
+                    veh.Dispose();
+            }
+
+            if (map != null)
+                map.Unload();
+
+            if (player != null)
+            {
+                player.VirtualWorld = 0;
+                player.CancelEdit();
+                player.KeyStateChanged -= OnPlayerKeyStateChanged;
+            }
         }
 
 		public Boolean Save()
@@ -257,6 +292,10 @@ namespace SampSharpGameMode1.Events.Derbys
                     { "@id", editingDerby.Id }
                 };
                 mySQLConnector.Execute("DELETE FROM derby_spawn WHERE derby_id=@id", param);
+                if (spawnerCreator != null)
+                    editingDerby.SpawnPoints = spawnerCreator.GetSpawnPoints();
+                if (editingDerby.SpawnPoints.Count == 0)
+                    player.SendClientMessage("You must place at least one spawn point (submission key) !");
                 for (int i = 0; i < editingDerby.SpawnPoints.Count; i++)
                 {
                     param = new Dictionary<string, object>
@@ -276,25 +315,6 @@ namespace SampSharpGameMode1.Events.Derbys
                 {
                     { "@id", editingDerby.Id }
                 };
-                mySQLConnector.Execute("DELETE FROM derby_mapobjects WHERE derby_id=@id", param);
-                for (int i = 0; i < editingDerby.MapObjects.Count; i++)
-                {
-                    param = new Dictionary<string, object>
-                    {
-                        { "@id", editingDerby.Id },
-                        { "@mapobject_model",  editingDerby.MapObjects[i].ModelId },
-                        { "@mapobject_pos_x",  editingDerby.MapObjects[i].Position.X },
-                        { "@mapobject_pos_y",  editingDerby.MapObjects[i].Position.Y },
-                        { "@mapobject_pos_z",  editingDerby.MapObjects[i].Position.Z },
-                        { "@mapobject_rot_x",  editingDerby.MapObjects[i].Rotation.X },
-                        { "@mapobject_rot_y",  editingDerby.MapObjects[i].Rotation.Y },
-                        { "@mapobject_rot_z",  editingDerby.MapObjects[i].Rotation.Z },
-                    };
-                    mySQLConnector.Execute("INSERT INTO derby_mapobjects " +
-                        "(derby_id, mapobject_model, mapobject_pos_x, mapobject_pos_y, mapobject_pos_z, mapobject_rot_x, mapobject_rot_y, mapobject_rot_z) VALUES " +
-                        "(@id, @mapobject_model, @mapobject_pos_x, @mapobject_pos_y, @mapobject_pos_z, @mapobject_rot_x, @mapobject_rot_y, @mapobject_rot_z)", param);
-
-                }
                 mySQLConnector.Execute("DELETE FROM derby_pickups WHERE derby_id=@id", param);
                 for (int i = 0; i < editingDerby.Pickups.Count; i++)
                 {
@@ -311,6 +331,12 @@ namespace SampSharpGameMode1.Events.Derbys
                         "(derby_id, pickup_event, pickup_model, pickup_pos_x, pickup_pos_y, pickup_pos_z) VALUES " +
                         "(@id, @pickup_event, @pickup_model, @pickup_pos_x, @pickup_pos_y, @pickup_pos_z)", param);
                 }
+                param = new Dictionary<string, object>
+                {
+                    { "@mapid", editingDerby.MapId },
+                    { "@id", editingDerby.Id }
+                };
+                mySQLConnector.Execute("UPDATE derbys SET derby_map=@mapid WHERE derby_id=@id", param);
                 return (mySQLConnector.RowsAffected > 0);
             }
             return false;
@@ -339,34 +365,9 @@ namespace SampSharpGameMode1.Events.Derbys
             return false;
         }
 
-        public void AddObject(int modelid)
-        {
-            DynamicObject obj = new DynamicObject(modelid, player.Position + new Vector3(10.0, 0.0, 0.0), Vector3.Zero);
-            editingDerby.MapObjects.Add(obj);
-            obj.Edited += OnMapObjectEdited;
-            obj.ShowForPlayer(player);
-            obj.Edit(player);
-            lastSelectedObjectId = obj.Id;
-        }
-
-        public void DeleteObject(int objectid)
-        {
-            DynamicObject obj = editingDerby.MapObjects.Find(obj => obj.Id == objectid);
-            if (obj == null)
-                player.SendClientMessage($"The Object ID {objectid} does not exists");
-            else
-			{
-                editingDerby.MapObjects.Remove(obj);
-                labels[obj.Id].Dispose();
-                labels.Remove(obj.Id);
-                obj.Dispose();
-                player.SendClientMessage($"Object ID {objectid} deleted");
-            }
-        }
-
         public void AddPickup(int modelid)
 		{
-            DerbyPickup pickup = new DerbyPickup(modelid, player.Position, player.VirtualWorld, DerbyPickup.PickupEvent.None);
+            DerbyPickup pickup = new DerbyPickup(modelid, Utils.GetPositionFrontOfPlayer(player), player.VirtualWorld, DerbyPickup.PickupEvent.None);
             editingDerby.Pickups.Add(pickup);
 		}
 
@@ -381,7 +382,8 @@ namespace SampSharpGameMode1.Events.Derbys
             ListDialog derbyDialog = new ListDialog("Derby options", "Select", "Cancel");
             derbyDialog.AddItem("Select starting vehicle [" + editingDerby.StartingVehicle + "]");
             derbyDialog.AddItem("Edit derby name");
-            derbyDialog.AddItem("Edit spawn positions");
+            derbyDialog.AddItem("Start Spawn creator");
+            derbyDialog.AddItem("Load a map ...");
 
             derbyDialog.Show(player);
             derbyDialog.Response += DerbyDialog_Response;
@@ -435,18 +437,97 @@ namespace SampSharpGameMode1.Events.Derbys
                                 };
                                 break;
                             }
-                        case 2: // Set/Edit spawn position
-							{
-                                new SpawnerCreator(player, 0, editingDerby.StartingVehicle.GetValueOrDefault(VehicleModelType.Ambulance), editingDerby.SpawnPoints)
-                                    .Quit += (sender, e) =>
+                        case 2: // Start Spawn creator
+                            {
+                                if (spawnerCreator != null)
                                 {
-                                    editingDerby.SpawnPoints = e.spawnPoints;
-                                    player.Notificate("Spawn points updated");
-                                };
+                                    editingDerby.SpawnPoints = spawnerCreator.GetSpawnPoints();
+                                    spawnerCreator.Unload();
+                                    spawnerCreator = null;
+                                }
+                                else
+                                {
+                                    List<Vector3R> spawns = new List<Vector3R>();
+                                    if (editingDerby.SpawnPoints.Count == 0)
+                                    {
+                                        spawns.Add(new Vector3R(player.Position));
+                                    }
+                                    else
+                                    {
+                                        spawns = editingDerby.SpawnPoints;
+                                    }
+                                    spawnerCreator = new SpawnerCreator(player, player.VirtualWorld, editingDerby.StartingVehicle.GetValueOrDefault(VehicleModelType.Ambulance), spawns);
+                                    spawnerCreator.Quit += (sender, e) =>
+                                        {
+                                            editingDerby.SpawnPoints = e.spawnPoints;
+                                            player.Notificate("Spawn points updated");
+                                        };
+                                }
                                 break;
 							}
+                        case 3:
+                            {
+                                InputDialog findMapDialog = new InputDialog("Find a map", "Type the name of the map you want to load, or empty for full list", false, "Search", "Cancel");
+                                findMapDialog.Show(player);
+                                findMapDialog.Response += (sender, eventArgs) =>
+                                {
+                                    if (eventArgs.DialogButton == DialogButton.Left)
+                                    {
+                                        ShowLoadMapDialog(eventArgs.InputText);
+                                    }
+                                    else
+                                    {
+                                        player.Notificate("Cancelled");
+                                        ShowDerbyDialog();
+                                    }
+                                };
+                                break;
+                            }
                     }
                 }
+            }
+        }
+        private void ShowLoadMapDialog(string text)
+        {
+            Dictionary<int, string> maps = Map.FindAll(text);
+            if (maps.Count == 0)
+            {
+                player.Notificate("No results");
+                GameMode.mySQLConnector.CloseReader();
+                ShowDerbyDialog();
+            }
+            else
+            {
+                List<int> mapList = new List<int>();
+                ListDialog mapListDialog = new ListDialog(maps.Count + " maps found", "Load", "Cancel");
+                foreach (var map in maps)
+                {
+                    mapList.Add(Convert.ToInt32(map.Key));
+                    mapListDialog.AddItem(map.Key + "_" + map.Value);
+                }
+                mapListDialog.Show(player);
+                mapListDialog.Response += (sender, eventArgs) =>
+                {
+                    if (eventArgs.DialogButton == DialogButton.Left)
+                    {
+                        if (map != null)
+                            map.Unload();
+                        else
+                            map = new Map();
+
+                        map.Loaded += (sender, eventArgs) =>
+                        {
+                            editingDerby.MapId = eventArgs.map.Id;
+                            player.SendClientMessage(ColorPalette.Primary.Main + "The map " + Color.White + eventArgs.map.Name + ColorPalette.Primary.Main + " has been loaded");
+                        };
+                        map.Load(mapList[eventArgs.ListItem], player.VirtualWorld);
+                    }
+                    else
+                    {
+                        player.Notificate("Cancelled");
+                        ShowDerbyDialog();
+                    }
+                };
             }
         }
 
@@ -498,21 +579,6 @@ namespace SampSharpGameMode1.Events.Derbys
             }
         }
 		#endregion
-		private void OnMapObjectEdited(object sender, SampSharp.Streamer.Events.PlayerEditEventArgs e)
-        {
-            DynamicObject obj = (sender as DynamicObject);
-            if (labels.ContainsKey(obj.Id))
-			{
-                labels[obj.Id].Position = e.Position;
-                labels[obj.Id].Text = "ID: " + obj.Id;
-                labels[obj.Id].Color = Color.White;
-            }
-            else
-			{
-                labels.Add(obj.Id, new DynamicTextLabel("ID: " + obj.Id, Color.White, e.Position, 100.0f));
-            }
-            lastSelectedObjectId = -1;
-        }
 
         private void moverObject_Edited(object sender, EditPlayerObjectEventArgs e)
         {

@@ -1,6 +1,7 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Events;
+using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using SampSharp.Streamer.World;
 using SampSharpGameMode1.Display;
@@ -13,7 +14,9 @@ namespace SampSharpGameMode1.Events.Derbys
 {
     public class DerbyEventArgs : EventArgs
     {
+        public bool success { get; set; }
         public Derby derby { get; set; }
+        public int availableSlots { get; set; }
     }
     public class DerbyLoadedEventArgs : DerbyEventArgs
     {
@@ -22,16 +25,19 @@ namespace SampSharpGameMode1.Events.Derbys
     public class Derby : EventSource
     {
         public const int MIN_PLAYERS_IN_DERBY = 0;
-        public const int MAX_PLAYERS_IN_DERBY = 100;
+        public const int MAX_PLAYERS_IN_DERBY = 20;
         public int Id { get; set; }
         public string Name { get; set; }
         public VehicleModelType? StartingVehicle { get; set; }
         public List<Vector3R> SpawnPoints { get; set; }
-        public List<DynamicObject> MapObjects { get; set; }
+        public int MapId { get; set; }
         public List<DerbyPickup> Pickups { get; set; }
         public bool IsLoaded { get; private set; }
         public bool IsCreatorMode { get; set; }
+        public string Creator { get; set; }
 
+
+        // Launcher only
 
         private bool isPreparing = false;
         public bool isStarted = false;
@@ -44,6 +50,7 @@ namespace SampSharpGameMode1.Events.Derbys
         private SampSharp.GameMode.SAMP.Timer countdownTimer;
         private int countdown;
         public DateTime startedTime;
+        private Map map;
 
         #region DerbyEvents
         public event EventHandler<DerbyLoadedEventArgs> Loaded;
@@ -57,11 +64,30 @@ namespace SampSharpGameMode1.Events.Derbys
         protected virtual void OnFinished(DerbyEventArgs e)
         {
             Finished?.Invoke(this, e);
-            Player.SendClientMessageToAll("Derby \"" + e.derby.Name + "\" is finished, the winner is " + e.derby.winner.Name + " !");
+            Player.SendClientMessageToAll("Derby \"" + e.derby.Name + "\" is finished, the winner is " + Color.Orange + (e.derby.winner?.Name ?? "nobody") + Color.White + " !");
         }
         #endregion
 
         #region PlayerEvents
+        public void OnPlayerDisconnect(object sender, DisconnectEventArgs e)
+        {
+            Player p = (Player)sender;
+            players.Remove(p);
+            if (players.Count == 0)
+            {
+                if (map != null)
+                    map.Unload();
+                spectatingPlayers.Clear();
+                foreach (BaseVehicle veh in BaseVehicle.All)
+                {
+                    if (veh.VirtualWorld == this.virtualWorld)
+                        veh.Dispose();
+                }
+                DerbyEventArgs args = new DerbyEventArgs();
+                args.derby = this;
+                OnFinished(args);
+            }
+        }
         public void OnPlayerVehicleDied(object sender, PlayerEventArgs e)
         {
             OnPlayerFinished((Player)e.Player, "Vehicle destroyed");
@@ -69,7 +95,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
         private void OnPlayerKeyStateChanged(object sender, KeyStateChangedEventArgs e)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
         #endregion
         public void Load(int id)
@@ -91,6 +117,8 @@ namespace SampSharpGameMode1.Events.Derbys
                     {
                         this.Id = Convert.ToInt32(row["derby_id"]);
                         this.Name = row["derby_name"].ToString();
+                        this.Creator = row["derby_creator"].ToString();
+                        this.MapId = Convert.ToInt32(row["derby_map"] == "[null]" ? "-1" : row["derby_map"]);
                         if (Convert.ToInt32(row["derby_startvehicle"]) >= 400 && Convert.ToInt32(row["derby_startvehicle"]) <= 611)
                         {
                             this.StartingVehicle = (VehicleModelType)Convert.ToInt32(row["derby_startvehicle"]);
@@ -106,13 +134,14 @@ namespace SampSharpGameMode1.Events.Derbys
                         errorFlag = true;
                     }
                     GameMode.mySQLConnector.CloseReader();
+
+                    int availableSlots = 0;
                     if (!errorFlag)
                     {
                         GameMode.mySQLConnector.OpenReader("SELECT spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot " +
                             "FROM derby_spawn " +
                             "WHERE derby_id=@id", param);
                         row = GameMode.mySQLConnector.GetNextRow();
-                        if (row.Count == 0) errorFlag = true;
 
                         this.SpawnPoints = new List<Vector3R>();
 
@@ -126,51 +155,11 @@ namespace SampSharpGameMode1.Events.Derbys
                                     ),
                                     (float)Convert.ToDouble(row["spawn_rot"])
                                 );
-                            this.SpawnPoints.Add(pos);
-                            row = GameMode.mySQLConnector.GetNextRow();
-                        }
-                        for (int i = 0; i < this.SpawnPoints.Count; i++)
-                        {
-                            if (this.SpawnPoints[i].Position == Vector3.Zero)
+                            if (pos.Position != Vector3.Zero)
                             {
-                                this.SpawnPoints.RemoveAt(i);
+                                this.SpawnPoints.Add(pos);
+                                availableSlots++;
                             }
-                        }
-                        if (this.SpawnPoints.Count == 0)
-						{
-                            Logger.WriteLineAndClose($"Derby.cs - Derby.Load:E: Trying to load derby #{id} but it does not have spawn points");
-                            errorFlag = true;
-                        }
-                        GameMode.mySQLConnector.CloseReader();
-                    }
-
-                    if (!errorFlag)
-                    {
-                        GameMode.mySQLConnector.OpenReader(
-                            "SELECT mapobject_model, mapobject_pos_x, mapobject_pos_y, mapobject_pos_z, mapobject_rot_x, mapobject_rot_y, mapobject_rot_z " +
-                            "FROM derby_mapobjects " +
-                            "WHERE derby_id=@id", param);
-                        row = GameMode.mySQLConnector.GetNextRow();
-
-                        this.MapObjects = new List<DynamicObject>();
-
-                        int modelid = -1;
-                        Vector3 pos;
-                        Vector3 rot;
-                        while (row.Count > 0)
-                        {
-                            modelid = Convert.ToInt32(row["mapobject_model"]);
-                            pos = new Vector3(
-                                        (float)Convert.ToDouble(row["mapobject_pos_x"]),
-                                        (float)Convert.ToDouble(row["mapobject_pos_y"]),
-                                        (float)Convert.ToDouble(row["mapobject_pos_z"])
-                                );
-                            rot = new Vector3(
-                                        (float)Convert.ToDouble(row["mapobject_rot_x"]),
-                                        (float)Convert.ToDouble(row["mapobject_rot_y"]),
-                                        (float)Convert.ToDouble(row["mapobject_rot_z"])
-                                );
-                            this.MapObjects.Add(new DynamicObject(modelid, pos, rot));
                             row = GameMode.mySQLConnector.GetNextRow();
                         }
                         GameMode.mySQLConnector.CloseReader();
@@ -206,6 +195,7 @@ namespace SampSharpGameMode1.Events.Derbys
                     DerbyLoadedEventArgs args = new DerbyLoadedEventArgs();
                     args.derby = this;
                     args.success = !errorFlag;
+                    args.availableSlots = availableSlots;
                     OnLoaded(args);
                 });
                 t.Start();
@@ -214,7 +204,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
         public Boolean IsPlayable()
         {
-            return (IsLoaded && StartingVehicle != null) ? true : false;
+            return (StartingVehicle != null && SpawnPoints.Count > Derby.MIN_PLAYERS_IN_DERBY) ? true : false;
         }
 
         public void Prepare(List<EventSlot> slots, int virtualWorld)
@@ -222,32 +212,38 @@ namespace SampSharpGameMode1.Events.Derbys
             if (IsPlayable())
             { // TODO: implementer slots
                 bool isAborted = false;
-                this.players = players;
+                this.players = new List<Player>();
                 this.spectatingPlayers = new List<Player>();
                 this.virtualWorld = virtualWorld;
 
                 Random rdm = new Random();
                 List<int> generatedPos = new List<int>();
+                List<int> remainingPos = new List<int>();
+                for (int i = 0; i < slots.Count; i++)
+                    remainingPos.Add(i);
                 int pos;
                 int tries = 0;
-                foreach (Player p in players)
+                foreach (EventSlot slot in slots)
                 {
                     DerbyPlayer playerData = new DerbyPlayer();
                     playerData.spectatePlayerIndex = -1;
                     playerData.status = DerbyPlayerStatus.Running;
 
-                    playersData.Add(p, playerData);
+                    playersData.Add(slot.Player, playerData);
 
-                    playersLiveInfoHUD[p] = new HUD(p, "derbyhud.json");
-                    playersLiveInfoHUD[p].Hide("iconrockets");
-                    playersLiveInfoHUD[p].Hide("remainingrockets");
-                    playersLiveInfoHUD[p].SetText("remainingplayers", "Remaining players: " + players.Count + "/" + players.Count);
+                    playersLiveInfoHUD[slot.Player] = new HUD(slot.Player, "derbyhud.json");
+                    playersLiveInfoHUD[slot.Player].Hide("iconrockets");
+                    playersLiveInfoHUD[slot.Player].Hide("remainingrockets");
+                    playersLiveInfoHUD[slot.Player].SetText("remainingplayers", "Remaining players: " + players.Count + "/" + players.Count);
 
-                    p.VirtualWorld = virtualWorld;
+                    slot.Player.VirtualWorld = virtualWorld;
 
-                    p.KeyStateChanged += OnPlayerKeyStateChanged;
+                    slot.Player.KeyStateChanged += OnPlayerKeyStateChanged;
+                    slot.Player.Disconnected += OnPlayerDisconnect;
 
-                    pos = rdm.Next(1, players.Count);
+                    pos = remainingPos[rdm.Next(0, remainingPos.Count)];
+
+                    remainingPos.Remove(pos);
                     while (generatedPos.Contains(pos) && tries++ < this.SpawnPoints.Count)
                         pos = rdm.Next(1, players.Count);
 
@@ -264,15 +260,37 @@ namespace SampSharpGameMode1.Events.Derbys
                     veh.Engine = false;
                     veh.Doors = true;
                     veh.Died += OnPlayerVehicleDied;
-                    p.PutInVehicle(veh);
+                    slot.Player.PutInVehicle(veh);
+                    players.Add(slot.Player);
                 }
 
                 if (!isAborted)
                 {
-                    countdown = 3;
-                    countdownTimer = new SampSharp.GameMode.SAMP.Timer(1000, true);
-                    countdownTimer.Tick += CountdownTimer_Tick;
-                    isPreparing = true;
+                    if (this.MapId > -1)
+                    {
+                        this.map = new Map();
+                        this.map.Loaded += (sender, eventArgs) =>
+                        {
+                            SampSharp.GameMode.SAMP.Timer preparationTimer = new SampSharp.GameMode.SAMP.Timer(3000, false);
+                            preparationTimer.Tick += (object sender, EventArgs e) =>
+                            {
+                                countdown = 3;
+                                countdownTimer = new SampSharp.GameMode.SAMP.Timer(1000, true);
+                                countdownTimer.Tick += CountdownTimer_Tick;
+                            };
+                        };
+                        this.map.Load(this.MapId, virtualWorld);
+                    }
+                    else
+                    {
+                        SampSharp.GameMode.SAMP.Timer preparationTimer = new SampSharp.GameMode.SAMP.Timer(3000, false);
+                        preparationTimer.Tick += (object sender, EventArgs e) =>
+                        {
+                            countdown = 3;
+                            countdownTimer = new SampSharp.GameMode.SAMP.Timer(1000, true);
+                            countdownTimer.Tick += CountdownTimer_Tick;
+                        };
+                    }
                 }
                 else
                 {
@@ -307,7 +325,8 @@ namespace SampSharpGameMode1.Events.Derbys
                 this.isStarted = true;
                 foreach (Player p in players)
                 {
-                    p.Vehicle.Engine = true;
+                    if (p.Vehicle != null)
+                        p.Vehicle.Engine = true;
                 }
             }
         }
@@ -353,9 +372,18 @@ namespace SampSharpGameMode1.Events.Derbys
             if(players.Count == 0) // Si c'est le vainqueur
             {
                 Eject(player);
-                foreach (Player p in spectatingPlayers)
+                List<Player> tmpPlayerList = new List<Player>(spectatingPlayers);
+                foreach (Player p in tmpPlayerList)
                 {
                     Eject(p);
+                }
+                if (map != null)
+                    map.Unload();
+                spectatingPlayers.Clear();
+                foreach (BaseVehicle veh in BaseVehicle.All)
+                {
+                    if (veh.VirtualWorld == this.virtualWorld)
+                        veh.Dispose();
                 }
                 DerbyEventArgs args = new DerbyEventArgs();
                 args.derby = this;

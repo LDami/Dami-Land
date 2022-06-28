@@ -80,5 +80,12 @@ namespace SampSharpGameMode1
                 player.Position.Y < (target.Y - range)
             );
         }
+
+        public static Vector3 GetPositionFrontOfPlayer(Player player, float distance = 8.f)
+        {
+            float angle = player.InAnyVehicle ? player.Vehicle.Angle : player.Angle;
+            angle = (float)(angle * Math.PI) / 180;
+            return player.Position + new Vector3(-distance * Math.Sin(angle), distance * Math.Cos(angle), 0);
+        }
     }
 }
