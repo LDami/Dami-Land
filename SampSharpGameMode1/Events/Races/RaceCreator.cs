@@ -179,7 +179,6 @@ namespace SampSharpGameMode1.Events.Races
                     editingRace = e.race;
                     spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
                     UpdatePlayerCheckpoint();
-                    player.SendClientMessage(Color.Green, "Race #" + e.race.Id + " loaded successfully in creation mode");
 
                     if (map != null)
                         map.Unload();
@@ -193,6 +192,7 @@ namespace SampSharpGameMode1.Events.Races
                     };
                     map.Load(editingRace.MapId, (int)VirtualWord.EventCreators + player.Id);
 
+                    player.SendClientMessage(Color.Green, "Race #" + e.race.Id + " loaded successfully in creation mode");
                     this.SetPlayerInEditor();
                 }
                 else
@@ -360,10 +360,11 @@ namespace SampSharpGameMode1.Events.Races
                 }
                 param = new Dictionary<string, object>
                 {
-                    { "@mapid", editingRace.MapId },
+                    { "@name", editingRace.Name },
+                    { "@mapid", editingRace.MapId == -1 ? null : editingRace.MapId.ToString() },
                     { "@id", editingRace.Id }
                 };
-                mySQLConnector.Execute("UPDATE races SET race_map=@mapid WHERE race_id=@id", param);
+                mySQLConnector.Execute("UPDATE races SET race_name=@name, race_map=@mapid WHERE race_id=@id", param);
                 isNew = false;
                 return (mySQLConnector.RowsAffected > 0);
             }

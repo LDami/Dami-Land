@@ -333,10 +333,11 @@ namespace SampSharpGameMode1.Events.Derbys
                 }
                 param = new Dictionary<string, object>
                 {
-                    { "@mapid", editingDerby.MapId },
+                    { "@name", editingDerby.Name },
+                    { "@mapid", editingDerby.MapId == -1 ? null : editingDerby.MapId.ToString() },
                     { "@id", editingDerby.Id }
                 };
-                mySQLConnector.Execute("UPDATE derbys SET derby_map=@mapid WHERE derby_id=@id", param);
+                mySQLConnector.Execute("UPDATE derbys SET derby_name=@name, derby_map=@mapid WHERE derby_id=@id", param);
                 return (mySQLConnector.RowsAffected > 0);
             }
             return false;
