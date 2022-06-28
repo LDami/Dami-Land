@@ -259,7 +259,6 @@ namespace SampSharpGameMode1.Commands
             }
             else
             {
-                AdminPermissionChecker isAdmin = new AdminPermissionChecker();
                 if (Enum.IsDefined(typeof(VirtualWord), virtualworld) && virtualworld < VirtualWord.Players) // Cannot teleport to a list of virualworlds like Players or Events
                 {
                     player.VirtualWorld = (int)virtualworld;
@@ -321,6 +320,16 @@ namespace SampSharpGameMode1.Commands
                 else
                     player.Teleport(targetPlayer.Position + Vector3.UnitZ);
             }
+        }
+        [Command("whereami")]
+        private static void WhereAmICommand(Player player)
+        {
+            player.SendClientMessage($"Position: {player.Position} ; VirtualWorld: {player.VirtualWorld}");
+        }
+        [Command("whereis")]
+        private static void WhereIsCommand(Player player, Player targetPlayer)
+        {
+            player.SendClientMessage($"Position of {targetPlayer.Name}: {targetPlayer.Position} ; VirtualWorld: {targetPlayer.VirtualWorld}");
         }
     }
 }

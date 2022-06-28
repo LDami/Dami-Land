@@ -150,10 +150,13 @@ namespace SampSharpGameMode1
         public override void OnRequestClass(RequestClassEventArgs e)
         {
             base.OnRequestClass(e);
-            this.Position = new Vector3(471.8715, -1772.8622, 14.1192);
-            this.Angle = 325.24f;
-            this.CameraPosition = new Vector3(476.7202, -1766.9512, 15.2254);
-            this.SetCameraLookAt(new Vector3(471.8715, -1772.8622, 14.1192));
+            if (!this.IsNPC)
+            {
+                this.Position = new Vector3(471.8715, -1772.8622, 14.1192);
+                this.Angle = 325.24f;
+                this.CameraPosition = new Vector3(476.7202, -1766.9512, 15.2254);
+                this.SetCameraLookAt(new Vector3(471.8715, -1772.8622, 14.1192));
+            }
         }
         public override void OnUpdate(PlayerUpdateEventArgs e)
         {
@@ -663,6 +666,16 @@ namespace SampSharpGameMode1
 			{
                 player.SetTime(hour % 24, 0); 
 			}
+        }
+
+        [Command("textlabel")]
+        private void TextLabelCommand(BasePlayer player)
+        {
+            this.SendClientMessage("List of 3D Player Text Labels for: " + player.Name);
+            foreach (PlayerTextLabel label in PlayerTextLabel.Of(player))
+            {
+                this.SendClientMessage($"Id: {label.Id} ; Text: {label.Text}");
+            }
         }
 
         [Command("test")]
