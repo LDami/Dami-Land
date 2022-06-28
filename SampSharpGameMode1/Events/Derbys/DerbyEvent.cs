@@ -7,7 +7,7 @@ namespace SampSharpGameMode1.Events.Derbys
 {
 	class DerbyEvent : Event
     {
-        private Derby loadedRace;
+        private Derby loadedDerby;
 
         public DerbyEvent(int _id)
         {
@@ -28,11 +28,11 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             if (e.derby.IsPlayable())
             {
-                loadedRace = e.derby;
+                loadedDerby = e.derby;
                 this.Name = e.derby.Name;
                 this.Status = EventStatus.Loaded;
-                this.Type = EventType.Race;
-                this.Source = loadedRace;
+                this.Type = EventType.Derby;
+                this.Source = loadedDerby;
                 this.AvailableSlots = e.availableSlots;
                 OnLoaded(new EventLoadedEventArgs { EventLoaded = this, ErrorMessage = null });
             }
@@ -41,37 +41,37 @@ namespace SampSharpGameMode1.Events.Derbys
 
         public override bool Start(List<EventSlot> slots)
         {
-            if (loadedRace != null && slots.Count > Derby.MIN_PLAYERS_IN_DERBY)
+            if (loadedDerby != null && slots.Count > Derby.MIN_PLAYERS_IN_DERBY)
             {
-                loadedRace.Prepare(slots, 1);
-                Player.SendClientMessageToAll("[Event] The " + this.Type.ToString() + " is starting, you cannot longer join it !");
+                loadedDerby.Prepare(slots, 1);
+                Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " is starting, you cannot longer join it !");
                 this.Status = EventStatus.Running;
-                loadedRace.Finished += (sender, eventArgs) => { this.End(); };
+                loadedDerby.Finished += (sender, eventArgs) => { this.End(); };
                 this.OnStarted(new EventStartedOrEndedEventArgs { });
                 return true;
             }
             else
             {
-                Logger.WriteLineAndClose($"DerbyEvent.cs - DerbyEvent.Start:E: The derby {this.loadedRace?.Name ?? "N/A"} cannot be started");
+                Logger.WriteLineAndClose($"DerbyEvent.cs - DerbyEvent.Start:E: The derby {this.loadedDerby?.Name ?? "N/A"} cannot be started");
                 return false;
             }
         }
         public override void End()
         {
-            if (!(this.loadedRace.spectatingPlayers is null))
+            if (!(this.loadedDerby.spectatingPlayers is null))
             {
-                List<Player> tmpPlayerList = new List<Player>(this.loadedRace.spectatingPlayers);
+                List<Player> tmpPlayerList = new List<Player>(this.loadedDerby.spectatingPlayers);
                 foreach (Player player in tmpPlayerList)
                 {
-                    this.loadedRace.Eject(player);
+                    this.loadedDerby.Eject(player);
                 }
             }
-            if (!(this.loadedRace.players is null))
+            if (!(this.loadedDerby.players is null))
             {
-                List<Player> tmpPlayerList = new List<Player>(this.loadedRace.players);
+                List<Player> tmpPlayerList = new List<Player>(this.loadedDerby.players);
                 foreach (Player player in tmpPlayerList)
                 {
-                    this.loadedRace.Eject(player);
+                    this.loadedDerby.Eject(player);
                 }
             }
             if (this.Status >= EventStatus.Waiting && this.Status != EventStatus.Running)

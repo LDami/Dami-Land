@@ -26,17 +26,29 @@ namespace SampSharpGameMode1.Events.Derbys
 		public DerbyPickup(int modelid, Vector3 position, int worldid, PickupEvent evt)
 		{
 			pickup = new DynamicPickup(modelid, 14, position, worldid);
-			pickup.PickedUp += Pickup_PickedUp;
 			ModelId = modelid;
 			Event = evt;
 			Position = position;
 			WorldId = worldid;
+			Enable();
+		}
+
+		public void Enable()
+		{
+			this.IsEnabled = true;
+			pickup.PickedUp += Pickup_PickedUp;
+		}
+		public void Disable()
+		{
+			this.IsEnabled = false;
+			pickup.PickedUp -= Pickup_PickedUp;
 		}
 
 		public void Respawn()
 		{
+			if (!pickup.IsDisposed)
+				pickup.Dispose();
 			pickup = new DynamicPickup(this.ModelId, 14, this.Position, this.WorldId);
-			pickup.PickedUp += Pickup_PickedUp;
 		}
 
 		private void Pickup_PickedUp(object sender, SampSharp.GameMode.Events.PlayerEventArgs e)

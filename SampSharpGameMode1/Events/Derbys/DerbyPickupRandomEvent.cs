@@ -51,15 +51,19 @@ namespace SampSharpGameMode1.Events.Derbys
 					if(this.Player.InAnyVehicle)
 					{
 						this.Player.SendClientMessage("Be carefull, your vehicle has some flat tires !");
+						BasePlayer.SendClientMessageToAll(this.Player.Name + " has some flat tires !");
 						Random rdm = new Random();
 						int panels, doors, lights, tires;
 						this.Player.Vehicle.GetDamageStatus(out panels, out doors, out lights, out tires);
 						this.Player.Vehicle.UpdateDamageStatus(panels, doors, lights, rdm.Next(15));
 						SampSharp.GameMode.SAMP.Timer.RunOnce(rdm.Next(10000, 30000), () =>
 						{
-							this.Player.Vehicle.GetDamageStatus(out panels, out doors, out lights, out tires);
-							this.Player.Vehicle.UpdateDamageStatus(panels, doors, lights, 0);
-							this.EventConsumed = true;
+							if(this.Player.InAnyVehicle)
+							{
+								this.Player.Vehicle.GetDamageStatus(out panels, out doors, out lights, out tires);
+								this.Player.Vehicle.UpdateDamageStatus(panels, doors, lights, 0);
+								this.EventConsumed = true;
+							}
 						});
 					}
 					break;
@@ -67,6 +71,7 @@ namespace SampSharpGameMode1.Events.Derbys
 					if (this.Player.InAnyVehicle)
 					{
 						this.Player.SendClientMessage("You received an air support ! Place the target with the submission key and wait !");
+						BasePlayer.SendClientMessageToAll(this.Player.Name + " received an air support !");
 						marker = new DynamicObject(19133, this.Player.Position + new Vector3(0.0, 10.0, 0.0), new Vector3(0.0, 90.0, 0.0), 0, -1, this.Player);
 						marker.ShowForPlayer(this.Player);
 						marker.AttachTo(this.Player.Vehicle, new Vector3(0.0, 10.0, 0.0), Vector3.Zero);
@@ -77,6 +82,7 @@ namespace SampSharpGameMode1.Events.Derbys
 					if (this.Player.InAnyVehicle)
 					{
 						this.Player.SendClientMessage("You received a missile ! Launch it with the submission key !");
+						BasePlayer.SendClientMessageToAll(this.Player.Name + " received a missile !");
 						this.Player.KeyStateChanged += OnPlayerKeyStateChanged;
 					}
 					break;
@@ -84,6 +90,7 @@ namespace SampSharpGameMode1.Events.Derbys
 					if (this.Player.InAnyVehicle)
 					{
 						this.Player.SendClientMessage("You received a protective sphere for 10 seconds !");
+						BasePlayer.SendClientMessageToAll(this.Player.Name + " received a protective sphere !");
 						protectiveSphere = new DynamicObject(11712, this.Player.Position, default, 0, -1);
 						protectiveSphere.AttachTo(this.Player.Vehicle, new Vector3(0.0,0.0,1.0), Vector3.Zero);
 						//UpdateProtectiveSpherePosition();

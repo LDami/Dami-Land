@@ -289,7 +289,6 @@ namespace SampSharpGameMode1.Events
                             {
                                 if (player.IsConnected) player.SendClientMessage(Display.ColorPalette.Primary.Main + $"Race {eventArgs.EventLoaded.Id} {Color.Green}loaded ! (Derby)");
                                 eventList.Add(eventArgs.EventLoaded);
-                                eventList.Add(eventArgs.EventLoaded);
                                 if (openedEvent == null)
                                 {
                                     openedEvent = eventArgs.EventLoaded;

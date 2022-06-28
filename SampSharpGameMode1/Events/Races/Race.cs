@@ -107,7 +107,7 @@ namespace SampSharpGameMode1.Events.Races
             checkpointEventHandler = (sender, eventArgs) => { OnPlayerEnterCheckpoint((Player)sender); };
         }
 
-        public void Load(int id)
+        public void Load(int id, int virtualworld = -1)
         {
             if (GameMode.mySQLConnector != null)
             {

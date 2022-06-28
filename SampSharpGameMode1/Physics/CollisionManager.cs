@@ -31,7 +31,8 @@ namespace SampSharpGameMode1.Physics
 					collisionWithVehicle = false;
 					foreach(BaseVehicle veh in BaseVehicle.All)
 					{
-						if(veh.GetDistanceFromPoint(objPos) < 5.0 && !sender.Vehicle.Equals(veh)) collisionWithVehicle = true;
+						if(!veh.IsDisposed)
+							if(veh.GetDistanceFromPoint(objPos) < 5.0 && !sender.Vehicle.Equals(veh)) collisionWithVehicle = true;
 					}
 					if(collisionTarget.distance < 10.0 || collisionWithVehicle)
 					{

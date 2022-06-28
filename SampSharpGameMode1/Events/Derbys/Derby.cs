@@ -210,17 +210,14 @@ namespace SampSharpGameMode1.Events.Derbys
         public void Prepare(List<EventSlot> slots, int virtualWorld)
         {
             if (IsPlayable())
-            { // TODO: implementer slots
+            {
                 bool isAborted = false;
                 this.isPreparing = true;
                 this.players = new List<Player>();
                 this.spectatingPlayers = new List<Player>();
                 this.virtualWorld = virtualWorld;
 
-                foreach (DerbyPickup pickup in Pickups)
-                {
-                    pickup.IsEnabled = true;
-                }
+                //List<DerbyPickup> tmpPickups = new List<DerbyPickup>();
 
                 Random rdm = new Random();
                 List<int> generatedPos = new List<int>();
@@ -230,7 +227,15 @@ namespace SampSharpGameMode1.Events.Derbys
                 int pos;
                 int tries = 0;
                 foreach (EventSlot slot in slots)
-                {
+                {/*
+                    foreach(DerbyPickup pickup in Pickups)
+                    {
+                        Console.WriteLine("Creating pickup for " + slot.Player.Name);
+                        DerbyPickup p = new DerbyPickup(slot.Player, pickup.ModelId, pickup.Position, pickup.WorldId, pickup.Event);
+                        p.Enable();
+                        tmpPickups.Add(p);
+                    }
+                    */
                     DerbyPlayer playerData = new DerbyPlayer();
                     playerData.spectatePlayerIndex = -1;
                     playerData.status = DerbyPlayerStatus.Running;
@@ -269,6 +274,17 @@ namespace SampSharpGameMode1.Events.Derbys
                     slot.Player.PutInVehicle(veh);
                     players.Add(slot.Player);
                 }
+                /*
+                foreach(DerbyPickup pickup in Pickups)
+                {
+                    pickup.Dispose();
+                }
+                Pickups.Clear();
+                Pickups = tmpPickups;
+                foreach(DerbyPickup pickup in Pickups)
+                {
+                    Console.WriteLine("There is a pickup for " + pickup.Player.Name);
+                }*/
 
                 if (!isAborted)
                 {
@@ -401,9 +417,14 @@ namespace SampSharpGameMode1.Events.Derbys
                     }
                     if (map != null)
                         map.Unload();
-                    foreach (DerbyPickup pickup in Pickups)
+                    foreach (BaseVehicle veh in BaseVehicle.All)
                     {
-                        pickup.pickup.Dispose();
+                        if (veh.VirtualWorld == this.virtualWorld)
+                            veh.Dispose();
+                    }
+                    foreach (DynamicPickup pickup in DynamicPickup.All)
+                    {
+                        pickup.Dispose();
                     }
                     spectatingPlayers.Clear();
                     foreach (BaseVehicle veh in BaseVehicle.All)
@@ -435,9 +456,25 @@ namespace SampSharpGameMode1.Events.Derbys
         }
         public void Eject(Player player)
         {
-            player.ToggleSpectating(false);
-            player.VirtualWorld = 0;
-            player.Spawn();
+            players.RemoveAll(x => x.Equals(player));
+            spectatingPlayers.RemoveAll(x => x.Equals(player));
+
+            if (!player.IsDisposed)
+            {
+                if (player.InAnyVehicle)
+                {
+                    BaseVehicle vehicle = player.Vehicle;
+                    player.RemoveFromVehicle();
+                    if (vehicle != null) vehicle.Dispose();
+                }
+                player.DisableCheckpoint();
+                player.DisableRaceCheckpoint();
+                player.KeyStateChanged -= OnPlayerKeyStateChanged;
+                player.ToggleSpectating(false);
+                player.VirtualWorld = 0;
+                player.pEvent = null;
+                player.Spawn();
+            }
         }
     }
 }
