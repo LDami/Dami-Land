@@ -115,9 +115,9 @@ namespace SampSharpGameMode1.Events.Derbys
 			{
 				if(this.Event == AvailableEvents.GiveAirSupport && !marker.IsDisposed)
 				{
-					Vector3 markerPos = marker.Position;
+					Vector3 markerPos = Utils.GetPositionFrontOfPlayer(this.Player, 10);
 					marker.Dispose();
-					marker = new DynamicObject(18728, markerPos + new Vector3(0.0, 0.0, -5.0), Vector3.Zero, 0);
+					marker = new DynamicObject(18728, markerPos + new Vector3(0.0, 0.0, -5.0), Vector3.Zero, this.Player.VirtualWorld);
 					Random rdm = new Random();
 					Vector3 explosionOffset = Vector3.Zero;
 					SampSharp.GameMode.SAMP.Timer.RunOnce(8000, () =>
