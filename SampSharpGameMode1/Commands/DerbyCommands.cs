@@ -117,11 +117,20 @@ namespace SampSharpGameMode1.Commands
             }
 
             [Command("delp")]
-            private static void DeletePickup(Player player)
+            private static void DeletePickup(Player player, int objectid)
             {
                 if (player.eventCreator is DerbyCreator)
                 {
-                    (player.eventCreator as DerbyCreator).DeletePickup(player.Position);
+                    (player.eventCreator as DerbyCreator).DeletePickup(objectid);
+                }
+            }
+
+            [Command("editp")]
+            private static void EditPickup(Player player, int objectid)
+            {
+                if (player.eventCreator is DerbyCreator)
+                {
+                    (player.eventCreator as DerbyCreator).EditPickup(objectid);
                 }
             }
 

@@ -18,6 +18,10 @@ namespace SampSharpGameMode1
 
 		public Map editingMap = null;
 
+		private bool isNew;
+		public bool IsNew { get { return isNew; } private set { isNew = value; } }
+
+
 		private Player player;
 		private HUD hud;
 		private PlayerObject[] markers;
@@ -43,6 +47,7 @@ namespace SampSharpGameMode1
 		{
 			editingMap = new Map();
 			editingMap.Name = "[Untitled]";
+			isNew = true;
 			this.SetPlayerInEditor();
 		}
 
@@ -64,6 +69,7 @@ namespace SampSharpGameMode1
 				if (e.map.Creator == player.DbId)
 				{
 					editingMap = e.map;
+					isNew = false;
 					player.SendClientMessage(Color.Green, "Map #" + e.map.Id + " loaded successfully in creation mode");
 					this.SetPlayerInEditor();
 					textLabels.Clear();
@@ -82,6 +88,7 @@ namespace SampSharpGameMode1
 		{
 			player.VirtualWorld = (int)VirtualWord.EventCreators + player.Id;
 			player.EnablePlayerCameraTarget(true);
+            player.Disconnected += Player_Disconnected;
 			player.KeyStateChanged += Player_KeyStateChanged;
 			if(editingMap.Spawn != Vector3.Zero)
 				player.Position = editingMap.Spawn;
@@ -94,7 +101,20 @@ namespace SampSharpGameMode1
 			player.SendClientMessage("    Y/N:                    Unfreeze/Freeze");
 		}
 
-		private void Player_KeyStateChanged(object sender, KeyStateChangedEventArgs e)
+        private void Player_Disconnected(object sender, DisconnectEventArgs e)
+        {
+			if (editingMap.Objects.Count > 0)
+			{
+				if (isNew)
+					this.Save("Unsaved_" + DateTime.Now.ToString("G"));
+				else
+					this.Save();
+			}
+
+			this.Unload();
+        }
+
+        private void Player_KeyStateChanged(object sender, KeyStateChangedEventArgs e)
 		{
 			switch(e.NewKeys)
 			{
@@ -115,7 +135,7 @@ namespace SampSharpGameMode1
 
 			string queryUpdate = "UPDATE mapobjects SET obj_model=@model, obj_pos_x=@posx, obj_pos_y=@posy, obj_pos_z=@posz, obj_rot_x=@rotx, obj_rot_y=@roty, obj_rot_z=@rotz WHERE obj_id=@id;";
 			string queryInsert = "INSERT INTO mapobjects (map_id, obj_model, obj_pos_x, obj_pos_y, obj_pos_z, obj_rot_x, obj_rot_y, obj_rot_z) VALUES (@mapid, @model, @posx, @posy, @posz, @rotx, @roty, @rotz);";
-			foreach (MapObject obj in MapObject.All)
+			foreach (MapObject obj in editingMap.Objects)
 			{
 				if(!obj.IsDisposed)
 				{
@@ -148,6 +168,7 @@ namespace SampSharpGameMode1
 			param.Add("@lastedit", DateTime.Now);
 			param.Add("@id", editingMap.Id);
 			mySQLConnector.Execute("UPDATE maps SET map_name=@name, map_lasteditdate=@lastedit WHERE map_id=@id", param);
+			isNew = false;
 			return mySQLConnector.RowsAffected > 0;
 		}
 

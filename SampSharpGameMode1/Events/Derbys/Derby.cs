@@ -98,7 +98,7 @@ namespace SampSharpGameMode1.Events.Derbys
             //throw new NotImplementedException();
         }
         #endregion
-        public void Load(int id)
+        public void Load(int id, int virtualworld = -1)
         {
             if (GameMode.mySQLConnector != null)
             {
@@ -187,7 +187,7 @@ namespace SampSharpGameMode1.Events.Derbys
                                         (float)Convert.ToDouble(row["pickup_pos_y"]),
                                         (float)Convert.ToDouble(row["pickup_pos_z"])
                                 );
-                            this.Pickups.Add(new DerbyPickup(modelid, pos, virtualWorld, (DerbyPickup.PickupEvent)type));
+                            this.Pickups.Add(new DerbyPickup(modelid, pos, virtualworld, (DerbyPickup.PickupEvent)type));
                             row = GameMode.mySQLConnector.GetNextRow();
                         }
                         GameMode.mySQLConnector.CloseReader();
@@ -212,6 +212,7 @@ namespace SampSharpGameMode1.Events.Derbys
             if (IsPlayable())
             { // TODO: implementer slots
                 bool isAborted = false;
+                this.isPreparing = true;
                 this.players = new List<Player>();
                 this.spectatingPlayers = new List<Player>();
                 this.virtualWorld = virtualWorld;
@@ -294,6 +295,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 }
                 else
                 {
+                    Player.SendClientMessageToAll($"Derby {this.Name} aborted");
                     //TODO: remettre les joueurs dans leurs vw et positions initiales
                 }
             }
@@ -343,6 +345,7 @@ namespace SampSharpGameMode1.Events.Derbys
                         placeStr = "1st";
                         player.GiveMoney(1000);
                         player.PlaySound(5448);
+                        winner = player;
                         break;
                     case 2:
                         placeStr = "2nd";
@@ -358,7 +361,18 @@ namespace SampSharpGameMode1.Events.Derbys
                 }
 
                 player.GameText(placeStr + " place !", 5000, 4);
-
+            }
+            else if (reason.Equals("Leave"))
+            {
+                Logger.WriteLineAndClose($"Derby.cs - OnPlayerFinished:I: {player.Name} leaved the derby {this.Name}");
+                player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You leaved the derby");
+                player.GameText("GAME OVER", 5000, 4);
+            }
+            else
+            {
+                Logger.WriteLineAndClose($"Derby.cs - OnPlayerFinished:I: {player.Name} has been ejected from the derby {this.Name} (reason: {reason})");
+                player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You lost (reason: " + reason + ")");
+                player.GameText("GAME OVER", 5000, 4);
             }
 
             if (player.InAnyVehicle)
@@ -392,16 +406,18 @@ namespace SampSharpGameMode1.Events.Derbys
             else
             {
                 if (players.Count == 1) // Si il ne reste plus qu'un seul joueur, on l'exclu pour terminer le derby
-                    OnPlayerFinished(players.FindLast(player => player.Id > 0), "Finished");
-
-                player.ToggleSpectating(true);
-                if (players[0].InAnyVehicle)
-                    player.SpectateVehicle(players[0].Vehicle);
+                    OnPlayerFinished(players.FindLast(player => player.Id >= 0), "Finished");
                 else
-                    player.SpectatePlayer(players[0]);
-                spectatingPlayers.Add(player);
-                playersData[player].status = DerbyPlayerStatus.Spectating;
-                playersData[player].spectatePlayerIndex = 0;
+                {
+                    player.ToggleSpectating(true);
+                    if (players[0].InAnyVehicle)
+                        player.SpectateVehicle(players[0].Vehicle);
+                    else
+                        player.SpectatePlayer(players[0]);
+                    spectatingPlayers.Add(player);
+                    playersData[player].status = DerbyPlayerStatus.Spectating;
+                    playersData[player].spectatePlayerIndex = 0;
+                }
             }
         }
         public void Eject(Player player)

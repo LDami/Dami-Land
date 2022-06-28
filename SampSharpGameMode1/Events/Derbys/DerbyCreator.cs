@@ -111,7 +111,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
         private int lastSelectedObjectId;
         private DerbyPickup? lastPickedUpPickup;
-        private Dictionary<int, DynamicTextLabel> labels;
+        private Dictionary<int, PlayerTextLabel> pickupLabels;
 
         PlayerObject moverObject;
         const int moverObjectModelID = 3082;
@@ -154,7 +154,7 @@ namespace SampSharpGameMode1.Events.Derbys
             isNew = true;
             lastSelectedObjectId = -1;
             lastPickedUpPickup = null;
-            labels = new Dictionary<int, DynamicTextLabel>();
+            pickupLabels = new Dictionary<int, PlayerTextLabel>();
             this.SetPlayerInEditor();
         }
         public void Load(int id)
@@ -176,7 +176,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 isNew = false;
                 lastSelectedObjectId = -1;
                 lastPickedUpPickup = null;
-                labels = new Dictionary<int, DynamicTextLabel>();
+                pickupLabels = new Dictionary<int, PlayerTextLabel>();
                 editingDerby = e.derby;
 
                 if (map != null)
@@ -195,6 +195,11 @@ namespace SampSharpGameMode1.Events.Derbys
                     pickup.pickup.PickedUp += OnPlayerPickUpPickup;
                 player.SendClientMessage(Color.Green, "Derby #" + editingDerby.Id + " loaded successfully in creation mode");
                 this.SetPlayerInEditor();
+                pickupLabels.Clear();
+                foreach (DerbyPickup pickup in e.derby.Pickups)
+                {
+                    pickupLabels.Add(pickup.pickup.Id, new PlayerTextLabel(player, $"Pickup #{pickup.pickup.Id}", Color.White, pickup.pickup.Position, 50.0f, false));
+                }
             }
             else
                 player.SendClientMessage(Color.Red, "Error loading derby (missing mandatory datas)");
@@ -244,12 +249,12 @@ namespace SampSharpGameMode1.Events.Derbys
                 editingDerby.Pickups = null;
             }
             editingDerby = null;
-            if(labels != null)
+            if(pickupLabels != null)
 			{
-                foreach (DynamicTextLabel label in labels.Values)
+                foreach (PlayerTextLabel label in pickupLabels.Values)
                     label.Dispose();
 			}
-            labels = null;
+            pickupLabels = null;
             if (hud != null)
                 hud.Destroy();
             hud = null;
@@ -358,6 +363,7 @@ namespace SampSharpGameMode1.Events.Derbys
                     "(@derby_name, @derby_creator, @derby_startvehicle)", param);
                 if (mySQLConnector.RowsAffected > 0)
                 {
+                    editingDerby.Name = name;
                     hud.SetDerbyName(name);
                     return this.Save();
                 }
@@ -370,12 +376,74 @@ namespace SampSharpGameMode1.Events.Derbys
 		{
             DerbyPickup pickup = new DerbyPickup(modelid, Utils.GetPositionFrontOfPlayer(player), player.VirtualWorld, DerbyPickup.PickupEvent.None);
             editingDerby.Pickups.Add(pickup);
+            PlayerTextLabel label = new PlayerTextLabel(player, $"Pickup #{pickup.pickup.Id}", Color.White, pickup.Position + Vector3.UnitZ, 50.0f);
+            pickupLabels.Add(pickup.pickup.Id, label);
 		}
 
-        public void DeletePickup(Vector3 position)
-		{
-            player.SendClientMessage("Function not implemented yet");
-		}
+        public void DeletePickup(int pickupid)
+        {
+            DerbyPickup pickup = editingDerby.Pickups.Find(x => x.pickup.Id == pickupid);
+            if (pickup != null)
+            {
+                pickup.pickup.Dispose();
+                editingDerby.Pickups.Remove(pickup);
+                pickupLabels[pickupid].Dispose();
+                pickupLabels.Remove(pickupid);
+                player.Notificate("Pickup Deleted");
+            }
+            else
+                player.SendClientMessage("Unknown pickup id");
+        }
+        public void EditPickup(int pickupid)
+        {
+            DerbyPickup pickup = editingDerby.Pickups.Find(x => x.pickup.Id == pickupid);
+            if (pickup != null)
+            {
+                ListDialog dialog = new ListDialog($"Edit pickup #{pickup}", "Select", "Cancel");
+                dialog.AddItem("Change model");
+                dialog.AddItem("Edit event [" + Enum.GetNames(typeof(DerbyPickup.PickupEvent))[(int)pickup.Event] + "]");
+                dialog.AddItem(Color.Red + "Delete");
+                dialog.Response += (sender, e) =>
+                {
+                    if(e.DialogButton == DialogButton.Left)
+                    {
+                        switch(e.ListItem)
+                        {
+                            case 0:
+                                player.SendClientMessage("This function is not implemented yet");
+                                EditPickup(pickupid);
+                                break;
+                            case 1:
+                                ListDialog eventDialog = new ListDialog("Event dialog", "Select", "Cancel");
+                                foreach (string evt in Enum.GetNames(typeof(DerbyPickup.PickupEvent)))
+                                {
+                                    if(evt == Enum.GetNames(typeof(DerbyPickup.PickupEvent))[(int)pickup.Event])
+                                        eventDialog.AddItem("> " + evt);
+                                    else
+                                        eventDialog.AddItem(evt);
+                                }
+                                eventDialog.Response += (sender, e) =>
+                                {
+                                    if(e.DialogButton == DialogButton.Left)
+                                    {
+                                        pickup.Event = (DerbyPickup.PickupEvent)e.ListItem;
+                                        player.Notificate("Updated");
+                                        EditPickup(pickupid);
+                                    }
+                                };
+                                eventDialog.Show(player);
+                                break;
+                            case 2:
+                                this.DeletePickup(pickupid);
+                                break;
+                        }
+                    }
+                };
+                dialog.Show(player);
+            }
+            else
+                player.SendClientMessage("Unknown pickup id");
+        }
 
         #region Dialogs
         private void ShowDerbyDialog()

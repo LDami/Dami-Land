@@ -19,7 +19,8 @@ namespace SampSharpGameMode1.Events
         ///     Loads the event's data on memory
         /// </summary>
         /// <param name="id">ID of the event</param>
-        public void Load(int id);
+        /// <param name="virtualworld">VirtualWorld where to load event data, ignored if the EventSource does not need specific VirtualWorld</param>
+        public void Load(int id, int virtualworld = -1);
         /// <summary>
         ///     Determines if the event is playable
         /// </summary>

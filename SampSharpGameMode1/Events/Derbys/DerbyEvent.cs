@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SampSharp.GameMode.SAMP;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -35,7 +36,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 this.AvailableSlots = e.availableSlots;
                 OnLoaded(new EventLoadedEventArgs { EventLoaded = this, ErrorMessage = null });
             }
-            else OnLoaded(new EventLoadedEventArgs { ErrorMessage = "This race is not playable !" });
+            else OnLoaded(new EventLoadedEventArgs { ErrorMessage = "This " + this.Type.ToString() + " is not playable !" });
         }
 
         public override bool Start(List<EventSlot> slots)
@@ -57,6 +58,24 @@ namespace SampSharpGameMode1.Events.Derbys
         }
         public override void End()
         {
+            if (!(this.loadedRace.spectatingPlayers is null))
+            {
+                List<Player> tmpPlayerList = new List<Player>(this.loadedRace.spectatingPlayers);
+                foreach (Player player in tmpPlayerList)
+                {
+                    this.loadedRace.Eject(player);
+                }
+            }
+            if (!(this.loadedRace.players is null))
+            {
+                List<Player> tmpPlayerList = new List<Player>(this.loadedRace.players);
+                foreach (Player player in tmpPlayerList)
+                {
+                    this.loadedRace.Eject(player);
+                }
+            }
+            if (this.Status >= EventStatus.Waiting && this.Status != EventStatus.Running)
+                Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.Red + " The " + this.Type.ToString() + " has been aborted !");
             this.Status = EventStatus.Finished;
             this.OnEnded(new EventStartedOrEndedEventArgs { });
         }

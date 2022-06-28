@@ -37,7 +37,7 @@ namespace SampSharpGameMode1.Events.Races
                 this.AvailableSlots = e.availableSlots;
                 OnLoaded(new EventLoadedEventArgs { EventLoaded = this, ErrorMessage = null });
             }
-            else OnLoaded(new EventLoadedEventArgs { ErrorMessage = "This race is not playable !" });
+            else OnLoaded(new EventLoadedEventArgs { ErrorMessage = "This " + this.Type.ToString() + " is not playable !" });
         }
 
         public override bool Start(List<EventSlot> slots)
