@@ -380,8 +380,8 @@ namespace SampSharpGameMode1.Events.Derbys
             }
             else if (reason.Equals("Leave"))
             {
-                Logger.WriteLineAndClose($"Derby.cs - OnPlayerFinished:I: {player.Name} leaved the derby {this.Name}");
-                player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You leaved the derby");
+                Logger.WriteLineAndClose($"Derby.cs - OnPlayerFinished:I: {player.Name} left the derby {this.Name}");
+                player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You left the derby");
                 player.GameText("GAME OVER", 5000, 4);
             }
             else

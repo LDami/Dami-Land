@@ -783,8 +783,8 @@ namespace SampSharpGameMode1.Events.Races
             }
             else if (reason.Equals("Leave"))
             {
-                Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} leaved the race {this.Name}");
-                player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You leaved the race");
+                Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} left the race {this.Name}");
+                player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You left the race");
                 player.GameText("GAME OVER", 5000, 4);
             }
             else

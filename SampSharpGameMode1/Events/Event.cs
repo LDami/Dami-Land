@@ -84,7 +84,7 @@ namespace SampSharpGameMode1.Events
                 Slots.Add(new EventSlot(player, Vector3R.Zero));
                 player.pEvent = this;
                 player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You joined the " + this.Type.ToString() + ", good luck !");
-                if (Slots.Count == Player.All.Count() || !this.HasAvailableSlots())
+                if (Slots.Count == Player.All.Count() || !this.HasAvailableSlots() || Player.All.OfType<Player>().Where(x => x.pEvent is null).Count() == 0)
                 {
                     this.Start(Slots);
                 }

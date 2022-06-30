@@ -266,7 +266,6 @@ namespace SampSharpGameMode1.Events
                 case EventType.Race:
                     {
                         Event newEvent = new RaceEvent(eventId);
-                        Console.WriteLine("eventId = " + eventId);
                         newEvent.Loaded += (sender, eventArgs) =>
                         {
                             if (eventArgs.ErrorMessage == null)

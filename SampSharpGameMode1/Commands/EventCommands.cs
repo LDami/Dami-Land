@@ -46,13 +46,18 @@ namespace SampSharpGameMode1.Commands
 				if (player.eventCreator is null)
 				{
 					if (GameMode.eventManager.openedEvent == null)
-						player.SendClientMessage(Color.Wheat, "[Event]" + Color.Red + " There is no opened event !");
-					else
-						GameMode.eventManager.openedEvent.Join(player);
+						player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " There is no opened event !");
+                    else
+                    {
+                        if (player.pEvent == null)
+                            GameMode.eventManager.openedEvent.Join(player);
+                        else
+                            player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " You are already in an event !");
+                    }
 				}
 				else
                 {
-					player.SendClientMessage(Color.Wheat, "[Event]" + Color.Red + " Close your editor first");
+					player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " Close your editor first");
                 }
 			}
 
