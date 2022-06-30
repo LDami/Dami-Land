@@ -22,6 +22,8 @@ namespace SampSharpGameMode1.Commands
             [Command("init")]
             private static void InitTD(Player player)
             {
+                if (player.pEvent != null)
+                    return;
                 if (player.IsAdmin)
                 {
                     if (player.textdrawCreator == null)

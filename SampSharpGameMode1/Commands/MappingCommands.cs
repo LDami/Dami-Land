@@ -45,12 +45,16 @@ namespace SampSharpGameMode1.Commands
             [Command("create")]
             private static void CreateCommand(Player player)
             {
+                if (player.pEvent != null)
+                    return;
                 player.mapCreator ??= new MapCreator(player);
                 player.mapCreator.CreateMap();
             }
             [Command("loadc")]
             private static void LoadCommand(Player player, int id)
             {
+                if (player.pEvent != null)
+                    return;
                 player.mapCreator ??= new MapCreator(player);
                 if(player.mapCreator.editingMap != null)
 				{

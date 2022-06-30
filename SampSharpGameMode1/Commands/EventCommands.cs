@@ -43,22 +43,22 @@ namespace SampSharpGameMode1.Commands
 			[Command("join", Shortcut = "join")]
 			private static void JoinEvent(Player player)
 			{
-				if (player.eventCreator is null)
-				{
-					if (GameMode.eventManager.openedEvent == null)
-						player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " There is no opened event !");
-                    else
-                    {
-                        if (player.pEvent == null)
-                            GameMode.eventManager.openedEvent.Join(player);
-                        else
-                            player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " You are already in an event !");
-                    }
-				}
-				else
+                if (!(player.eventCreator is null))
                 {
-					player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " Close your editor first");
+                    player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " Close your editor first");
+                    return;
                 }
+                if (GameMode.eventManager.openedEvent is null)
+                {
+                    player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " There is no opened event !");
+                    return;
+                }
+                if (!(player.pEvent is null))
+                {
+                    player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " You are already in an event !");
+                    return;
+                }
+                GameMode.eventManager.openedEvent.Join(player);
 			}
 
             [Command("leave", Shortcut = "leave")]

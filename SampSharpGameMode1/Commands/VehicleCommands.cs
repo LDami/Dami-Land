@@ -14,45 +14,51 @@ namespace SampSharpGameMode1.Commands
 		[Command("vehicle", "veh", "v", DisplayName = "v")]
 		private static void SpawnVehicleCommand(Player player, VehicleModelType model)
 		{
-			if(player.SpawnedVehicles.Count > 5)
-            {
-				if(!player.SpawnedVehicles[0].IsDisposed)
-					player.SpawnedVehicles[0].Dispose();
-				player.SpawnedVehicles.RemoveAt(0);
-            }
-			Random rndColor = new Random();
-			BaseVehicle v = BaseVehicle.Create(model, new Vector3(player.Position.X + 5.0, player.Position.Y, player.Position.Z), 0.0f, rndColor.Next(0, 255), rndColor.Next(0, 255));
-			v.VirtualWorld = player.VirtualWorld;
-			player.SpawnedVehicles.Add(v);
-			if (!player.DisableForceEnterVehicle)
+			if(player.pEvent == null)
 			{
-				player.PutInVehicle(v, 0);
-				SampSharp.GameMode.Events.EnterVehicleEventArgs e = new SampSharp.GameMode.Events.EnterVehicleEventArgs(player, v, false);
-				player.OnEnterVehicle(e);
+				if (player.SpawnedVehicles.Count > 5)
+				{
+					if (!player.SpawnedVehicles[0].IsDisposed)
+						player.SpawnedVehicles[0].Dispose();
+					player.SpawnedVehicles.RemoveAt(0);
+				}
+				Random rndColor = new Random();
+				BaseVehicle v = BaseVehicle.Create(model, new Vector3(player.Position.X + 5.0, player.Position.Y, player.Position.Z), 0.0f, rndColor.Next(0, 255), rndColor.Next(0, 255));
+				v.VirtualWorld = player.VirtualWorld;
+				player.SpawnedVehicles.Add(v);
+				if (!player.DisableForceEnterVehicle)
+				{
+					player.PutInVehicle(v, 0);
+					SampSharp.GameMode.Events.EnterVehicleEventArgs e = new SampSharp.GameMode.Events.EnterVehicleEventArgs(player, v, false);
+					player.OnEnterVehicle(e);
+				}
 			}
 		}
 		[Command("nitro")]
 		private static void NitroCommand(Player player)
 		{
-			player.NitroEnabled = !player.NitroEnabled;
-			if (player.NitroEnabled)
+			if (player.pEvent == null)
 			{
-				if (player.InAnyVehicle)
+				player.NitroEnabled = !player.NitroEnabled;
+				if (player.NitroEnabled)
 				{
-					if (VehicleComponents.Get(1010).IsCompatibleWithVehicle(player.Vehicle))
+					if (player.InAnyVehicle)
 					{
-						player.Vehicle.AddComponent(1010);
+						if (VehicleComponents.Get(1010).IsCompatibleWithVehicle(player.Vehicle))
+						{
+							player.Vehicle.AddComponent(1010);
+						}
 					}
+					player.Notificate("Nitro added");
 				}
-				player.Notificate("Nitro added");
-			}
-			else
-			{
-				if (player.InAnyVehicle)
+				else
 				{
-					player.Vehicle.RemoveComponent(1010);
+					if (player.InAnyVehicle)
+					{
+						player.Vehicle.RemoveComponent(1010);
+					}
+					player.Notificate("Nitro removed");
 				}
-				player.Notificate("Nitro removed");
 			}
 		}
 		[Command("enable-force-enter")]

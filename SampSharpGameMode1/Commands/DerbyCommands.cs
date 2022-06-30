@@ -26,6 +26,8 @@ namespace SampSharpGameMode1.Commands
             [Command("create")]
             private static void CreateDerby(Player player)
             {
+                if (player.pEvent != null)
+                    return;
                 if (!(player.eventCreator is DerbyCreator))
                 {
                     player.eventCreator = new DerbyCreator(player);
@@ -36,6 +38,8 @@ namespace SampSharpGameMode1.Commands
             [Command("loadc")]
             private static void LoadDerbyCreator(Player player, int id)
             {
+                if (player.pEvent != null)
+                    return;
                 if (!(player.eventCreator is DerbyCreator))
                 {
                     player.eventCreator?.Unload();

@@ -37,7 +37,8 @@ namespace SampSharpGameMode1.Commands
                 $"{color1}/kill [player] {color2} Kill player\n" +
                 $"{color1}/get [player] {color2} Teleport player to your position\n" +
                 $"{color1}/goto [player] {color2} Teleport yourself to player\n" +
-                $"{color1}/clearveh {color2} Respawn all vehicles\n"
+                $"{color1}/clearveh {color2} Respawn all vehicles\n" +
+                $"{color1}/whereis [player] {color2} Get the position and virtualworld of player\n"
                 ;
             new MessageDialog("Admin command list", cmdList, "Close").Show(player);
         }
@@ -180,12 +181,6 @@ namespace SampSharpGameMode1.Commands
                         break;
                 }
             }
-        }
-
-        [Command("tp")]
-        private static void TP(Player player)
-        {
-            player.Position = new Vector3(1431.6393, 1519.5398, 10.5988);
         }
         [Command("kick", PermissionChecker = typeof(AdminPermissionChecker))]
         private static void KickCommand(Player player, Player targetPlayer, string reason = "No reason")
