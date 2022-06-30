@@ -121,6 +121,7 @@ namespace SampSharpGameMode1
                 logger.Write("Error !");
                 logger.WriteLine("GameMode.cs - GameMode.OnInitialized:E: Error trying to load vehicles: " + ex.Message);
             }
+            DisableInteriorEnterExits();
             logger.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Gamemode ready !");
 
             logger.Close();
