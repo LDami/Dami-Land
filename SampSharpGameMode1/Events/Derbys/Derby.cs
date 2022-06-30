@@ -464,7 +464,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 if (v.VirtualWorld == this.virtualWorld)
                     v.Dispose();
             }
-            foreach (DynamicPickup pickup in DynamicPickup.All)
+            foreach (DerbyPickup pickup in this.Pickups)
             {
                 pickup.Dispose();
             }

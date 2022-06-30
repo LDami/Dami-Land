@@ -1,5 +1,6 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
+using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using SampSharp.Streamer.World;
 using System;
@@ -23,6 +24,8 @@ namespace SampSharpGameMode1.Events.Derbys
 		public int WorldId { get; set; }
 		public bool IsEnabled { get; set; }
 
+		private Timer respawnTimer;
+
 		public DerbyPickup(int modelid, Vector3 position, int worldid, PickupEvent evt)
 		{
 			pickup = new DynamicPickup(modelid, 14, position, worldid);
@@ -31,6 +34,20 @@ namespace SampSharpGameMode1.Events.Derbys
 			Position = position;
 			WorldId = worldid;
 			Enable();
+			respawnTimer = new Timer(1000 * 60, true);
+			respawnTimer.Tick += (sender, e) => Respawn();
+		}
+
+		public void Dispose()
+        {
+			Disable();
+			if(respawnTimer != null)
+            {
+				respawnTimer.IsRepeating = false;
+				respawnTimer.IsRunning = false;
+			}
+			if (!pickup.IsDisposed)
+				pickup.Dispose();
 		}
 
 		public void Enable()
@@ -49,6 +66,7 @@ namespace SampSharpGameMode1.Events.Derbys
 			if (!pickup.IsDisposed)
 				pickup.Dispose();
 			pickup = new DynamicPickup(this.ModelId, 14, this.Position, this.WorldId);
+			Enable();
 		}
 
 		private void Pickup_PickedUp(object sender, SampSharp.GameMode.Events.PlayerEventArgs e)
