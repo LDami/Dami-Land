@@ -65,17 +65,24 @@ namespace SampSharpGameMode1.Events.Derbys
 						float rot = 0.0f;
 						if (e.Player.InAnyVehicle)
 						{
+							BaseVehicle veh = e.Player.Vehicle;
 							pos = e.Player.Vehicle.Position;
 							rot = e.Player.Vehicle.Angle;
 							e.Player.RemoveFromVehicle();
+							veh.Dispose();
 						}
 						Random rdm = new Random();
-						e.Player.PutInVehicle(BaseVehicle.Create((VehicleModelType)rdm.Next(400, 611), pos, rot, rdm.Next(0, 255), rdm.Next(0, 255)));
+						BaseVehicle newVeh = BaseVehicle.Create((VehicleModelType)rdm.Next(400, 611), pos, rot, rdm.Next(0, 255), rdm.Next(0, 255));
+						newVeh.VirtualWorld = e.Player.VirtualWorld;
+						newVeh.Engine = true;
+						newVeh.Doors = true;
+						newVeh.Died += ((Player)e.Player).pEvent.Source.OnPlayerVehicleDied;
+						e.Player.PutInVehicle(newVeh);
 						break;
 					case PickupEvent.Repair:
 						if (e.Player.InAnyVehicle)
 						{
-							e.Player.Vehicle.Health = 100.0f;
+							e.Player.Vehicle.Repair();
 							e.Player.PlaySound(1134);
 						}
 						break;
