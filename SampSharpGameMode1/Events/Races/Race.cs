@@ -7,18 +7,23 @@ using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using static SampSharpGameMode1.Civilisation.PathExtractor;
 
 namespace SampSharpGameMode1.Events.Races
 {
+    public class RaceEventArgs : EventArgs
+    {
+        public Race race { get; set; }
+    }
     public class RaceLoadedEventArgs : EventArgs
     {
         public bool success { get; set; }
         public Race race { get; set; }
         public int availableSlots { get; set; }
     }
-    public class RaceEventArgs : EventArgs
+    public class RaceFinishedEventArgs : RaceEventArgs
     {
-        public Race race { get; set; }
+        public BasePlayer winner { get; set; }
     }
 
     public class Race : EventSource
@@ -61,13 +66,14 @@ namespace SampSharpGameMode1.Events.Races
         private List<CheckpointLiveInfo> checkpointLiveInfos = new List<CheckpointLiveInfo>();
         private Dictionary<Player, TimeSpan> playersTimeSpan = new Dictionary<Player, TimeSpan>();
         private Dictionary<string, TimeSpan> records = new Dictionary<string, TimeSpan>();
-        public Player winner;
         private int virtualWorld;
         private SampSharp.GameMode.SAMP.Timer countdownTimer;
         private int countdown;
         public DateTime startedTime;
         private SampSharp.GameMode.SAMP.Timer stopWatchTimer;
         private Map map;
+        //private List<Civilisation.SpectatorGroup> spectatorGroups = new List<Civilisation.SpectatorGroup>();
+        private List<Actor> spectators = new List<Actor>();
 
         public struct PlayerCheckpointData
         {
@@ -89,12 +95,17 @@ namespace SampSharpGameMode1.Events.Races
 
         // Launcher Events
 
-        public event EventHandler<RaceEventArgs> Finished;
+        public event EventHandler<RaceFinishedEventArgs> Finished;
 
-        protected virtual void OnFinished(RaceEventArgs e)
+        protected virtual void OnFinished(RaceFinishedEventArgs e)
         {
             Finished?.Invoke(this, e);
-            Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " Race \"" + e.race.Name + "\" is finished, the winner is " + Color.Orange + (e.race.winner?.Name ?? "nobody") + Color.White + " !");
+            Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " Race \"" + e.race.Name + "\" is finished, the winner is " + Color.Orange + (e.winner?.Name ?? "nobody") + Color.White + " !");
+            foreach(Actor spectator in spectators)
+            {
+                spectator.Dispose();
+            }
+            spectators.Clear();
         }
 
         public void OnPlayerVehicleDied(object sender, SampSharp.GameMode.Events.PlayerEventArgs e)
@@ -258,6 +269,20 @@ namespace SampSharpGameMode1.Events.Races
                 int pos;
 
                 string displayedRecord;
+                /*
+                PathNode nearestPathNode = Civilisation.PathTools.GetNeirestPathNode(this.checkpoints[0].Position);
+                List<PathNode> neighbors = Civilisation.PathTools.GetNeighbors(nearestPathNode);
+                PathNode neighbor1 = neighbors[0];
+                for(int i = 0; i < 5; i++)
+                {
+                    Actor actor = Actor.Create(47, nearestPathNode.position + new Vector3(rdm.NextDouble() + i, rdm.NextDouble() + i, 1), 0);
+                    actor.VirtualWorld = this.virtualWorld;
+                    actor.ApplyAnimation("ON_LOOKERS", "shout_02", 4.1f, true, false, false, true, 0);
+                    actor.IsInvulnerable = false;
+                    Logger.WriteLineAndClose($"Race.cs - Race.Prepare:I: Actor Id {actor.Id} created at pos {actor.Position} and vw {actor.VirtualWorld}");
+                    spectators.Add(actor);
+                }
+                */
 
                 Dictionary<string, string> row;
                 foreach (EventSlot slot in slots)
@@ -470,22 +495,7 @@ namespace SampSharpGameMode1.Events.Races
 
         public void OnPlayerDisconnect(object sender, DisconnectEventArgs e)
         {
-            Player p = (Player)sender;
-            players.Remove(p);
-            if(players.Count == 0)
-            {
-                if (map != null)
-                    map.Unload();
-                spectatingPlayers.Clear();
-                foreach(BaseVehicle veh in BaseVehicle.All)
-                {
-                    if (veh.VirtualWorld == this.virtualWorld)
-                        veh.Dispose();
-                }
-                RaceEventArgs args = new RaceEventArgs();
-                args.race = this;
-                OnFinished(args);
-            }
+            OnPlayerFinished((Player)sender, "Disconnected");
         }
 
         public void OnPlayerEnterCheckpoint(Player player)
@@ -706,12 +716,6 @@ namespace SampSharpGameMode1.Events.Races
         {
             if(reason.Equals("Finished"))
             {
-                Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} finished the race {this.Name}");
-                if(playersTimeSpan.Count == 0)
-                {
-                    winner = player;
-                }
-
                 TimeSpan duration = DateTime.Now - startedTime;
                 playersTimeSpan[player] = duration;
                 int place = playersTimeSpan.Count;
@@ -768,6 +772,7 @@ namespace SampSharpGameMode1.Events.Races
                     param.Add("@record_duration", duration.ToString(@"hh\:mm\:ss\.ffffff"));
                     GameMode.mySQLConnector.Execute("INSERT INTO race_records (race_id, player_id, record_duration) VALUES (@race_id, @player_id, @record_duration)", param);
                 }
+                Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} finished the race {this.Name} at {placeStr} place");
             }
             else if (reason.Equals("Leave"))
             {
@@ -782,40 +787,26 @@ namespace SampSharpGameMode1.Events.Races
                 player.GameText("GAME OVER", 5000, 4);
             }
 
-            if (player.InAnyVehicle)
-            {
-                BaseVehicle vehicle = player.Vehicle;
-                player.RemoveFromVehicle();
-                if(!(vehicle is null) && !vehicle.IsDisposed) vehicle.Dispose();
-            }
-
             players.Remove(player);
             if(players.Count == 0) // Si on arrive dernier / si le dernier arrive
             {
                 SampSharp.GameMode.SAMP.Timer ejectionTimer = new SampSharp.GameMode.SAMP.Timer(2000, false);
                 ejectionTimer.Tick += (object sender, EventArgs e) =>
                 {
-                    Eject(player);
-                    List<Player> tmpPlayerList = new List<Player>(spectatingPlayers);
-                    foreach (Player p in tmpPlayerList)
-                    {
-                        Eject(p);
-                    }
-                    if(map != null)
-                        map.Unload();
-                    spectatingPlayers.Clear();
-                    foreach(BaseVehicle veh in BaseVehicle.All)
-                    {
-                        if (veh.VirtualWorld == this.virtualWorld)
-                            veh.Dispose();
-                    }
-                    RaceEventArgs args = new RaceEventArgs();
+                    RaceFinishedEventArgs args = new RaceFinishedEventArgs();
                     args.race = this;
+                    args.winner = player;
                     OnFinished(args);
                 };
             }
             else
             {
+                if (player.InAnyVehicle)
+                {
+                    BaseVehicle vehicle = player.Vehicle;
+                    player.RemoveFromVehicle();
+                    if (!(vehicle is null) && !vehicle.IsDisposed) vehicle.Dispose();
+                }
                 player.ToggleSpectating(true);
                 if(players[0].InAnyVehicle)
                     player.SpectateVehicle(players[0].Vehicle);
@@ -848,11 +839,34 @@ namespace SampSharpGameMode1.Events.Races
                 player.EnterCheckpoint -= checkpointEventHandler;
                 player.EnterRaceCheckpoint -= checkpointEventHandler;
                 player.KeyStateChanged -= OnPlayerKeyStateChanged;
+                player.Disconnected -= OnPlayerDisconnect;
                 player.ToggleSpectating(false);
                 player.VirtualWorld = 0;
                 player.pEvent = null;
                 player.Spawn();
             }
+        }
+
+        public void Unload()
+        {
+            foreach (Player p in BasePlayer.All)
+            {
+                if (p.VirtualWorld == this.virtualWorld)
+                    Eject(p);
+            }
+            if (map != null)
+                map.Unload();
+            foreach (BaseVehicle v in BaseVehicle.All)
+            {
+                if (v.VirtualWorld == this.virtualWorld)
+                    v.Dispose();
+            }
+            Logger.WriteLineAndClose($"Race.cs - Race.Unload:I: Race {this.Name} unloaded");
+        }
+
+        public bool IsPlayerSpectating(Player player)
+        {
+            return this.spectatingPlayers.Contains(player);
         }
     }
 }

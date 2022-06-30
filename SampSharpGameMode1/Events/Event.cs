@@ -1,4 +1,5 @@
 ﻿using SampSharp.GameMode.SAMP;
+using SampSharp.GameMode.World;
 using SampSharpGameMode1.Events.Races;
 using System;
 using System.Collections.Generic;
@@ -20,13 +21,20 @@ namespace SampSharpGameMode1.Events
         Race,
         Derby
     }
+    public enum EventFinishedReason
+    {
+        Aborted,
+        Terminated
+    }
     public class EventLoadedEventArgs : EventArgs
     {
         public Event EventLoaded { get; set; }
         public string ErrorMessage { get; set; }
     }
-    public class EventStartedOrEndedEventArgs : EventArgs
+    public class EventFinishedEventArgs : EventArgs
     {
+        public Event EventFinished { get; set; }
+        public EventFinishedReason Reason { get; set; }
     }
 
     public abstract class Event
@@ -39,6 +47,7 @@ namespace SampSharpGameMode1.Events
         public int VirtualWorld { get; set; }
         public List<EventSlot> Slots { get; set; }
         public int AvailableSlots { get; set; }
+        public BasePlayer Winner { get; set; }
 
         public event EventHandler<EventLoadedEventArgs> Loaded;
         protected virtual void OnLoaded(EventLoadedEventArgs e)
@@ -46,14 +55,14 @@ namespace SampSharpGameMode1.Events
             Loaded?.Invoke(this, e);
         }
 
-        public event EventHandler<EventStartedOrEndedEventArgs> Started;
-        protected virtual void OnStarted(EventStartedOrEndedEventArgs e)
+        public event EventHandler<EventArgs> Started;
+        protected virtual void OnStarted(EventArgs e)
         {
             Started?.Invoke(this, e);
         }
 
-        public event EventHandler<EventStartedOrEndedEventArgs> Ended;
-        protected virtual void OnEnded(EventStartedOrEndedEventArgs e)
+        public event EventHandler<EventFinishedEventArgs> Ended;
+        protected virtual void OnEnded(EventFinishedEventArgs e)
         {
             Ended?.Invoke(this, e);
         }
@@ -84,9 +93,14 @@ namespace SampSharpGameMode1.Events
 
         public void Leave(Player player)
 		{
-            if (player.IsConnected && Slots.Find(x => x.Player.Equals(player)) != null)
-			{
-                this.Source.OnPlayerFinished(player, "Leave");
+            if (this.Source.IsPlayerSpectating(player))
+                this.Source.Eject(player);
+            else
+            {
+                if (Slots.Find(x => x.Player.Equals(player)) != null)
+                {
+                    this.Source.OnPlayerFinished(player, "Leave");
+                }
             }
 
         }
@@ -96,7 +110,7 @@ namespace SampSharpGameMode1.Events
             return (Slots.Count < AvailableSlots);
 		}
 
-        public abstract void End();
+        public abstract void End(EventFinishedReason reason);
 
     }
 }

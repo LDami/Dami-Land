@@ -8,6 +8,12 @@ namespace SampSharpGameMode1.Events
     {
         #region Callbacks
         /// <summary>
+        ///     Called when the player disconnects from the game
+        /// </summary>
+        /// <param name="sender">Player</param>
+        /// <param name="e">Event argument</param>
+        public void OnPlayerDisconnect(object sender, SampSharp.GameMode.Events.DisconnectEventArgs e);
+        /// <summary>
         ///     Called when the player's vehicle is destroyed during the event
         /// </summary>
         /// <param name="sender">Vehicle that exploded</param>
@@ -47,6 +53,16 @@ namespace SampSharpGameMode1.Events
         /// </summary>
         /// <param name="player">Player to eject</param>
         public void Eject(Player player);
+        /// <summary>
+        ///     Unload all event elements (maps, players, vehicles)
+        /// </summary>
+        public void Unload();
+        /// <summary>
+        ///     Returns true if the player is spectating the event
+        /// </summary>
+        /// <param name="player">Player</param>
+        /// <returns>True if player is spectating the event, False otherwise</returns>
+        public bool IsPlayerSpectating(Player player);
         #endregion
     }
 }

@@ -47,8 +47,8 @@ namespace SampSharpGameMode1.Events.Races
                 loadedRace.Prepare(slots, 1);
                 Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " is starting, you cannot longer join it !");
                 this.Status = EventStatus.Running;
-                loadedRace.Finished += (sender, eventArgs) => { this.End(); };
-                this.OnStarted(new EventStartedOrEndedEventArgs { });
+                loadedRace.Finished += (sender, eventArgs) => { this.End(EventFinishedReason.Terminated); };
+                this.OnStarted(new EventArgs { });
                 return true;
             }
             else
@@ -57,28 +57,13 @@ namespace SampSharpGameMode1.Events.Races
                 return false;
             }
         }
-        public override void End()
+        public override void End(EventFinishedReason reason)
         {
-            if(!(this.loadedRace.spectatingPlayers is null))
-            {
-                List<Player> tmpPlayerList = new List<Player>(this.loadedRace.spectatingPlayers);
-                foreach (Player player in tmpPlayerList)
-                {
-                    this.loadedRace.Eject(player);
-                }
-            }
-            if (!(this.loadedRace.players is null))
-            {
-                List<Player> tmpPlayerList = new List<Player>(this.loadedRace.players);
-                foreach (Player player in tmpPlayerList)
-                {
-                    this.loadedRace.Eject(player);
-                }
-            }
             if(this.Status >= EventStatus.Waiting && this.Status != EventStatus.Running)
                 Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.Red + " The " + this.Type.ToString() + " has been aborted !");
+            this.loadedRace.Unload();
             this.Status = EventStatus.Finished;
-            this.OnEnded(new EventStartedOrEndedEventArgs { });
+            this.OnEnded(new EventFinishedEventArgs { Reason = reason });
         }
     }
 }

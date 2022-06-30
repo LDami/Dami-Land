@@ -152,7 +152,7 @@ namespace SampSharpGameMode1.Events
                             eventList.Remove(evt);
                             if(openedEvent == evt)
                                 openedEvent = null;
-                            evt.End();
+                            evt.End(EventFinishedReason.Aborted);
                             player.Notificate("Event cancelled");
                         }
                     }
@@ -163,7 +163,7 @@ namespace SampSharpGameMode1.Events
                             eventList.Remove(evt);
                             if (openedEvent == evt)
                                 openedEvent = null;
-                            evt.End();
+                            evt.End(EventFinishedReason.Aborted);
                             player.Notificate("Event cancelled");
                         }
                     }

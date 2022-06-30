@@ -14,13 +14,16 @@ namespace SampSharpGameMode1.Events.Derbys
 {
     public class DerbyEventArgs : EventArgs
     {
-        public bool success { get; set; }
         public Derby derby { get; set; }
-        public int availableSlots { get; set; }
     }
     public class DerbyLoadedEventArgs : DerbyEventArgs
     {
         public bool success { get; set; }
+        public int availableSlots { get; set; }
+    }
+    public class DerbyFinishedEventArgs : DerbyEventArgs
+    {
+        public BasePlayer winner { get; set; }
     }
     public class Derby : EventSource
     {
@@ -45,7 +48,6 @@ namespace SampSharpGameMode1.Events.Derbys
         public Dictionary<Player, DerbyPlayer> playersData = new Dictionary<Player, DerbyPlayer>();
         public List<Player> spectatingPlayers; // Contains spectating players who looses the derby, and others players who spectate without joining
         private Dictionary<Player, HUD> playersLiveInfoHUD = new Dictionary<Player, HUD>();
-        public Player winner;
         private int virtualWorld;
         private SampSharp.GameMode.SAMP.Timer countdownTimer;
         private int countdown;
@@ -60,33 +62,18 @@ namespace SampSharpGameMode1.Events.Derbys
             IsLoaded = e.success;
         }
 
-        public event EventHandler<DerbyEventArgs> Finished;
-        protected virtual void OnFinished(DerbyEventArgs e)
+        public event EventHandler<DerbyFinishedEventArgs> Finished;
+        protected virtual void OnFinished(DerbyFinishedEventArgs e)
         {
             Finished?.Invoke(this, e);
-            Player.SendClientMessageToAll("Derby \"" + e.derby.Name + "\" is finished, the winner is " + Color.Orange + (e.derby.winner?.Name ?? "nobody") + Color.White + " !");
+            Player.SendClientMessageToAll("Derby \"" + e.derby.Name + "\" is finished, the winner is " + Color.Orange + (e.winner?.Name ?? "nobody") + Color.White + " !");
         }
         #endregion
 
         #region PlayerEvents
         public void OnPlayerDisconnect(object sender, DisconnectEventArgs e)
         {
-            Player p = (Player)sender;
-            players.Remove(p);
-            if (players.Count == 0)
-            {
-                if (map != null)
-                    map.Unload();
-                spectatingPlayers.Clear();
-                foreach (BaseVehicle veh in BaseVehicle.All)
-                {
-                    if (veh.VirtualWorld == this.virtualWorld)
-                        veh.Dispose();
-                }
-                DerbyEventArgs args = new DerbyEventArgs();
-                args.derby = this;
-                OnFinished(args);
-            }
+            OnPlayerFinished((Player)sender, "Disconnected");
         }
         public void OnPlayerVehicleDied(object sender, PlayerEventArgs e)
         {
@@ -366,7 +353,6 @@ namespace SampSharpGameMode1.Events.Derbys
                         placeStr = "1st";
                         player.GiveMoney(1000);
                         player.PlaySound(5448);
-                        winner = player;
                         break;
                     case 2:
                         placeStr = "2nd";
@@ -382,6 +368,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 }
 
                 player.GameText(placeStr + " place !", 5000, 4);
+                Logger.WriteLineAndClose($"Derby.cs - OnPlayerFinished:I: {player.Name} finished the derby {this.Name} at {placeStr} place");
             }
             else if (reason.Equals("Leave"))
             {
@@ -396,44 +383,15 @@ namespace SampSharpGameMode1.Events.Derbys
                 player.GameText("GAME OVER", 5000, 4);
             }
 
-            if (player.InAnyVehicle)
-            {
-                BaseVehicle vehicle = player.Vehicle;
-                player.RemoveFromVehicle();
-                vehicle.Dispose();
-            }
-
             players.Remove(player);
             if(players.Count == 0) // Si c'est le vainqueur
             {
                 SampSharp.GameMode.SAMP.Timer ejectionTimer = new SampSharp.GameMode.SAMP.Timer(2000, false);
                 ejectionTimer.Tick += (object sender, EventArgs e) =>
                 {
-                    Eject(player);
-                    List<Player> tmpPlayerList = new List<Player>(spectatingPlayers);
-                    foreach (Player p in tmpPlayerList)
-                    {
-                        Eject(p);
-                    }
-                    if (map != null)
-                        map.Unload();
-                    foreach (BaseVehicle veh in BaseVehicle.All)
-                    {
-                        if (veh.VirtualWorld == this.virtualWorld)
-                            veh.Dispose();
-                    }
-                    foreach (DynamicPickup pickup in DynamicPickup.All)
-                    {
-                        pickup.Dispose();
-                    }
-                    spectatingPlayers.Clear();
-                    foreach (BaseVehicle veh in BaseVehicle.All)
-                    {
-                        if (veh.VirtualWorld == this.virtualWorld)
-                            veh.Dispose();
-                    }
-                    DerbyEventArgs args = new DerbyEventArgs();
+                    DerbyFinishedEventArgs args = new DerbyFinishedEventArgs();
                     args.derby = this;
+                    args.winner = player;
                     OnFinished(args);
                 };
             }
@@ -443,6 +401,12 @@ namespace SampSharpGameMode1.Events.Derbys
                     OnPlayerFinished(players.FindLast(player => player.Id >= 0), "Finished");
                 else
                 {
+                    if (player.InAnyVehicle)
+                    {
+                        BaseVehicle vehicle = player.Vehicle;
+                        player.RemoveFromVehicle();
+                        vehicle.Dispose();
+                    }
                     player.ToggleSpectating(true);
                     if (players[0].InAnyVehicle)
                         player.SpectateVehicle(players[0].Vehicle);
@@ -470,11 +434,38 @@ namespace SampSharpGameMode1.Events.Derbys
                 player.DisableCheckpoint();
                 player.DisableRaceCheckpoint();
                 player.KeyStateChanged -= OnPlayerKeyStateChanged;
+                player.Disconnected -= OnPlayerDisconnect;
                 player.ToggleSpectating(false);
                 player.VirtualWorld = 0;
                 player.pEvent = null;
                 player.Spawn();
             }
+        }
+
+        public void Unload()
+        {
+            foreach (Player p in BasePlayer.All)
+            {
+                if(p.VirtualWorld == this.virtualWorld)
+                    Eject(p);
+            }
+            if (map != null)
+                map.Unload();
+            foreach (BaseVehicle v in BaseVehicle.All)
+            {
+                if (v.VirtualWorld == this.virtualWorld)
+                    v.Dispose();
+            }
+            foreach (DynamicPickup pickup in DynamicPickup.All)
+            {
+                pickup.Dispose();
+            }
+            Logger.WriteLineAndClose($"Derby.cs - Derby.Unload:I: Derby {this.Name} unloaded");
+        }
+
+        public bool IsPlayerSpectating(Player player)
+        {
+            return this.spectatingPlayers.Contains(player);
         }
     }
 }

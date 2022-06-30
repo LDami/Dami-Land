@@ -46,8 +46,8 @@ namespace SampSharpGameMode1.Events.Derbys
                 loadedDerby.Prepare(slots, 1);
                 Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " is starting, you cannot longer join it !");
                 this.Status = EventStatus.Running;
-                loadedDerby.Finished += (sender, eventArgs) => { this.End(); };
-                this.OnStarted(new EventStartedOrEndedEventArgs { });
+                loadedDerby.Finished += (sender, eventArgs) => { this.End(EventFinishedReason.Terminated); };
+                this.OnStarted(new EventArgs { });
                 return true;
             }
             else
@@ -56,28 +56,13 @@ namespace SampSharpGameMode1.Events.Derbys
                 return false;
             }
         }
-        public override void End()
+        public override void End(EventFinishedReason reason)
         {
-            if (!(this.loadedDerby.spectatingPlayers is null))
-            {
-                List<Player> tmpPlayerList = new List<Player>(this.loadedDerby.spectatingPlayers);
-                foreach (Player player in tmpPlayerList)
-                {
-                    this.loadedDerby.Eject(player);
-                }
-            }
-            if (!(this.loadedDerby.players is null))
-            {
-                List<Player> tmpPlayerList = new List<Player>(this.loadedDerby.players);
-                foreach (Player player in tmpPlayerList)
-                {
-                    this.loadedDerby.Eject(player);
-                }
-            }
-            if (this.Status >= EventStatus.Waiting && this.Status != EventStatus.Running)
+            if (reason == EventFinishedReason.Aborted)
                 Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.Red + " The " + this.Type.ToString() + " has been aborted !");
+            this.loadedDerby.Unload();
             this.Status = EventStatus.Finished;
-            this.OnEnded(new EventStartedOrEndedEventArgs { });
+            this.OnEnded(new EventFinishedEventArgs { Reason = reason });
         }
     }
 }
