@@ -4,6 +4,7 @@ using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using SampSharp.Streamer.World;
 using System;
+using System.Collections.Generic;
 
 namespace SampSharpGameMode1.Events.Derbys
 {
@@ -90,7 +91,35 @@ namespace SampSharpGameMode1.Events.Derbys
 							veh.Dispose();
 						}
 						Random rdm = new Random();
-						BaseVehicle newVeh = BaseVehicle.Create((VehicleModelType)rdm.Next(400, 611), pos, rot, rdm.Next(0, 255), rdm.Next(0, 255));
+						// Prevent system to load an unusable / cheated vehicle in Derby
+						List<VehicleCategory> notAuthorizedVehicle = new List<VehicleCategory>()
+						{
+							VehicleCategory.Airplane,
+							VehicleCategory.Boat,
+							VehicleCategory.Helicopter,
+							VehicleCategory.RemoteControl,
+							VehicleCategory.Trailer,
+							VehicleCategory.TrainTrailer
+						};
+						VehicleModelType modelType = VehicleModelType.Ambulance;
+						bool isValidVehicle = false;
+						while (!isValidVehicle)
+                        {
+							modelType = (VehicleModelType)rdm.Next(400, 611);
+							if(!notAuthorizedVehicle.Contains(VehicleModelInfo.ForVehicle(modelType).Category))
+                            {
+								if (VehicleModelInfo.ForVehicle(modelType).Category == VehicleCategory.Unique &&
+									(VehicleModelInfo.ForVehicle(modelType).Name == "Tram" || VehicleModelInfo.ForVehicle(modelType).Name.Contains("Train")))
+								{
+
+								}
+								else
+									isValidVehicle = true;
+
+							}
+
+						}
+						BaseVehicle newVeh = BaseVehicle.Create(modelType, pos, rot, rdm.Next(0, 255), rdm.Next(0, 255));
 						newVeh.VirtualWorld = e.Player.VirtualWorld;
 						newVeh.Engine = true;
 						newVeh.Doors = true;
