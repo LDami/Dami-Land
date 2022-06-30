@@ -32,6 +32,10 @@ namespace SampSharpGameMode1.Display
 			public static SAMPColor Lighten = new SAMPColor(Color.FromArgb(243, 245, 247));
 			public static SAMPColor Darken = new SAMPColor(Color.FromArgb(194, 207, 214));
 		}
+		public static class Error
+		{
+			public static SAMPColor Main = new SAMPColor(Color.FromArgb(223, 41, 53));
+		}
 
 	}
 }

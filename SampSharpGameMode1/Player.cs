@@ -73,7 +73,7 @@ namespace SampSharpGameMode1
 
             Console.WriteLine("Players.cs - Player.OnConnected:I: New player connected: [" + this.Id + "] " + this.Name);
 
-            //this.SetSpawnInfo(1, 1, new Vector3(1431.6393, 1519.5398, 10.5988), 0.0f);
+            BasePlayer.SendClientMessageToAll($"{ColorPalette.Secondary.Main}{this.Name}{ColorPalette.Primary.Main} joined the server");
             this.SendClientMessage("Welcome to " + ColorPalette.Secondary.Main + "Dami's Land");
             this.SendClientMessage(ColorPalette.Primary.Main + "This server is still in beta, type /beta to see what is coming soon !");
             this.SendClientMessage(ColorPalette.Primary.Main + "You can create your own race with /race, and play it with other players with /event !");
@@ -121,7 +121,9 @@ namespace SampSharpGameMode1
         {
             base.OnDisconnected(e);
 
-            if(!this.IsNPC)
+            BasePlayer.SendClientMessageToAll($"{ColorPalette.Secondary.Main}{this.Name}{ColorPalette.Error.Main} left the server");
+
+            if (!this.IsNPC)
             {
                 isAuthenticated = false;
                 Adminlevel = 0;
