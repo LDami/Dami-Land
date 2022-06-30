@@ -139,6 +139,7 @@ namespace SampSharpGameMode1.Events.Races
                         this.Creator = row["race_creator"].ToString();
                         this.Laps = Convert.ToInt32(row["race_laps"]);
                         this.MapId = Convert.ToInt32(row["race_map"] == "[null]" ? "-1" : row["race_map"]);
+                        this.virtualWorld = virtualworld;
                         if (Convert.ToInt32(row["race_startvehicle"]) >= 400 && Convert.ToInt32(row["race_startvehicle"]) <= 611)
                         {
                             this.StartingVehicle = (VehicleModelType)Convert.ToInt32(row["race_startvehicle"]);
@@ -248,7 +249,7 @@ namespace SampSharpGameMode1.Events.Races
             return (checkpoints.Count > 0 && StartingVehicle != null && SpawnPoints.Count > Race.MIN_PLAYERS_IN_RACE) ? true : false;
         }
 
-        public void Prepare(List<EventSlot> slots, int virtualWorld)
+        public void Prepare(List<EventSlot> slots)
         {
             if(IsPlayable())
             {
@@ -256,7 +257,6 @@ namespace SampSharpGameMode1.Events.Races
                 this.isPreparing = true;
                 this.players = new List<Player>();
                 this.spectatingPlayers = new List<Player>();
-                this.virtualWorld = virtualWorld;
                 this.checkpointLiveInfos = new List<CheckpointLiveInfo>();
                 for(int i = 0; i < this.checkpoints.Count; i ++)
                     this.checkpointLiveInfos.Add(new CheckpointLiveInfo());
@@ -467,15 +467,22 @@ namespace SampSharpGameMode1.Events.Races
                     Eject(p);
                 }
             }
-            if(countdown == 0)
+            if (countdown == 0)
             {
                 countdownTimer.IsRepeating = false;
                 countdownTimer.IsRunning = false;
                 countdownTimer.Dispose();
                 Start();
             }
-            else
-                countdown--;
+            if (countdown == 1)
+            {
+                foreach (Player p in players)
+                {
+                    if (p.InAnyVehicle)
+                        p.Vehicle.Position = p.Vehicle.Position + Vector3.UnitZ;
+                }
+            }
+            countdown--;
         }
 
         public void Start()

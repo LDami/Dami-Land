@@ -149,6 +149,7 @@ namespace SampSharpGameMode1.Events.Races
             editingRace = new Race();
             editingRace.Name = "[Untitled]";
             editingRace.SpawnPoints = new List<Vector3R>();
+            editingRace.MapId = -1;
             checkpointIndex = 0;
             editingRace.StartingVehicle = VehicleModelType.Infernus;
             spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
@@ -998,36 +999,39 @@ namespace SampSharpGameMode1.Events.Races
         {
             player.DisableCheckpoint();
             player.DisableRaceCheckpoint();
-            Checkpoint cp = editingRace.checkpoints[checkpointIndex];
-
-            Checkpoint nextCp = null;
-            if (editingRace.checkpoints.ContainsKey(checkpointIndex + 1))
-                nextCp = editingRace.checkpoints[checkpointIndex + 1];
-
-            Vector3 nextPos = (nextCp != null) ? nextCp.Position : Vector3.Zero;
-
-            if (shownCheckpoint == null || shownCheckpoint.IsDisposed)
-                shownCheckpoint = new DynamicRaceCheckpoint(cp.Type, cp.Position, nextPos, cp.Size, 500.0f);
-            else
+            if(editingRace.checkpoints.Count > 0)
             {
-                shownCheckpoint.Position = cp.Position;
-                shownCheckpoint.NextPosition = nextPos;
-                shownCheckpoint.Size = cp.Size;
-            }
-            shownCheckpoint.ShowForPlayer(player);
-            Streamer.Update(player);
-            if (moverObject == null)
-            {
-                moverObject = new PlayerObject(
-                    player,
-                    moverObjectModelID,
-                    cp.Position + moverObjectOffset,
-                    new Vector3(0.0, 0.0, 0.0));
-                moverObject.Edited += moverObject_Edited;
-            }
-            else
-            {
-                moverObject.Position = cp.Position;
+                Checkpoint cp = editingRace.checkpoints[checkpointIndex];
+
+                Checkpoint nextCp = null;
+                if (editingRace.checkpoints.ContainsKey(checkpointIndex + 1))
+                    nextCp = editingRace.checkpoints[checkpointIndex + 1];
+
+                Vector3 nextPos = (nextCp != null) ? nextCp.Position : Vector3.Zero;
+
+                if (shownCheckpoint == null || shownCheckpoint.IsDisposed)
+                    shownCheckpoint = new DynamicRaceCheckpoint(cp.Type, cp.Position, nextPos, cp.Size, 500.0f);
+                else
+                {
+                    shownCheckpoint.Position = cp.Position;
+                    shownCheckpoint.NextPosition = nextPos;
+                    shownCheckpoint.Size = cp.Size;
+                }
+                shownCheckpoint.ShowForPlayer(player);
+                Streamer.Update(player);
+                if (moverObject == null)
+                {
+                    moverObject = new PlayerObject(
+                        player,
+                        moverObjectModelID,
+                        cp.Position + moverObjectOffset,
+                        new Vector3(0.0, 0.0, 0.0));
+                    moverObject.Edited += moverObject_Edited;
+                }
+                else
+                {
+                    moverObject.Position = cp.Position;
+                }
             }
         }
 

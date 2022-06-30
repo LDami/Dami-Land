@@ -10,19 +10,20 @@ namespace SampSharpGameMode1.Events.Races
     {
         private Race loadedRace;
 
-        public RaceEvent(int _id)
+        public RaceEvent(int eventId)
         {
-            if (_id > 0)
+            if (eventId > 0)
             {
-                this.Id = _id;
+                this.Id = eventId;
+                this.VirtualWorld = (int)VirtualWord.Events + eventId;
             }
         }
 
-        public override void Load()
+        public override void Load(int _id)
         {
             Race loadingRace = new Race();
             loadingRace.Loaded += LoadingRace_Loaded;
-            loadingRace.Load(this.Id);
+            loadingRace.Load(_id, this.VirtualWorld);
         }
 
         private void LoadingRace_Loaded(object sender, RaceLoadedEventArgs e)
@@ -44,7 +45,7 @@ namespace SampSharpGameMode1.Events.Races
         {
             if (loadedRace != null && slots.Count > Race.MIN_PLAYERS_IN_RACE)
             {
-                loadedRace.Prepare(slots, 1);
+                loadedRace.Prepare(slots);
                 Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " is starting, you cannot longer join it !");
                 this.Status = EventStatus.Running;
                 loadedRace.Finished += (sender, eventArgs) => { this.End(EventFinishedReason.Terminated); };

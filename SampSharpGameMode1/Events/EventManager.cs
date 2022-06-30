@@ -24,11 +24,13 @@ namespace SampSharpGameMode1.Events
 
         public Event openedEvent;
         private List<Event> eventList;
+        private List<int> usedIds;
 
         public EventManager()
         {
             openedEvent = null;
             eventList = new List<Event>();
+            usedIds = new List<int>();
         }
 
         public void PurgeEvents(Player player)
@@ -38,6 +40,10 @@ namespace SampSharpGameMode1.Events
             {
                 if(e.DialogButton == DialogButton.Left)
                 {
+                    foreach(Event evt in eventList.Where(ev => ev.Status == EventStatus.Loaded))
+                    {
+                        usedIds.RemoveAll(x => x == evt.Id);
+                    }
                     int nbr = eventList.RemoveAll(ev => ev.Status == EventStatus.Loaded);
                     player.Notificate(nbr + " event(s) removed");
                 }
@@ -254,11 +260,13 @@ namespace SampSharpGameMode1.Events
 
         public void CreateEvent(Player player, EventType type, int id)
         {
-            switch(type)
+            int eventId = CheckForAvailableId(usedIds);
+            switch (type)
             {
                 case EventType.Race:
                     {
-                        Event newEvent = new RaceEvent(id);
+                        Event newEvent = new RaceEvent(eventId);
+                        Console.WriteLine("eventId = " + eventId);
                         newEvent.Loaded += (sender, eventArgs) =>
                         {
                             if (eventArgs.ErrorMessage == null)
@@ -276,13 +284,14 @@ namespace SampSharpGameMode1.Events
                             else
                                 if (player.IsConnected) player.SendClientMessage(Color.Red, "Cannot load the race: " + eventArgs.ErrorMessage);
                         };
-                        player.SendClientMessage(Display.ColorPalette.Primary.Main + $"Loading Race #{id}");
-                        newEvent.Load();
+                        player.SendClientMessage(Display.ColorPalette.Primary.Main + $"Loading Race #{eventId}");
+                        newEvent.Load(id);
+                        usedIds.Add(eventId);
                         break;
                     }
                 case EventType.Derby:
                     {
-                        Event newEvent = new DerbyEvent(id);
+                        Event newEvent = new DerbyEvent(eventId);
                         newEvent.Loaded += (sender, eventArgs) =>
                         {
                             if (eventArgs.ErrorMessage == null)
@@ -300,11 +309,28 @@ namespace SampSharpGameMode1.Events
                             else
                                 if (player.IsConnected) player.SendClientMessage(Color.Red, "Cannot load the derby: " + eventArgs.ErrorMessage);
                         };
-                        player.SendClientMessage(Display.ColorPalette.Primary.Main + $"Loading Derby #{id}");
-                        newEvent.Load();
+                        player.SendClientMessage(Display.ColorPalette.Primary.Main + $"Loading Derby #{eventId}");
+                        newEvent.Load(id);
+                        usedIds.Add(eventId);
                         break;
                     }
             }
+        }
+
+        private int CheckForAvailableId(List<int> alreadyUsedIds)
+        {
+            alreadyUsedIds.Sort();
+            if (alreadyUsedIds.Count > 0)
+            {
+                int a = alreadyUsedIds.First();
+                int b = alreadyUsedIds.Last();
+                List<int> list2 = Enumerable.Range(a, b - a + 1).ToList();
+                List<int> remaining = list2.Except(alreadyUsedIds).ToList();
+                return remaining.Count > 0 ? remaining[0] : b + 1;
+            }
+            else
+                return 1;
+
         }
 
     }

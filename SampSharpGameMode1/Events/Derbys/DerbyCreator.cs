@@ -522,7 +522,7 @@ namespace SampSharpGameMode1.Events.Derbys
                                     List<Vector3R> spawns = new List<Vector3R>();
                                     if (editingDerby.SpawnPoints.Count == 0)
                                     {
-                                        spawns.Add(new Vector3R(player.Position));
+                                        spawns.Add(new Vector3R(player.Position + Vector3.UnitX));
                                     }
                                     else
                                     {

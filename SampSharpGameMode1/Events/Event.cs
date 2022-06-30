@@ -67,7 +67,7 @@ namespace SampSharpGameMode1.Events
             Ended?.Invoke(this, e);
         }
 
-        public abstract void Load();
+        public abstract void Load(int _id);
 
         public void Open()
         {

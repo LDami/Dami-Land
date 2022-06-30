@@ -106,6 +106,7 @@ namespace SampSharpGameMode1.Events.Derbys
                         this.Name = row["derby_name"].ToString();
                         this.Creator = row["derby_creator"].ToString();
                         this.MapId = Convert.ToInt32(row["derby_map"] == "[null]" ? "-1" : row["derby_map"]);
+                        this.virtualWorld = virtualworld;
                         if (Convert.ToInt32(row["derby_startvehicle"]) >= 400 && Convert.ToInt32(row["derby_startvehicle"]) <= 611)
                         {
                             this.StartingVehicle = (VehicleModelType)Convert.ToInt32(row["derby_startvehicle"]);
@@ -194,7 +195,7 @@ namespace SampSharpGameMode1.Events.Derbys
             return (StartingVehicle != null && SpawnPoints.Count > Derby.MIN_PLAYERS_IN_DERBY) ? true : false;
         }
 
-        public void Prepare(List<EventSlot> slots, int virtualWorld)
+        public void Prepare(List<EventSlot> slots)
         {
             if (IsPlayable())
             {
@@ -202,7 +203,6 @@ namespace SampSharpGameMode1.Events.Derbys
                 this.isPreparing = true;
                 this.players = new List<Player>();
                 this.spectatingPlayers = new List<Player>();
-                this.virtualWorld = virtualWorld;
 
                 //List<DerbyPickup> tmpPickups = new List<DerbyPickup>();
 
@@ -311,7 +311,6 @@ namespace SampSharpGameMode1.Events.Derbys
 
         private void CountdownTimer_Tick(object sender, EventArgs e)
         {
-            countdown--;
             foreach (Player p in players)
             {
                 p.GameText(countdown.ToString(), 1000, 6);
@@ -324,6 +323,15 @@ namespace SampSharpGameMode1.Events.Derbys
                 countdownTimer.Dispose();
                 Start();
             }
+            if(countdown == 1)
+            {
+                foreach(Player p in players)
+                {
+                    if(p.InAnyVehicle)
+                        p.Vehicle.Position = p.Vehicle.Position + Vector3.UnitZ;
+                }
+            }
+            countdown--;
         }
 
         public void Start()

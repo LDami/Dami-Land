@@ -9,19 +9,20 @@ namespace SampSharpGameMode1.Events.Derbys
     {
         private Derby loadedDerby;
 
-        public DerbyEvent(int _id)
+        public DerbyEvent(int eventId)
         {
-            if (_id > 0)
+            if (eventId > 0)
             {
-                this.Id = _id;
+                this.Id = eventId;
+                this.VirtualWorld = (int)VirtualWord.Events + eventId;
             }
         }
 
-        public override void Load()
+        public override void Load(int _id)
         {
             Derby loadingRace = new Derby();
             loadingRace.Loaded += LoadingRace_Loaded;
-            loadingRace.Load(this.Id);
+            loadingRace.Load(_id, this.VirtualWorld);
         }
 
         private void LoadingRace_Loaded(object sender, DerbyLoadedEventArgs e)
@@ -43,7 +44,7 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             if (loadedDerby != null && slots.Count > Derby.MIN_PLAYERS_IN_DERBY)
             {
-                loadedDerby.Prepare(slots, 1);
+                loadedDerby.Prepare(slots);
                 Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " is starting, you cannot longer join it !");
                 this.Status = EventStatus.Running;
                 loadedDerby.Finished += (sender, eventArgs) => { this.End(EventFinishedReason.Terminated); };
