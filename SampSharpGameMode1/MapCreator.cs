@@ -4,6 +4,7 @@ using SampSharp.GameMode.Display;
 using SampSharp.GameMode.Events;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
+using SampSharp.Streamer.World;
 using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
@@ -25,7 +26,7 @@ namespace SampSharpGameMode1
 		private Player player;
 		private HUD hud;
 		private PlayerObject[] markers;
-		private Dictionary<int, PlayerTextLabel> textLabels;
+		private Dictionary<int, DynamicTextLabel> textLabels;
 		private MySQLConnector mySQLConnector = MySQLConnector.Instance();
 
 		public MapCreator(Player p)
@@ -35,7 +36,7 @@ namespace SampSharpGameMode1
 				player = p;
 				editingMap = null;
 				markers = new PlayerObject[2];
-				textLabels = new Dictionary<int, PlayerTextLabel>();
+				textLabels = new Dictionary<int, DynamicTextLabel>();
 				p.SendClientMessage("Map creator initialized");
 				p.SendClientMessage("/mapping help for command list");
 			}
@@ -75,7 +76,7 @@ namespace SampSharpGameMode1
 					textLabels.Clear();
 					foreach(MapObject obj in e.map.Objects)
                     {
-						textLabels.Add(obj.Id, new PlayerTextLabel(player, $"Object #{obj.Id}", Color.White, obj.Position, 50.0f, false));
+						textLabels.Add(obj.Id, new DynamicTextLabel($"Object #{obj.Id}", Color.White, obj.Position, 100.0f, null, null, false, player.VirtualWorld));
                     }
 				}
 				else
@@ -96,7 +97,7 @@ namespace SampSharpGameMode1
 			hud = new HUD(player, "mapcreator.json");
 			hud.SetText("mapname", editingMap.Name);
 			hud.SetText("totalobj", "Total: " + editingMap.Objects.Count.ToString() + " objects");
-			player.SendClientMessage("Map loaded, here are the controls:");
+			player.SendClientMessage("Here are the controls:");
 			player.SendClientMessage("    submission key (2/é):                    Open menu");
 			player.SendClientMessage("    Y/N:                    Unfreeze/Freeze");
 		}
@@ -202,7 +203,7 @@ namespace SampSharpGameMode1
 			if (hud != null)
 				hud.Hide();
 			hud = null;
-			foreach(PlayerTextLabel label in textLabels.Values)
+			foreach(DynamicTextLabel label in textLabels.Values)
             {
 				label?.Dispose();
             }
@@ -232,7 +233,7 @@ namespace SampSharpGameMode1
 				textLabels[mapObject.Id].Position = e.Position;
 			};
 			editingMap.Objects.Add(mapObject);
-			textLabels.Add(mapObject.Id, new PlayerTextLabel(player, $"Object #{mapObject.Id}", Color.White, mapObject.Position, 50.0f, false));
+			textLabels.Add(mapObject.Id, new DynamicTextLabel($"Object #{mapObject.Id}", Color.White, mapObject.Position, 100.0f, null, null, false));
 			player.SendClientMessage($"Object #{mapObject.Id} created with model {modelid}");
 			hud.SetText("totalobj", "Total: " + editingMap.Objects.Count.ToString() + " objects");
 		}
