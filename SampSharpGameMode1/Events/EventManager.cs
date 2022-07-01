@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using SampSharpGameMode1.Display;
 
 namespace SampSharpGameMode1.Events
 {
@@ -72,7 +73,10 @@ namespace SampSharpGameMode1.Events
                 {
                     if(eventArgs.ListItem == 0) // Create event
                     {
-                        ShowCreateEventTypeDialog(player);
+                        if(openedEvent == null)
+                            ShowCreateEventTypeDialog(player);
+                        else
+                            player.SendClientMessage(ColorPalette.Error.Main + "There is already an opened event");
                     }
                     else
                         if (player.Adminlevel > 0) ShowEventOptionDialog(player, eventList.ElementAt(eventArgs.ListItem - 1));
