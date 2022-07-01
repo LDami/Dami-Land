@@ -27,6 +27,8 @@ namespace SampSharpGameMode1
 		private int adminlevel;
 		public int Adminlevel { get => adminlevel; set => adminlevel = value; }
 
+        private Vector3R lastSavePosition = Vector3R.Zero;
+
 
         //AntiCheat
         AntiCheat antiCheat;
@@ -638,6 +640,24 @@ namespace SampSharpGameMode1
             this.SendClientMessage(ColorPalette.Secondary.Main + " - Derby creator and Derby events (need to implement Map creator first)");
             this.SendClientMessage(ColorPalette.Secondary.Main + " - AI / NPC to play with");
             this.SendClientMessage(ColorPalette.Secondary.Main + " - More event types");
+        }
+
+        [Command("s")]
+        private void SCommand()
+        {
+            lastSavePosition = new Vector3R(this.Position, this.Angle);
+            Notificate("Position saved");
+        }
+        [Command("r")]
+        private void RCommand()
+        {
+            if (lastSavePosition.Position != Vector3.Zero)
+            {
+                Teleport(lastSavePosition.Position);
+                this.Angle = lastSavePosition.Rotation;
+            }
+            else
+                SendClientMessage(ColorPalette.Error.Main + "Set the position with /s first");
         }
 
         [CommandGroup("time")]
