@@ -151,6 +151,7 @@ namespace SampSharpGameMode1.Events.Derbys
             editingDerby.StartingVehicle = VehicleModelType.Infernus;
             editingDerby.SpawnPoints = new List<Vector3R>();
             editingDerby.Pickups = new List<DerbyPickup>();
+            editingDerby.MapId = -1;
             isNew = true;
             lastSelectedObjectId = -1;
             lastPickedUpPickup = null;
@@ -346,6 +347,7 @@ namespace SampSharpGameMode1.Events.Derbys
                     { "@id", editingDerby.Id }
                 };
                 mySQLConnector.Execute("UPDATE derbys SET derby_name=@name, derby_map=@mapid WHERE derby_id=@id", param);
+                isNew = false;
                 return (mySQLConnector.RowsAffected > 0);
             }
             return false;

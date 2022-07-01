@@ -387,6 +387,7 @@ namespace SampSharpGameMode1.Events.Races
                     "(@race_name, @race_creator, @race_startvehicle)", param);
                 if (mySQLConnector.RowsAffected > 0)
                 {
+                    this.editingRace.Name = name;
                     hud.SetRaceName(name);
                     return this.Save();
                 }
