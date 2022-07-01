@@ -57,6 +57,8 @@ namespace SampSharpGameMode1.Display
                                 layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
                                 layer.SetTextdrawColor(textdraw.Name, textdraw.Color);
                                 layer.SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
+                                if (textdraw.Width > 0 && textdraw.Height > 0)
+                                    layer.SetTextdrawLetterSize(textdraw.Name, textdraw.Width, textdraw.Height);
                             }
                         }
                         layer.UnselectAllTextdraw();
