@@ -219,7 +219,8 @@ namespace SampSharpGameMode1.Commands
         [Command("vw", "virtualworld", DisplayName = "vw")]
         private static void VWCommand(Player player, int virtualworld)
         {
-            if (player.IsInEvent)
+            AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+            if (player.IsInEvent && !isAdmin.Check(player))
             {
                 player.SendClientMessage(Color.Red + "You cannot use this command during events");
             }
@@ -229,7 +230,6 @@ namespace SampSharpGameMode1.Commands
             }
             else
             {
-                AdminPermissionChecker isAdmin = new AdminPermissionChecker();
                 if (virtualworld == (int)VirtualWord.Main || virtualworld == (int)VirtualWord.Players + player.Id || isAdmin.Check(player))
                 {
                     player.VirtualWorld = virtualworld;
@@ -244,7 +244,8 @@ namespace SampSharpGameMode1.Commands
         [Command("vw", "virtualworld", DisplayName = "vw")]
         private static void VWCommand(Player player, VirtualWord virtualworld)
         {
-            if (player.IsInEvent)
+            AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+            if (player.IsInEvent && !isAdmin.Check(player))
             {
                 player.SendClientMessage(Color.Red + "You cannot use this command during events");
             }
@@ -254,7 +255,7 @@ namespace SampSharpGameMode1.Commands
             }
             else
             {
-                if (Enum.IsDefined(typeof(VirtualWord), virtualworld) && virtualworld < VirtualWord.Players) // Cannot teleport to a list of virualworlds like Players or Events
+                if (Enum.IsDefined(typeof(VirtualWord), virtualworld) && virtualworld < VirtualWord.Players || isAdmin.Check(player)) // Cannot teleport to a list of virualworlds like Players or Events
                 {
                     player.VirtualWorld = (int)virtualworld;
                     player.Notificate("World ~g~" + virtualworld, 1);
