@@ -399,7 +399,7 @@ namespace SampSharpGameMode1.Events.Races
         public void AddCheckpoint(Vector3 position)
         {
             editingMode = EditingMode.Checkpoints;
-            if(editingRace.checkpoints.Count == 0)
+            if (editingRace.checkpoints.Count == 0)
             {
                 editingRace.checkpoints.Add(0, new Checkpoint(position, CheckpointType.Normal));
                 checkpointIndex = 0;
@@ -407,26 +407,25 @@ namespace SampSharpGameMode1.Events.Races
             }
             else
             {
-                if(checkpointIndex == editingRace.checkpoints.Count-1) // Add to the end
+                if (checkpointIndex == editingRace.checkpoints.Count - 1) // Add to the end
                 {
                     editingRace.checkpoints.Add(editingRace.checkpoints.Count, new Checkpoint(position, CheckpointType.Normal));
-                    checkpointIndex = editingRace.checkpoints.Count-1;
+                    checkpointIndex = editingRace.checkpoints.Count - 1;
                     Console.WriteLine("RaceCreator.cs - RaceCreator.AddCheckpoint:I: checkpointIndex = count-1, new CP added at the end");
                 }
                 else
                 {
                     Console.WriteLine("RaceCreator.cs - RaceCreator.AddCheckpoint:I: checkpointIndex != count-1, rearrangement  needed");
-                    Dictionary<int, Checkpoint> tmp = editingRace.checkpoints;
-                    editingRace.checkpoints[checkpointIndex + 1] = new Checkpoint(position, CheckpointType.Normal);
-                    for(int i = editingRace.checkpoints.Count-1; i > checkpointIndex + 2; i--)
+                    Dictionary<int, Checkpoint> tmp = new Dictionary<int, Checkpoint>(editingRace.checkpoints);
+                    for (int i = checkpointIndex + 1; i < tmp.Count; i++)
                     {
-                        editingRace.checkpoints[i] = tmp[i-1];
+                        editingRace.checkpoints[i + 1] = tmp[i];
                     }
-                    editingRace.checkpoints.Add(editingRace.checkpoints.Count, tmp[tmp.Count -1]);
                     checkpointIndex++;
+                    editingRace.checkpoints[checkpointIndex] = new Checkpoint(position, CheckpointType.Normal);
                 }
             }
-            
+
             UpdatePlayerCheckpoint();
             hud.SetSelectedIdx(checkpointIndex.ToString(), editingMode);
             hud.SetTotalCP(editingRace.checkpoints.Count);
@@ -438,7 +437,7 @@ namespace SampSharpGameMode1.Events.Races
                 if (editingRace.checkpoints.Count > 0)
                 {
                     editingMode = EditingMode.Checkpoints;
-                    editingRace.checkpoints[checkpointIndex].Position = position + new Vector3(0.0, 5.0, 0.0);
+                    editingRace.checkpoints[checkpointIndex].Position = position;
                     UpdatePlayerCheckpoint();
                 }
                 else
