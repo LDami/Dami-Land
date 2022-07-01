@@ -338,6 +338,8 @@ namespace SampSharpGameMode1
                 pwdDialog.Show(this);
                 pwdDialog.Response += PwdLoginDialog_Response;
             }
+            else
+                this.Kick();
         }
 
         private void PwdLoginDialog_Response(object sender, DialogResponseEventArgs e)
@@ -346,12 +348,8 @@ namespace SampSharpGameMode1
             {
                 if (e.InputText.Length == 0)
                 {
-                    isAuthenticated = true;
-                    //this.Spawn();
-                    /*
-                    isConnected = false;
+                    isAuthenticated = false;
                     ShowLoginForm();
-                    */
                 }
                 else
                 {
