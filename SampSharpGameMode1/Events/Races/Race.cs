@@ -74,6 +74,7 @@ namespace SampSharpGameMode1.Events.Races
         private Map map;
         //private List<Civilisation.SpectatorGroup> spectatorGroups = new List<Civilisation.SpectatorGroup>();
         private List<Actor> spectators = new List<Actor>();
+        private Player winner;
 
         public struct PlayerCheckpointData
         {
@@ -727,29 +728,32 @@ namespace SampSharpGameMode1.Events.Races
                 playersTimeSpan[player] = duration;
                 int place = playersTimeSpan.Count;
                 string placeStr = "";
+                int money = 0;
                 switch (place)
                 {
                     case 1:
                         placeStr = "1st";
-                        player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You finished " + Color.Green + placeStr);
-                        player.GiveMoney(1000);
-                        player.PlaySound(5448);
+                        money = 1000;
+                        player.SendClientMessage(Color.Wheat, $"[Event]{Color.White} You finished {Color.Green}{placeStr}{Color.White}, you won {money}$");
+                        winner = player;
                         break;
                     case 2:
                         placeStr = "2nd";
-                        player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You finished " + Color.Orange + placeStr);
-                        player.GiveMoney(750);
+                        money = 750;
+                        player.SendClientMessage(Color.Wheat, $"[Event]{Color.White} You finished {Color.Orange}{placeStr}{Color.White}, you won {money}$");
                         break;
                     case 3:
                         placeStr = "3rd";
-                        player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You finished " + Color.OrangeRed + placeStr);
-                        player.GiveMoney(500);
+                        money = 500;
+                        player.SendClientMessage(Color.Wheat, $"[Event]{Color.White} You finished {Color.OrangeRed}{placeStr}{Color.White}, you won {money}$");
                         break;
                     default:
-                        player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You finished " + placeStr);
+                        money = 0;
+                        player.SendClientMessage(Color.Wheat, $"[Event]{Color.White} You finished {placeStr}");
                         placeStr = place + "th";
                         break;
                 }
+                player.GiveMoney(money);
 
                 string finishText = placeStr + " place !~n~" + duration.ToString(@"hh\:mm\:ss\.fff");
                 bool isNewRecord = false;
@@ -802,7 +806,7 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     RaceFinishedEventArgs args = new RaceFinishedEventArgs();
                     args.race = this;
-                    args.winner = player;
+                    args.winner = winner;
                     OnFinished(args);
                 };
             }
