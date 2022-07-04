@@ -1010,7 +1010,7 @@ namespace SampSharpGameMode1.Events.Races
                 Vector3 nextPos = (nextCp != null) ? nextCp.Position : Vector3.Zero;
 
                 if (shownCheckpoint == null || shownCheckpoint.IsDisposed)
-                    shownCheckpoint = new DynamicRaceCheckpoint(cp.Type, cp.Position, nextPos, cp.Size, 500.0f);
+                    shownCheckpoint = new DynamicRaceCheckpoint(cp.Type, cp.Position, nextPos, cp.Size, player.VirtualWorld);
                 else
                 {
                     shownCheckpoint.Position = cp.Position;
