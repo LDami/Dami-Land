@@ -321,12 +321,12 @@ namespace SampSharpGameMode1
 
 			ListDialog dialog = new ListDialog("Maps", "Select", "Cancel");
 			dialog.Style = SampSharp.GameMode.Definitions.DialogStyle.TablistHeaders;
-			dialog.AddItem("Map name\tCreator");
+			dialog.AddItem("Id\tMap name\tCreator");
 
 			Dictionary<string, string> row = mySQLConnector.GetNextRow();
 			while (row.Count > 0)
 			{
-				dialog.AddItem(row["name"] + "\t" + row["creator"]);
+				dialog.AddItem(row["map_id"] + "\t" + row["name"] + "\t" + row["creator"]);
 				row = mySQLConnector.GetNextRow();
 			}
 			mySQLConnector.CloseReader();
