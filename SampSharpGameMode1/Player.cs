@@ -9,6 +9,7 @@ using SampSharp.GameMode.Pools;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
 using SampSharp.GameMode.World;
+using SampSharp.Streamer.World;
 using SampSharpGameMode1.Civilisation;
 using SampSharpGameMode1.Display;
 using SampSharpGameMode1.Events;
@@ -653,7 +654,7 @@ namespace SampSharpGameMode1
         {
             if (lastSavePosition.Position != Vector3.Zero)
             {
-                Teleport(lastSavePosition.Position);
+                Teleport(lastSavePosition.Position + Vector3.UnitZ);
                 this.Angle = lastSavePosition.Rotation;
             }
             else
@@ -793,6 +794,14 @@ namespace SampSharpGameMode1
             this.cameraController.LockDistance = (float)distance;
 		}
 
+        [Command("re")]
+        private void ReCommand()
+        {
+            if (!this.IsInEvent && this.InAnyVehicle)
+            {
+                this.Vehicle.Angle = this.Vehicle.Angle;
+            }
+        }
         [Command("rep")]
         private void RepCommand()
         {
