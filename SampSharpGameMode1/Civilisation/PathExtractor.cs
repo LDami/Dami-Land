@@ -174,8 +174,6 @@ namespace SampSharpGameMode1.Civilisation
             Peds = 100
         }
         
-        public static List<Vector3>[] pathRoad = new List<Vector3>[10000];
-        public static Vector3[][] roads = new Vector3[50000][];
         public static Header[] headers = new Header[64];
         public static List<PathNode>[] pathNodes = new List<PathNode>[64];
         public static List<NaviNode>[] naviNodes = new List<NaviNode>[64];
@@ -326,14 +324,6 @@ namespace SampSharpGameMode1.Civilisation
                                 areasInLink.Add(tmpLink.areaID);
                             //Console.WriteLine("== Link " + j + " == \r\n" + tmpLink.ToString() + "node exists: " + ((linkedNode.Count == 0) ? "false" : "true") + "\r\n");
                         }
-                        /*
-                        if (index == 54)
-                        {
-                            Logger.WriteAndClose("Area in link: ");
-                            foreach(int i in areasInLink)
-                                Logger.WriteAndClose(i + ",");
-                            Logger.WriteLineAndClose("");
-                        }*/
 
                         for (int i = 0; i < 768; i++)
                             fs.ReadByte();
@@ -414,12 +404,7 @@ namespace SampSharpGameMode1.Civilisation
             int nbrOfUnknown = 0;
             List<PathNode> linkedNode;
             bool exists;
-            //Console.WriteLine("neighborhood: ");
-            foreach (int area2 in GetAreaNeighborhood(areaID))
-            {
-                //Console.Write(area2 + ", ");
-            }
-            //Console.WriteLine();
+
             for (int i = 0; i < headers[areaID].links; i++)
             {
                 //Console.Write("Looking for node " + links[areaID][i].nodeID);
@@ -470,14 +455,6 @@ namespace SampSharpGameMode1.Civilisation
                     linkInfo = new LinkInfo();
 
                     linkInfo.targetNode = pathNodes[links[areaID][linkIndex].areaID].Find(e => e.nodeID == links[areaID][linkIndex].nodeID);
-                    if (areaID == 54)
-                    {
-                        /*
-                        logger.WriteLine("links[areaID][linkIndex] = {areaID: " + links[areaID][linkIndex].areaID + ", nodeID: " + links[areaID][linkIndex].nodeID + "}");
-                        logger.WriteLine("areaID = " + areaID + " | linkIndex = " + linkIndex);
-                        logger.WriteLine("found target node = {areaID: " + linkInfo.targetNode.areaID + ", nodeID: " + linkInfo.targetNode.nodeID + "}");
-                        */
-                    }
 
                     if (i < headers[areaID].vehiclesNodes)
                     {
@@ -555,13 +532,6 @@ namespace SampSharpGameMode1.Civilisation
             }
             return null;
         }
-        public static void CalculateRoads()
-        {
-            int aera = 44;
-            List<PathNode> _pathNodes = pathNodes[aera];
-            List<NaviNode> _naviNodes = naviNodes[aera];
-
-        }
 
         public static List<PathNode> GetPathNodes()
         {
@@ -569,7 +539,9 @@ namespace SampSharpGameMode1.Civilisation
             for(int i = 0; i < 64; i++)
             {
                 foreach (PathNode node in pathNodes[i])
+                {
                     result.Add(node);
+                }
             }
             return result;
         }
