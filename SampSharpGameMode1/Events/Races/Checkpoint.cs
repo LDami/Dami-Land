@@ -68,7 +68,11 @@ namespace SampSharpGameMode1.Events.Races
                 veh.Doors = true;
                 veh.Died += player.pEvent.Source.OnPlayerVehicleDied;
                 player.PutInVehicle(veh);
-                veh.Velocity = vVel;
+
+                // Using a timer of 100ms because of open.mp issue
+                SampSharp.GameMode.SAMP.Timer timer = new SampSharp.GameMode.SAMP.Timer(100, false);
+                timer.Tick += (sender, e) => veh.Velocity = vVel;
+
                 this.OnPlayerVehicleChanged(new PlayerEventArgs(player));
             }
             if (this.NextNitro == NitroEvent.Give)
