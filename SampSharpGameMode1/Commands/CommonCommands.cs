@@ -22,6 +22,16 @@ namespace SampSharpGameMode1.Commands
             player.SendClientMessage(ColorPalette.Secondary.Main + " - AI / NPC to play with");
             player.SendClientMessage(ColorPalette.Secondary.Main + " - More event types");
         }
+        [Command("event-infos")]
+        private static void EventInfosCommand(Player player)
+        {
+            player.SendClientMessage(ColorPalette.Primary.Main + "On this server you can create your own races and derbies, so please read the following instructions:");
+            player.SendClientMessage(ColorPalette.Secondary.Main + " - Use /race to see race creator commands, and /derby for derby creator commands");
+            player.SendClientMessage(ColorPalette.Secondary.Main + " - Make sure you use a keyboard with numpad (controllers are not supported yet)");
+            player.SendClientMessage(ColorPalette.Secondary.Main + " - You can only edit your own event");
+            player.SendClientMessage(ColorPalette.Secondary.Main + " - If you want to add a map to your event, create the map first with /map commands, then load it into your event");
+            player.SendClientMessage(ColorPalette.Secondary.Main + " - Once your event is playable, everybody can load it and join it");
+        }
 
         [Command("s")]
         private static void SCommand(Player player)

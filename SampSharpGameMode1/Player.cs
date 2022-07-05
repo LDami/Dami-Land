@@ -80,7 +80,7 @@ namespace SampSharpGameMode1
             BasePlayer.SendClientMessageToAll($"{ColorPalette.Secondary.Main}{this.Name}{ColorPalette.Primary.Main} joined the server");
             this.SendClientMessage("Welcome to " + ColorPalette.Secondary.Main + "Dami's Land");
             this.SendClientMessage(ColorPalette.Primary.Main + "This server is still in beta, type /beta to see what is coming soon !");
-            this.SendClientMessage(ColorPalette.Primary.Main + "You can create your own race with /race, and play it with other players with /event !");
+            this.SendClientMessage(ColorPalette.Primary.Main + "Please read /event-infos to create events !");
 
             if(!this.IsNPC)
             {
