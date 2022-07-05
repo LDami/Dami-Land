@@ -73,5 +73,23 @@ namespace SampSharpGameMode1.Commands
 			player.DisableForceEnterVehicle = true;
 			player.SendClientMessage("The command /v will not put you in the vehicle anymore");
 		}
+
+		[Command("re")]
+		private static void ReCommand(Player player)
+		{
+			if (!player.IsInEvent && player.InAnyVehicle)
+			{
+				player.Vehicle.Angle = player.Vehicle.Angle;
+			}
+		}
+		[Command("rep")]
+		private static void RepCommand(Player player)
+		{
+			if (!player.IsInEvent && player.InAnyVehicle)
+			{
+				player.Vehicle.Repair();
+				player.Notificate("Vehicle repaired");
+			}
+		}
 	}
 }

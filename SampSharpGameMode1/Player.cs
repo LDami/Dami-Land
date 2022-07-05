@@ -28,7 +28,8 @@ namespace SampSharpGameMode1
 		private int adminlevel;
 		public int Adminlevel { get => adminlevel; set => adminlevel = value; }
 
-        private Vector3R lastSavePosition = Vector3R.Zero;
+        private Vector3R lastSavedPosition = Vector3R.Zero;
+        public Vector3R LastSavedPosition { get => lastSavedPosition; set => lastSavedPosition = value; }
 
 
         //AntiCheat
@@ -212,7 +213,7 @@ namespace SampSharpGameMode1
         public override void OnClickMap(PositionEventArgs e)
         {
             base.OnClickMap(e);
-            CalculateWay(this.Position, e.Position);
+            //CalculateWay(this.Position, e.Position);
         }
 
 		public override void OnPickUpPickup(PickUpPickupEventArgs e)
@@ -633,62 +634,6 @@ namespace SampSharpGameMode1
             }
         }
 
-        [Command("beta")]
-        private void BetaCommand()
-        {
-            this.SendClientMessage(ColorPalette.Primary.Main + "These features are still in development and will be ready to test soon:");
-            this.SendClientMessage(ColorPalette.Secondary.Main + " - Map creator (in progress)");
-            this.SendClientMessage(ColorPalette.Secondary.Main + " - Derby creator and Derby events (need to implement Map creator first)");
-            this.SendClientMessage(ColorPalette.Secondary.Main + " - AI / NPC to play with");
-            this.SendClientMessage(ColorPalette.Secondary.Main + " - More event types");
-        }
-
-        [Command("s")]
-        private void SCommand()
-        {
-            lastSavePosition = new Vector3R(this.Position, this.Angle);
-            Notificate("Position saved");
-        }
-        [Command("r")]
-        private void RCommand()
-        {
-            if (lastSavePosition.Position != Vector3.Zero)
-            {
-                Teleport(lastSavePosition.Position + Vector3.UnitZ);
-                this.Angle = lastSavePosition.Rotation;
-            }
-            else
-                SendClientMessage(ColorPalette.Error.Main + "Set the position with /s first");
-        }
-
-        [CommandGroup("time")]
-        class TimeCommands
-        {
-            [Command(IsGroupHelp = true)]
-            private static void TimeCommand(BasePlayer player)
-            {
-                player.SendClientMessage($"Usage: {ColorPalette.Secondary.Main}/time [option]");
-                player.SendClientMessage($"Options: {ColorPalette.Secondary.Main}day, night, set [hour]");
-            }
-            [Command("day")]
-            private static void DayCommand(BasePlayer player)
-            {
-                player.SetTime(12, 0);
-            }
-
-            [Command("night")]
-            private static void NightCommand(BasePlayer player)
-            {
-                player.SetTime(0, 0);
-            }
-            
-            [Command("set")]
-            private static void SetCommand(BasePlayer player, int hour)
-			{
-                player.SetTime(hour % 24, 0); 
-			}
-        }
-
         [Command("textlabel")]
         private void TextLabelCommand(BasePlayer player)
         {
@@ -696,35 +641,6 @@ namespace SampSharpGameMode1
             foreach (PlayerTextLabel label in PlayerTextLabel.Of(player))
             {
                 this.SendClientMessage($"Id: {label.Id} ; Text: {label.Text}");
-            }
-        }
-
-        [Command("test")]
-        private void TestCommand()
-        {
-            if (PathExtractor.pathPoints != null)
-            {
-                this.Position = PathExtractor.pathPoints[0] + new Vector3(0.0f, 0.0f, 30.0f);
-            }
-        }
-
-        [Command("test2")]
-        private void Test2Command(int area = -1)
-        {
-            if (area == -1) area = this.GetArea(this.Position);
-            if (PathExtractor.pathPoints != null)
-            {
-                viewAreaID = area;
-                UpdatePath();
-            }
-        }
-
-        [Command("accel")]
-        private void AccelCommand(int vel)
-        {
-            if (this.InAnyVehicle)
-            {
-                this.Vehicle.SetAngularVelocity(this.Vehicle.Velocity + new Vector3(vel, 0, 0));
             }
         }
 
@@ -772,46 +688,6 @@ namespace SampSharpGameMode1
             this.SelectTextDraw(Color.OrangeRed);
         }
 
-        [Command("ak47")]
-        private void AK47ommand()
-        {
-            this.GiveWeapon(Weapon.AK47, 500);
-        }
-        [Command("tec")]
-        private void TecCommand()
-        {
-            this.GiveWeapon(Weapon.Tec9, 500);
-        }
-        [Command("pickup")]
-        private void PickupCommand(int id = -1)
-        {
-            Events.Derbys.DerbyPickupRandomEvent pickup = new Events.Derbys.DerbyPickupRandomEvent(this, id);
-        }
-
-        [Command("camdist")]
-        private void SetCameraDistance(int distance)
-		{
-            this.cameraController.LockDistance = (float)distance;
-		}
-
-        [Command("re")]
-        private void ReCommand()
-        {
-            if (!this.IsInEvent && this.InAnyVehicle)
-            {
-                this.Vehicle.Angle = this.Vehicle.Angle;
-            }
-        }
-        [Command("rep")]
-        private void RepCommand()
-        {
-            if (!this.IsInEvent && this.InAnyVehicle)
-            {
-                this.Vehicle.Repair();
-                this.Notificate("Vehicle repaired");
-            }
-        }
-
         [Command("getlink")]
         private void GetLinkCommand(int areaID, string id)
         {
@@ -851,12 +727,6 @@ namespace SampSharpGameMode1
                 this.SendClientMessage("Position.Z = " + PathExtractor.FindZFromVector2(this.Position.X, this.Position.Y));
             }
         }
-
-        [Command("jet")]
-        private void JetpackCommand()
-		{
-            this.SpecialAction = SpecialAction.Usejetpack;
-		}
 
         class GroupedCommandClass
         {
