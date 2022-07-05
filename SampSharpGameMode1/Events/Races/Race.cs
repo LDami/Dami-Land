@@ -101,7 +101,7 @@ namespace SampSharpGameMode1.Events.Races
         protected virtual void OnFinished(RaceFinishedEventArgs e)
         {
             Finished?.Invoke(this, e);
-            Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " Race \"" + e.race.Name + "\" is finished, the winner is " + Color.Orange + (e.winner?.Name ?? "nobody") + Color.White + " !");
+            Player.SendClientMessageToAll(Color.Wheat, $"[Event]{Color.White} The Race {ColorPalette.Secondary.Main}{e.race.Name}{Color.White} is finished, the winner is {Color.Orange}{(e.winner?.Name ?? "nobody")}{Color.White} !");
             foreach(Actor spectator in spectators)
             {
                 spectator.Dispose();

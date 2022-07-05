@@ -1,5 +1,6 @@
 ﻿using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
+using SampSharpGameMode1.Display;
 using SampSharpGameMode1.Events.Races;
 using System;
 using System.Collections.Generic;
@@ -72,7 +73,7 @@ namespace SampSharpGameMode1.Events
         public void Open()
         {
             Slots = new List<EventSlot>();
-            Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " " + Color.PowderBlue + this.Name + Color.White + " will start soon, join it with " + Color.PowderBlue + "/event join");
+            Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " " + ColorPalette.Secondary.Main + this.Name + Color.White + " will start soon, join it with " + ColorPalette.Primary.Main + "/event join");
             this.Status = EventStatus.Waiting;
         }
         public abstract bool Start(List<EventSlot> slots);

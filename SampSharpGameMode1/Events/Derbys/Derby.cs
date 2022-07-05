@@ -66,7 +66,7 @@ namespace SampSharpGameMode1.Events.Derbys
         protected virtual void OnFinished(DerbyFinishedEventArgs e)
         {
             Finished?.Invoke(this, e);
-            Player.SendClientMessageToAll("Derby \"" + e.derby.Name + "\" is finished, the winner is " + Color.Orange + (e.winner?.Name ?? "nobody") + Color.White + " !");
+            Player.SendClientMessageToAll(Color.Wheat, $"[Event]{Color.White} The Derby {ColorPalette.Secondary.Main}{e.derby.Name}{Color.White} is finished, the winner is {Color.Orange}{(e.winner?.Name ?? "nobody")}{Color.White} !");
         }
         #endregion
 

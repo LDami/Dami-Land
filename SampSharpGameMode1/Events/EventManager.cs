@@ -274,7 +274,7 @@ namespace SampSharpGameMode1.Events
                         {
                             if (eventArgs.ErrorMessage == null)
                             {
-                                if (player.IsConnected) player.SendClientMessage(Display.ColorPalette.Primary.Main + $"Race {eventArgs.EventLoaded.Id} {Color.Green}loaded ! (Race)");
+                                if (player.IsConnected) player.SendClientMessage(ColorPalette.Primary.Main + $"Race {eventArgs.EventLoaded.Id} {Color.Green}loaded ! (Race)");
                                 eventList.Add(eventArgs.EventLoaded);
                                 if (openedEvent == null)
                                 {
@@ -287,7 +287,7 @@ namespace SampSharpGameMode1.Events
                             else
                                 if (player.IsConnected) player.SendClientMessage(Color.Red, "Cannot load the race: " + eventArgs.ErrorMessage);
                         };
-                        player.SendClientMessage(Display.ColorPalette.Primary.Main + $"Loading Race #{eventId}");
+                        player.SendClientMessage(ColorPalette.Primary.Main + $"Loading Race #{eventId}");
                         newEvent.Load(id);
                         usedIds.Add(eventId);
                         break;
@@ -299,7 +299,7 @@ namespace SampSharpGameMode1.Events
                         {
                             if (eventArgs.ErrorMessage == null)
                             {
-                                if (player.IsConnected) player.SendClientMessage(Display.ColorPalette.Primary.Main + $"Race {eventArgs.EventLoaded.Id} {Color.Green}loaded ! (Derby)");
+                                if (player.IsConnected) player.SendClientMessage(ColorPalette.Primary.Main + $"Race {eventArgs.EventLoaded.Id} {Color.Green}loaded ! (Derby)");
                                 eventList.Add(eventArgs.EventLoaded);
                                 if (openedEvent == null)
                                 {
@@ -312,7 +312,7 @@ namespace SampSharpGameMode1.Events
                             else
                                 if (player.IsConnected) player.SendClientMessage(Color.Red, "Cannot load the derby: " + eventArgs.ErrorMessage);
                         };
-                        player.SendClientMessage(Display.ColorPalette.Primary.Main + $"Loading Derby #{eventId}");
+                        player.SendClientMessage(ColorPalette.Primary.Main + $"Loading Derby #{eventId}");
                         newEvent.Load(id);
                         usedIds.Add(eventId);
                         break;
