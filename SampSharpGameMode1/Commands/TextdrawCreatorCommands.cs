@@ -46,13 +46,20 @@ namespace SampSharpGameMode1.Commands
             [Command("load", UsageMessage = "Usage: /td load [name (without .json)]")]
             private static void Load(Player player, string name)
             {
-                if (player.textdrawCreator != null)
+                if (player.pEvent != null)
+                    return;
+                if (player.IsAdmin)
                 {
+                    if (player.textdrawCreator == null)
+                        player.textdrawCreator = new TextdrawCreator(player);
+
                     if (!player.textdrawCreator.IsEditing)
                         player.textdrawCreator.Load(name);
                     else
                         player.SendClientMessage("You must close the opened editor before loading a new one");
                 }
+                else
+                    player.SendClientMessage(Color.Red + "You are not Administrator");
             }
             [Command("save", UsageMessage = "Usage: /td save [name (without .json)]")]
             private static void Save(Player player, string name)
