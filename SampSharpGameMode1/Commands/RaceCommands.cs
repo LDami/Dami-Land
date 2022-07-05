@@ -19,7 +19,7 @@ namespace SampSharpGameMode1.Commands
             if(player.pEvent != null)
             {
                 if (player.pEvent.Type == Events.EventType.Race)
-                    ((Race)player.pEvent.Source).RespawnPlayerOnLastCheckpoint(player, false);
+                    ((Race)player.pEvent.Source).RespawnPlayerOnLastCheckpoint(player, true);
             }
         }
 
