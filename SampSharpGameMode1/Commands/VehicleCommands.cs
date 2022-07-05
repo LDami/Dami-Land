@@ -16,7 +16,8 @@ namespace SampSharpGameMode1.Commands
 		{
 			if(player.pEvent == null)
 			{
-				if (player.SpawnedVehicles.Count > 5)
+				AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+				if (player.SpawnedVehicles.Count > 5 && !isAdmin.Check(player))
 				{
 					if (!player.SpawnedVehicles[0].IsDisposed)
 						player.SpawnedVehicles[0].Dispose();
