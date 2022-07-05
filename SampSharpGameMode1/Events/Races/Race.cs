@@ -109,10 +109,71 @@ namespace SampSharpGameMode1.Events.Races
             spectators.Clear();
         }
 
+        #region Player's event
+        public void OnPlayerDisconnect(object sender, DisconnectEventArgs e)
+        {
+            OnPlayerFinished((Player)sender, "Disconnected");
+        }
+        private void OnPlayerKeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
+        {
+            Player spectator = (Player)sender;
+            if (spectatingPlayers.Contains(spectator))
+            {
+                Player target;
+                switch (e.NewKeys)
+                {
+                    case Keys.Fire:
+                        playersData[(Player)sender].spectatePlayerIndex++;
+                        if (playersData[(Player)sender].spectatePlayerIndex >= players.Count)
+                        {
+                            playersData[(Player)sender].spectatePlayerIndex = 0;
+                        }
+                        target = players[playersData[(Player)sender].spectatePlayerIndex];
+                        if (target.InAnyVehicle)
+                            spectator.SpectateVehicle(target.Vehicle);
+                        else
+                            spectator.SpectatePlayer(target);
+                        spectator.Notificate(target.Name);
+                        break;
+                    case Keys.Aim:
+                        playersData[(Player)sender].spectatePlayerIndex--;
+                        if (playersData[(Player)sender].spectatePlayerIndex < 0)
+                        {
+                            playersData[(Player)sender].spectatePlayerIndex = players.Count - 1;
+                        }
+                        target = players[playersData[(Player)sender].spectatePlayerIndex];
+                        if (target.InAnyVehicle)
+                            spectator.SpectateVehicle(target.Vehicle);
+                        else
+                            spectator.SpectatePlayer(target);
+                        spectator.Notificate(target.Name);
+                        break;
+                }
+            }
+            else
+            {
+                if (e.NewKeys == Keys.Yes)
+                {
+                    this.RespawnPlayerOnLastCheckpoint((Player)sender, false);
+                }
+            }
+        }
+
+        private void OnPlayerExitVehicle(object sender, PlayerVehicleEventArgs e)
+        {
+            e.Player.Position = e.Vehicle.Position;
+            SampSharp.GameMode.SAMP.Timer timer = new SampSharp.GameMode.SAMP.Timer(100, false);
+            timer.Tick += (sender, e2) =>
+            {
+                if (!e.Vehicle.IsDisposed)
+                    e.Player.PutInVehicle(e.Vehicle);
+            };
+        }
         public void OnPlayerVehicleDied(object sender, SampSharp.GameMode.Events.PlayerEventArgs e)
         {
             OnPlayerFinished((Player)e.Player, "Vehicle destroyed");
         }
+        #endregion
 
         public Race()
 		{
@@ -340,6 +401,7 @@ namespace SampSharpGameMode1.Events.Races
                     slot.Player.EnterCheckpoint += checkpointEventHandler;
                     slot.Player.EnterRaceCheckpoint += checkpointEventHandler;
                     slot.Player.KeyStateChanged += OnPlayerKeyStateChanged;
+                    slot.Player.ExitVehicle += OnPlayerExitVehicle;
 
                     pos = remainingPos[rdm.Next(0, remainingPos.Count)];
 
@@ -406,51 +468,6 @@ namespace SampSharpGameMode1.Events.Races
             }
         }
 
-        private void OnPlayerKeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
-        {
-            Player spectator = (Player)sender;
-            if (spectatingPlayers.Contains(spectator))
-            {
-                Player target;
-                switch (e.NewKeys)
-                {
-                    case Keys.Fire:
-                        playersData[(Player)sender].spectatePlayerIndex++;
-                        if (playersData[(Player)sender].spectatePlayerIndex >= players.Count)
-                        {
-                            playersData[(Player)sender].spectatePlayerIndex = 0;
-                        }
-                        target = players[playersData[(Player)sender].spectatePlayerIndex];
-                        if(target.InAnyVehicle)
-                            spectator.SpectateVehicle(target.Vehicle);
-                        else
-                            spectator.SpectatePlayer(target);
-                        spectator.Notificate(target.Name);
-                        break;
-                    case Keys.Aim:
-                        playersData[(Player)sender].spectatePlayerIndex--;
-                        if (playersData[(Player)sender].spectatePlayerIndex < 0)
-                        {
-                            playersData[(Player)sender].spectatePlayerIndex = players.Count-1;
-                        }
-                        target = players[playersData[(Player)sender].spectatePlayerIndex];
-                        if (target.InAnyVehicle)
-                            spectator.SpectateVehicle(target.Vehicle);
-                        else
-                            spectator.SpectatePlayer(target);
-                        spectator.Notificate(target.Name);
-                        break;
-                }
-            }
-            else
-            {
-                if (e.NewKeys == Keys.Yes)
-                {
-                    this.RespawnPlayerOnLastCheckpoint((Player)sender, false);
-                }
-            }
-        }
-
         private void CountdownTimer_Tick(object sender, EventArgs e)
         {
             foreach (Player p in players)
@@ -499,11 +516,6 @@ namespace SampSharpGameMode1.Events.Races
                         p.Vehicle.Engine = true;
                 }
             }
-        }
-
-        public void OnPlayerDisconnect(object sender, DisconnectEventArgs e)
-        {
-            OnPlayerFinished((Player)sender, "Disconnected");
         }
 
         public void OnPlayerEnterCheckpoint(Player player)
@@ -847,6 +859,7 @@ namespace SampSharpGameMode1.Events.Races
                 }
                 player.DisableCheckpoint();
                 player.DisableRaceCheckpoint();
+                player.ExitVehicle -= OnPlayerExitVehicle;
                 player.EnterCheckpoint -= checkpointEventHandler;
                 player.EnterRaceCheckpoint -= checkpointEventHandler;
                 player.KeyStateChanged -= OnPlayerKeyStateChanged;

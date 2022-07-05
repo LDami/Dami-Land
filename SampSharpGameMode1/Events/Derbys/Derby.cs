@@ -75,6 +75,16 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             OnPlayerFinished((Player)sender, "Disconnected");
         }
+        private void OnPlayerExitVehicle(object sender, PlayerVehicleEventArgs e)
+        {
+            e.Player.Position = e.Vehicle.Position;
+            SampSharp.GameMode.SAMP.Timer timer = new SampSharp.GameMode.SAMP.Timer(100, false);
+            timer.Tick += (sender, e2) =>
+            {
+                if (!e.Vehicle.IsDisposed)
+                    e.Player.PutInVehicle(e.Vehicle);
+            };
+        }
         public void OnPlayerVehicleDied(object sender, PlayerEventArgs e)
         {
             OnPlayerFinished((Player)e.Player, "Vehicle destroyed");
@@ -236,6 +246,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
                     slot.Player.VirtualWorld = virtualWorld;
 
+                    slot.Player.ExitVehicle += OnPlayerExitVehicle;
                     slot.Player.KeyStateChanged += OnPlayerKeyStateChanged;
                     slot.Player.Disconnected += OnPlayerDisconnect;
 
@@ -441,6 +452,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 }
                 player.DisableCheckpoint();
                 player.DisableRaceCheckpoint();
+                player.ExitVehicle -= OnPlayerExitVehicle;
                 player.KeyStateChanged -= OnPlayerKeyStateChanged;
                 player.Disconnected -= OnPlayerDisconnect;
                 player.ToggleSpectating(false);
