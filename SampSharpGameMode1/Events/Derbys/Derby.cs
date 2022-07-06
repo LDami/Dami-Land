@@ -214,8 +214,6 @@ namespace SampSharpGameMode1.Events.Derbys
                 this.players = new List<Player>();
                 this.spectatingPlayers = new List<Player>();
 
-                //List<DerbyPickup> tmpPickups = new List<DerbyPickup>();
-
                 Random rdm = new Random();
                 List<int> generatedPos = new List<int>();
                 List<int> remainingPos = new List<int>();
@@ -224,15 +222,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 int pos;
                 int tries = 0;
                 foreach (EventSlot slot in slots)
-                {/*
-                    foreach(DerbyPickup pickup in Pickups)
-                    {
-                        Console.WriteLine("Creating pickup for " + slot.Player.Name);
-                        DerbyPickup p = new DerbyPickup(slot.Player, pickup.ModelId, pickup.Position, pickup.WorldId, pickup.Event);
-                        p.Enable();
-                        tmpPickups.Add(p);
-                    }
-                    */
+                {
                     DerbyPlayer playerData = new DerbyPlayer();
                     playerData.spectatePlayerIndex = -1;
                     playerData.status = DerbyPlayerStatus.Running;
@@ -272,17 +262,6 @@ namespace SampSharpGameMode1.Events.Derbys
                     slot.Player.PutInVehicle(veh);
                     players.Add(slot.Player);
                 }
-                /*
-                foreach(DerbyPickup pickup in Pickups)
-                {
-                    pickup.Dispose();
-                }
-                Pickups.Clear();
-                Pickups = tmpPickups;
-                foreach(DerbyPickup pickup in Pickups)
-                {
-                    Console.WriteLine("There is a pickup for " + pickup.Player.Name);
-                }*/
 
                 if (!isAborted)
                 {

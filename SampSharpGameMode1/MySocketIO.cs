@@ -214,7 +214,7 @@ namespace SampSharpGameMode1
             }
             catch (Exception e)
             {
-                Console.WriteLine("MySocketIO.cs - MySocketIO.Read:E: " + e);
+                Logger.WriteLineAndClose("MySocketIO.cs - MySocketIO.Read:E: " + e);
             }
             return Encoding.ASCII.GetString(buffer, 0, bytesRead);
         }

@@ -69,13 +69,13 @@ namespace SampSharpGameMode1.Events.Derbys
                     }
                     catch (IOException e)
                     {
-                        Console.WriteLine("DerbyCreator.cs - DerbyCreator.HUD._:E: Cannot load Derby Creator HUD:");
-                        Console.WriteLine(e.Message);
+                        Logger.WriteLineAndClose("DerbyCreator.cs - DerbyCreator.HUD._:E: Cannot load Derby Creator HUD:");
+                        Logger.WriteLineAndClose(e.Message);
                     }
                     catch(TextdrawNameNotFoundException e)
                     {
-                        Console.WriteLine("DerbyCreator.cs - DerbyCreator.HUD._:E: Cannot load Derby Creator HUD:");
-                        Console.WriteLine(e.Message);
+                        Logger.WriteLineAndClose("DerbyCreator.cs - DerbyCreator.HUD._:E: Cannot load Derby Creator HUD:");
+                        Logger.WriteLineAndClose(e.Message);
                     }
                 }
             }

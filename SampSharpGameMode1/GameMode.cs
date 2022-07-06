@@ -44,8 +44,6 @@ namespace SampSharpGameMode1
                 Thread.Sleep(1000);
                 if (mySQLConnector.Connect())
                 {
-                    Logger.WriteLineAndClose("Done !");
-                    Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: MySql State: {mySQLConnector.GetState()}");
                     isConnected = true;
                 }
             }

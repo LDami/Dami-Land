@@ -198,7 +198,7 @@ namespace SampSharpGameMode1.Civilisation
             {
                 long fsLen = fs.Length;
                 dataPoints = new ushort[fsLen/2];
-                Console.Write("Loading dataPoints ...");
+                Logger.WriteAndClose("Loading dataPoints ...");
                 
                 byte[] buffer;
                 for(int i = 0; i < fsLen/2; i++)
@@ -208,8 +208,8 @@ namespace SampSharpGameMode1.Civilisation
                         fs.Read(buffer, j, 1);
                     dataPoints[i] = (ushort)GetLittleEndianInt16FromByteArray(buffer, 0);
                 }
-                
-                Console.WriteLine(" Done");
+
+                Logger.WriteLineAndClose(" Done !");
                 fs.Close();
             }
         }
@@ -355,8 +355,8 @@ namespace SampSharpGameMode1.Civilisation
 
                         nodeBorders[index] = new float?[] { -3000 + (750 * row), -3000 + (750 * col) };
 
-                        Console.WriteLine("PathExtractor.cs - PathExtractor.Extract:I: Area " + index + " loaded");
-                        Console.WriteLine(headers[index].ToString());
+                        //Logger.WriteLineAndClose("PathExtractor.cs - PathExtractor.Extract:I: Area " + index + " loaded");
+                        //Logger.WriteLineAndClose(headers[index].ToString());
 
                         //Console.WriteLine("PathExtractor.cs - PathExtractor.Extract:I: Path loaded from " + fs.Name);
                         //Console.WriteLine("PathExtractor.cs - PathExtractor.Extract:I: Path points: " + tmpPathPoints.Length);
@@ -365,7 +365,7 @@ namespace SampSharpGameMode1.Civilisation
                 }
                 catch (IOException e)
                 {
-                    Console.WriteLine("PathExtractor.cs - PathExtractor.Extract:E: " + e);
+                    Logger.WriteLineAndClose("PathExtractor.cs - PathExtractor.Extract:E: " + e);
                 }
             }
         }
@@ -422,7 +422,7 @@ namespace SampSharpGameMode1.Civilisation
                                 break;
                             }
                         }
-                        else Console.WriteLine("pathnodes in area " + area2 + " not exists");
+                        else Logger.WriteLineAndClose("pathnodes in area " + area2 + " not exists");
                     }
                 }
                 //if (!exists) Console.WriteLine("Looking for node " + links[areaID][i].nodeID + " NOK");
@@ -431,8 +431,8 @@ namespace SampSharpGameMode1.Civilisation
                 else
                     nbrOfExist++;
             }
-            if(nbrOfUnknown > 0)
-                Logger.WriteLineAndClose("PathExtractor.cs - PathExtractor.CheckLinks:W: Area " + areaID + " : " + nbrOfUnknown + " of " + (nbrOfUnknown+nbrOfExist).ToString() + " links are not resolvable");
+            //if(nbrOfUnknown > 0)
+            //    Logger.WriteLineAndClose("PathExtractor.cs - PathExtractor.CheckLinks:W: Area " + areaID + " : " + nbrOfUnknown + " of " + (nbrOfUnknown+nbrOfExist).ToString() + " links are not resolvable");
         }
         public static void SeparateNodes(int areaID)
         {
@@ -481,7 +481,7 @@ namespace SampSharpGameMode1.Civilisation
                 else
                     pedNodes.Add(node);
             }
-            Console.WriteLine("PathExtractor.cs - PathExtractor.SeparateNodes:I: Number of links = " + nbrOfLinks);
+            //Logger.WriteLineAndClose("PathExtractor.cs - PathExtractor.SeparateNodes:I: Number of links = " + nbrOfLinks);
 
             for(int i = 0; i < headers[areaID].naviNodes; i++)
             {

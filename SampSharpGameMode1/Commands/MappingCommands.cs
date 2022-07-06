@@ -144,7 +144,6 @@ namespace SampSharpGameMode1.Commands
                 {
                     foreach (Map map in maps)
                     {
-                        Console.WriteLine("Showing:" + map.Name + " " + map.VirtualWorld);
                         dialog.AddItem(map.Name + " " + map.VirtualWorld);
                     }
                     dialog.Response += (object sender, DialogResponseEventArgs e) =>

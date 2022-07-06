@@ -73,8 +73,8 @@ namespace SampSharpGameMode1.Events.Races
                     }
                     catch (IOException e)
                     {
-                        Console.WriteLine("RaceCreator.cs - RaceCreator.HUD._:E: Cannot load Race Creator HUD:");
-                        Console.WriteLine(e.Message);
+                        Logger.WriteLineAndClose("RaceCreator.cs - RaceCreator.HUD._:E: Cannot load Race Creator HUD:");
+                        Logger.WriteLineAndClose(e.Message);
                     }
                 }
             }
@@ -403,7 +403,6 @@ namespace SampSharpGameMode1.Events.Races
             {
                 editingRace.checkpoints.Add(0, new Checkpoint(position, CheckpointType.Normal));
                 checkpointIndex = 0;
-                Console.WriteLine("RaceCreator.cs - RaceCreator.AddCheckpoint:I: First CP added");
             }
             else
             {
@@ -411,11 +410,9 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     editingRace.checkpoints.Add(editingRace.checkpoints.Count, new Checkpoint(position, CheckpointType.Normal));
                     checkpointIndex = editingRace.checkpoints.Count - 1;
-                    Console.WriteLine("RaceCreator.cs - RaceCreator.AddCheckpoint:I: checkpointIndex = count-1, new CP added at the end");
                 }
                 else
                 {
-                    Console.WriteLine("RaceCreator.cs - RaceCreator.AddCheckpoint:I: checkpointIndex != count-1, rearrangement  needed");
                     Dictionary<int, Checkpoint> tmp = new Dictionary<int, Checkpoint>(editingRace.checkpoints);
                     for (int i = checkpointIndex + 1; i < tmp.Count; i++)
                     {

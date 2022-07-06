@@ -541,27 +541,19 @@ namespace SampSharpGameMode1.Events.Races
                     playersLiveInfoHUD[player].Show("checkpointtime");
                     Player playerInFront;
                     TimeSpan gap = TimeSpan.MaxValue;
-                    Logger.WriteLineAndClose($"{player.Name} entered in a checkpoint");
                     foreach (KeyValuePair<Player, PlayerCheckpointData> kvp in playerLastCheckpointData)
 					{
                         if(kvp.Value.Checkpoint == playersData[player].nextCheckpoint)
                         {
-                            Logger.WriteLineAndClose($"{kvp.Key.Name} has already take this checkpoint before");
-                            Logger.WriteLineAndClose($"gap: {gap.ToString(@"mm\:ss\.fff")}");
-                            Logger.WriteLineAndClose($"cpTime.Subtract(kvp.Value.Time): {cpTime.Subtract(kvp.Value.Time).ToString(@"mm\:ss\.fff")}");
                             if (gap.CompareTo((cpTime.Subtract(kvp.Value.Time))) > 0)
                             {
-                                Logger.WriteLineAndClose($"His gap is lower than previous");
                                 gap = cpTime - kvp.Value.Time;
                                 playerInFront = kvp.Key;
                             }
-                            else
-                                Logger.WriteLineAndClose($"The gap stay unchanged");
                         }
 					}
                     if(gap < TimeSpan.MaxValue)
                     {
-                        Logger.WriteLineAndClose($"gap is shown");
                         playersLiveInfoHUD[player].SetText("checkpointdelta", "~R~+ " + gap.ToString(@"mm\:ss\.fff"));
                         playersLiveInfoHUD[player].Show("checkpointdelta");
                     }
@@ -572,7 +564,6 @@ namespace SampSharpGameMode1.Events.Races
                     });
 
                     int cpidx = playersData[player].nextCheckpoint.Idx;
-                    Console.WriteLine("Race.cs - OnPlayerEnterCheckpoint:I: playerCheckpoint[" + player.Name + "].Idx = " + playersData[player].nextCheckpoint.Idx);
                     player.Notificate("CP: " + cpidx + "/" + (this.checkpoints.Count - 1).ToString());
                     playersData[player].nextCheckpoint = this.checkpoints[cpidx+1];
                     UpdatePlayerCheckpoint(player);

@@ -193,8 +193,8 @@ namespace SampSharpGameMode1
                     return field[name];
                 else
                 {
-                    Console.WriteLine("MySQLConnector.cs - MySQLConnector.Field.GetFieldName:W: No field name for " + name);
-                    Console.WriteLine("Returning empty string");
+                    Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.Field.GetFieldName:W: No field name for " + name);
+                    Logger.WriteLineAndClose("Returning empty string");
                     return "";
                 }
             }

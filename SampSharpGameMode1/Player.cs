@@ -75,7 +75,7 @@ namespace SampSharpGameMode1
         {
             base.OnConnected(e);
 
-            Console.WriteLine("Players.cs - Player.OnConnected:I: New player connected: [" + this.Id + "] " + this.Name);
+            Logger.WriteLineAndClose("Players.cs - Player.OnConnected:I: New player connected: [" + this.Id + "] " + this.Name);
 
             BasePlayer.SendClientMessageToAll($"{ColorPalette.Secondary.Main}{this.Name}{ColorPalette.Primary.Main} joined the server");
             this.SendClientMessage("Welcome to " + ColorPalette.Secondary.Main + "Dami's Land");
@@ -288,7 +288,7 @@ namespace SampSharpGameMode1
             }
             else
             {
-                Console.WriteLine("Player.cs - Player.IsRegisterd:E: MySQL not started");
+                Logger.WriteLineAndClose("Player.cs - Player.IsRegisterd:E: MySQL not started");
                 return false;
             }
         }
@@ -328,7 +328,7 @@ namespace SampSharpGameMode1
                         mySQLConnector.CloseReader();
                     }
                     else
-                        Console.WriteLine("Player.cs - Player.PwdSignupDialog_Response:E: Unable to create player (state: " + mySQLConnector.GetState() + ")");
+                        Logger.WriteLineAndClose("Player.cs - Player.PwdSignupDialog_Response:E: Unable to create player (state: " + mySQLConnector.GetState() + ")");
                 }
             }
             else

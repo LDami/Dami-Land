@@ -75,8 +75,8 @@ namespace SampSharpGameMode1.Display
                     }
                     catch (IOException e)
                     {
-                        Console.WriteLine("TextdrawCreator.cs - TextdrawHUD._:E: Cannot load Textdraw HUD:");
-                        Console.WriteLine(e.Message);
+                        Logger.WriteLineAndClose("TextdrawCreator.cs - TextdrawHUD._:E: Cannot load Textdraw HUD:");
+                        Logger.WriteLineAndClose(e.Message);
                     }
                 }
             }
@@ -521,8 +521,8 @@ namespace SampSharpGameMode1.Display
                 }
                 catch (IOException e)
                 {
-                    Console.WriteLine("TextdrawCreator.cs - TextdrawCreator.Save:E: Cannot read Textdraw data in file:");
-                    Console.WriteLine(e.Message);
+                    Logger.WriteLineAndClose("TextdrawCreator.cs - TextdrawCreator.Save:E: Cannot read Textdraw data in file:");
+                    Logger.WriteLineAndClose(e.Message);
                 }
             }
             else
@@ -568,8 +568,8 @@ namespace SampSharpGameMode1.Display
             }
             catch (IOException e)
             {
-                Console.WriteLine("TextdrawCreator.cs - TextdrawCreator.Save:E: Cannot write Textdraw data in file:");
-                Console.WriteLine(e.Message);
+                Logger.WriteLineAndClose("TextdrawCreator.cs - TextdrawCreator.Save:E: Cannot write Textdraw data in file:");
+                Logger.WriteLineAndClose(e.Message);
             }
         }
 

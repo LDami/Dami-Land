@@ -67,8 +67,8 @@ namespace SampSharpGameMode1.Display
                 }
                 catch (IOException e)
                 {
-                    Console.WriteLine("HUD.cs - HUD:_:E: Cannot load HUD: " + jsonFilename);
-                    Console.WriteLine(e.Message);
+                    Logger.WriteLineAndClose("HUD.cs - HUD:_:E: Cannot load HUD: " + jsonFilename);
+                    Logger.WriteLineAndClose(e.Message);
                 }
             }
         }

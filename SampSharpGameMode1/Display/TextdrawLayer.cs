@@ -298,15 +298,15 @@ namespace SampSharpGameMode1.Display
                 case EditingMode.Position:
                     {
                         textdrawList[name].BackColor = editingColor;
-                        //textdrawList[name].Text = "Position";
-                        //textdrawList[name].Font = SampSharp.GameMode.Definitions.TextDrawFont.Normal;
+                        textdrawList[name].Text = "Position";
+                        textdrawList[name].Font = SampSharp.GameMode.Definitions.TextDrawFont.Normal;
                         break;
                     }
                 case EditingMode.WidthHeight:
                     {
                         textdrawList[name].BackColor = editingColor;
-                        //textdrawList[name].Text = "Width/Height";
-                        //textdrawList[name].Font = SampSharp.GameMode.Definitions.TextDrawFont.Normal;
+                        textdrawList[name].Text = "Width/Height";
+                        textdrawList[name].Font = SampSharp.GameMode.Definitions.TextDrawFont.Normal;
                         break;
                     }
             }
