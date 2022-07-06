@@ -9,17 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MySql.Data" Version="8.0.19" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="MySql.Data" Version="8.0.29" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="SampSharp.Core" Version="0.10.1" />
+    <PackageReference Include="SampSharp.GameMode" Version="0.10.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="SampSharp.Core">
-      <HintPath>..\..\..\..\Documents\Dev\SampSharp.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="SampSharp.GameMode">
-      <HintPath>..\..\..\..\Documents\Dev\SampSharp.GameMode.dll</HintPath>
-    </Reference>
     <Reference Include="SampSharp.Streamer">
       <HintPath>..\..\..\..\Documents\Dev\SampSharp.Streamer.dll</HintPath>
     </Reference>

@@ -1018,7 +1018,8 @@ namespace SampSharpGameMode1.Events.Races
                     shownCheckpoint.Size = cp.Size;
                 }
                 shownCheckpoint.ShowForPlayer(player);
-                Streamer.Update(player);
+                Streamer st = new Streamer();
+                st.Update(player);
                 if (moverObject == null)
                 {
                     moverObject = new PlayerObject(
