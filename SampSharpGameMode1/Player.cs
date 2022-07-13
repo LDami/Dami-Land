@@ -24,12 +24,15 @@ namespace SampSharpGameMode1
 
         private int dbid;
         public int DbId { get => dbid; set => dbid = value; }
+        private string dbname; // Store the name to save in SaveAccount() if player is renaming in-game
+        public string DbName { get => dbname; set => dbname = value; }
 
-		private int adminlevel;
+        private int adminlevel;
 		public int Adminlevel { get => adminlevel; set => adminlevel = value; }
 
         private Vector3R lastSavedPosition = Vector3R.Zero;
         public Vector3R LastSavedPosition { get => lastSavedPosition; set => lastSavedPosition = value; }
+
 
 
         //AntiCheat
@@ -386,6 +389,44 @@ namespace SampSharpGameMode1
             }
             else
                 this.Kick();
+        }
+
+        public bool SaveAccount(string newPassword = null)
+        {
+            try
+            {
+                bool nameAlreadyExists = false; // Used to check if the new name of the Player is not already used by someone else
+                Dictionary<string, object> param = new Dictionary<string, object>();
+                param.Add("@id", this.DbId);
+                param.Add("@name", this.DbName);
+                mySQLConnector.OpenReader("SELECT name FROM users WHERE id!=@id AND name=@name", param);
+                Dictionary<string, string> results = mySQLConnector.GetNextRow();
+                nameAlreadyExists = (results.Count > 0);
+                mySQLConnector.CloseReader();
+
+                if (nameAlreadyExists)
+                    return false;
+
+                param.Clear();
+                string query;
+                if (newPassword != null)
+                {
+                    string hashPassword = Password.Crypt(newPassword);
+                    query = "UPDATE users SET name=@name, password=@password, adminlvl=@adminlvl WHERE id=@id";
+                    param.Add("@password", hashPassword);
+                }
+                else
+                    query = "UPDATE users SET name=@name, adminlvl=@adminlvl WHERE id=@id";
+                param.Add("@id", this.DbId);
+                param.Add("@name", this.Name);
+                param.Add("@adminlvl", this.Adminlevel);
+                mySQLConnector.Execute(query, param);
+            }
+            catch(Exception e)
+            {
+                Logger.WriteLineAndClose("Player.cs - Player.SaveAccount:E: Exception thrown during SaveAccount: " + e.Message);
+            }
+            return mySQLConnector.RowsAffected > 0;
         }
 
         public static Player GetPlayerByDatabaseId(int id)

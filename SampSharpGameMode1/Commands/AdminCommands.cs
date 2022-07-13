@@ -11,6 +11,52 @@ namespace SampSharpGameMode1.Commands
 {
     class AdminCommands
     {
+        [Command("promote", PermissionChecker = typeof(AdminPermissionChecker))]
+        private static void PromoteCommand(Player player, Player target)
+        {
+            AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+            if (!isAdmin.Check(target))
+            {
+                MessageDialog confirm = new MessageDialog("Do you confirm ?", $"You will promote {target.Name} as administrator, do you confirm ?", "Yes", "Cancel");
+                confirm.Response += (sender, e) =>
+                {
+                    if(e.DialogButton == DialogButton.Left)
+                    {
+                        target.Adminlevel = 1;
+                        target.SaveAccount();
+                        player.SendClientMessage($"{target.Name} is now admin");
+                        target.SendClientMessage($"You have been promoted as administrator by {player.Name}");
+                        Logger.WriteLineAndClose($"[Admin] {player.Name} promoted {target.Name}");
+                    }
+                };
+                confirm.Show(player);
+            }
+            else
+                player.SendClientMessage($"{target.Name} is already admin");
+        }
+        [Command("demote", PermissionChecker = typeof(AdminPermissionChecker))]
+        private static void DemoteCommand(Player player, Player target)
+        {
+            AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+            if (isAdmin.Check(target))
+            {
+                MessageDialog confirm = new MessageDialog("Do you confirm ?", $"You will demote {target.Name} as administrator, do you confirm ?", "Yes", "Cancel");
+                confirm.Response += (sender, e) =>
+                {
+                    if (e.DialogButton == DialogButton.Left)
+                    {
+                        target.Adminlevel = 0;
+                        target.SaveAccount();
+                        player.SendClientMessage($"{target.Name} is not admin anymore");
+                        target.SendClientMessage($"You have been demoted as administrator by {player.Name}");
+                        Logger.WriteLineAndClose($"[Admin] {player.Name} demoted {target.Name}");
+                    }
+                };
+                confirm.Show(player);
+            }
+            else
+                player.SendClientMessage($"{target.Name} is not admin");
+        }
         [Command("getmodel")]
         private static void GetModel(Player player, string model)
         {
