@@ -6,8 +6,8 @@ namespace SampSharpGameMode1.Display
 {
     public class TextdrawNameNotFoundException : Exception
     {
-        public TextdrawNameNotFoundException() :
-            base("The given Textdraw name has not been found.")
+        public TextdrawNameNotFoundException(string name) :
+            base("The given Textdraw name has not been found: " + name)
         { }
     }
 }

@@ -10,6 +10,8 @@ namespace SampSharpGameMode1.Display
 {
     public class HUD
     {
+        public bool HasError { get; private set; }
+
         private TextdrawLayer layer;
         /// <summary>
         /// Create a HUD for a player from a JSON file
@@ -69,6 +71,13 @@ namespace SampSharpGameMode1.Display
                 {
                     Logger.WriteLineAndClose("HUD.cs - HUD:_:E: Cannot load HUD: " + jsonFilename);
                     Logger.WriteLineAndClose(e.Message);
+                    HasError = true;
+                }
+                catch(JsonReaderException e)
+                {
+                    Logger.WriteLineAndClose("HUD.cs - HUD:_:E: Cannot load HUD: " + jsonFilename);
+                    Logger.WriteLineAndClose(e.Message);
+                    HasError = true;
                 }
             }
         }
@@ -104,7 +113,15 @@ namespace SampSharpGameMode1.Display
         /// <param name="value">The value to display</param>
         public void SetText(string element, string value)
         {
-            layer.SetTextdrawText(element, value);
+            try
+            {
+                layer.SetTextdrawText(element, value);
+            }
+            catch(TextdrawNameNotFoundException e)
+            {
+                Logger.WriteLineAndClose("HUD.cs - HUD:SetText:E: " + e.Message);
+                HasError = true;
+            }
         }
 
         /// <summary>
@@ -114,7 +131,15 @@ namespace SampSharpGameMode1.Display
         /// <param name="color">The color to set</param>
         public void SetColor(string element, Color color)
         {
-            layer.SetTextdrawColor(element, color);
+            try
+            {
+                layer.SetTextdrawColor(element, color);
+            }
+            catch (TextdrawNameNotFoundException e)
+            {
+                Logger.WriteLineAndClose("HUD.cs - HUD:SetColor:E: " + e.Message);
+                HasError = true;
+            }
         }
     }
 }

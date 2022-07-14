@@ -153,6 +153,7 @@ namespace SampSharpGameMode1.Display
 
         public void Init()
         {
+            player.DisablePlayerVehicleHUD();
             if(tdHUD == null) player.KeyStateChanged += Player_KeyStateChanged; // la condition est juste pour éviter d'ajouter plusieurs fois l'event
             tdHUD = new TextdrawHUD(player);
             layers.Clear();
@@ -456,6 +457,8 @@ namespace SampSharpGameMode1.Display
             player.ToggleControllable(true);
             player.KeyStateChanged -= Player_KeyStateChanged;
             tdHUD.Destroy();
+            if(player.InAnyVehicle)
+                player.EnablePlayerVehicleHUD();
         }
 
         public void Update()
@@ -556,8 +559,11 @@ namespace SampSharpGameMode1.Display
             
             try
             {
-                using (FileStream fs = File.Open(filename, FileMode.OpenOrCreate, FileAccess.Write))
+                if (File.Exists(filename))
+                    File.Delete(filename);
+                using (FileStream fs = File.Open(filename, FileMode.CreateNew, FileAccess.Write))
                 {
+                    
                     byte[] data = new UTF8Encoding(true).GetBytes(output);
                     foreach (byte databyte in data)
                         fs.WriteByte(databyte);
@@ -565,6 +571,7 @@ namespace SampSharpGameMode1.Display
                     fs.Close();
                 }
                 player.SendClientMessage("File saved in " + filename);
+                Logger.WriteLineAndClose($"{player.Name} updated {filename}");
             }
             catch (IOException e)
             {
@@ -603,6 +610,36 @@ namespace SampSharpGameMode1.Display
                 tdHUD.SetMode(layers[layerIndex].GetEditingMode(editingTDName).ToString());
             }
         }
+
+        /// <summary>
+        /// Replaces Text textdraw by Box
+        /// </summary>
+        /// <param name="name">Name of the textdraw to set as Box</param>
+        public void SetAsBox(string name)
+        {
+            if (isEditing)
+            {
+                layers[layerIndex].SetTextdrawSize(name, 250, 20);
+                layers[layerIndex].SetTextdrawFont(name, 0);
+                layers[layerIndex].SetTextdrawText(name, "_");
+                layers[layerIndex].SetTextdrawType(name, TextdrawLayer.TextdrawType.Box);
+            }
+        }
+
+        /// <summary>
+        /// Replaces Box textdraw by Text
+        /// </summary>
+        /// <param name="name">Name of the textdraw to set as Text</param>
+        public void SetAsText(string name)
+        {
+            if (isEditing)
+            {
+                layers[layerIndex].SetTextdrawSize(name, 0, 0);
+                layers[layerIndex].SetTextdrawFont(name, 1);
+                layers[layerIndex].SetTextdrawType(name, TextdrawLayer.TextdrawType.Text);
+            }
+        }
+
 
         public void Select(string name)
         {
