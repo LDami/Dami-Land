@@ -228,7 +228,7 @@ namespace SampSharpGameMode1.Events.Races
                         int idx = 0;
                         while (row.Count > 0)
                         {
-                            checkpoint = new Checkpoint(new Vector3(
+                            checkpoint = new Checkpoint(idx, new Vector3(
                                     (float)Convert.ToDouble(row["checkpoint_pos_x"]),
                                     (float)Convert.ToDouble(row["checkpoint_pos_y"]),
                                     (float)Convert.ToDouble(row["checkpoint_pos_z"])
@@ -244,7 +244,6 @@ namespace SampSharpGameMode1.Events.Races
                             else
                                 checkpoint.NextNitro = (Checkpoint.NitroEvent)Convert.ToInt32(row["checkpoint_nitro"]);
 
-                            checkpoint.Idx = idx;
 							checkpoint.PlayerVehicleChanged += Checkpoint_PlayerVehicleChanged;
                             this.checkpoints.Add(idx++, checkpoint);
                             row = GameMode.mySQLConnector.GetNextRow();
@@ -559,8 +558,11 @@ namespace SampSharpGameMode1.Events.Races
                     }
                     SampSharp.GameMode.SAMP.Timer.RunOnce(5000, () =>
                     {
-                        playersLiveInfoHUD[player].Hide("checkpointtime");
-                        playersLiveInfoHUD[player].Hide("checkpointdelta");
+                        if(!player.IsDisposed) // Can be disconnected during race
+                        {
+                            playersLiveInfoHUD[player].Hide("checkpointtime");
+                            playersLiveInfoHUD[player].Hide("checkpointdelta");
+                        }
                     });
 
                     int cpidx = playersData[player].nextCheckpoint.Idx;
