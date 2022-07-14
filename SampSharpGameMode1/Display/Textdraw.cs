@@ -31,7 +31,6 @@ namespace SampSharpGameMode1.Display
         public string text = "";
         public int font = 1;
         public int alignment;
-        public Color Color = Color.SkyBlue;
         public Color backColor = Color.SkyBlue;
         public string type; // Utilisé uniquement pour la sauvegarde
         public Textdraw(BasePlayer owner, string name) : base(owner)

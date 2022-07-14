@@ -44,21 +44,30 @@ namespace SampSharpGameMode1.Display
                         List<textdraw> textdraws = JsonConvert.DeserializeObject<List<textdraw>>(jsonData);
                         foreach (textdraw textdraw in textdraws)
                         {
+                            if (textdraw.Type.Equals("background"))
+                            {
+                                layer.CreateBackground(player, textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY), new Vector2(textdraw.Width, textdraw.Height), textdraw.Color);
+                                //layer.SetTextdrawText(textdraw.Name, textdraw.Text);
+                            }
                             if (textdraw.Type.Equals("box"))
                             {
                                 layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Box);
                                 layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
                                 layer.SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height);
                                 layer.SetTextdrawColor(textdraw.Name, textdraw.Color);
-                                layer.SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
+                                layer.SetTextdrawBoxColor(textdraw.Name, textdraw.BackColor);
                             }
                             if (textdraw.Type.Equals("text"))
                             {
                                 layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Text);
                                 layer.SetTextdrawText(textdraw.Name, textdraw.Text);
                                 layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
+                                layer.SetTextdrawAlignment(textdraw.Name, textdraw.Alignment);
                                 layer.SetTextdrawColor(textdraw.Name, textdraw.Color);
                                 layer.SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
+                                layer.SetTextdrawFont(textdraw.Name, textdraw.Font);
+                                if(textdraw.Font == 4)
+                                    layer.SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height);
                                 if (textdraw.Width > 0 && textdraw.Height > 0)
                                     layer.SetTextdrawLetterSize(textdraw.Name, textdraw.Width, textdraw.Height);
                             }

@@ -43,7 +43,7 @@ namespace SampSharpGameMode1
         int passwordEntryTries = 3;
 
         //Vehicle
-        private HUD vehicleHUD;
+        public Speedometer Speedometer;
         private bool nitroEnabled;
         public bool NitroEnabled { get => nitroEnabled; set => nitroEnabled = value; }
 
@@ -100,6 +100,8 @@ namespace SampSharpGameMode1
                 eventCreator = null;
                 pEvent = null;
 
+                Speedometer = new Speedometer(this);
+
                 pathObjectsTimer = new SampSharp.GameMode.SAMP.Timer(10000, true);
                 //pathObjectsTimer.Tick += PathObjectsTimer_Tick;
 
@@ -139,6 +141,8 @@ namespace SampSharpGameMode1
                 mapCreator = null;
                 eventCreator = null;
 
+                Speedometer = null;
+
                 pathObjectsTimer.IsRunning = false;
                 pathObjectsTimer.Dispose();
                 pathObjectsTimer = null;
@@ -170,32 +174,32 @@ namespace SampSharpGameMode1
         public override void OnUpdate(PlayerUpdateEventArgs e)
         {
             base.OnUpdate(e);
-            /*
-            if (playerMapping != null)
-                playerMapping.Update();
-            //if (playerRaceCreator != null)
-            //    playerRaceCreator.Update();
-            if(this.InAnyVehicle && vehicleHUD != null)
+            if(this.InAnyVehicle && Speedometer != null)
             {
-                double vel = Math.Sqrt(this.Vehicle.Velocity.LengthSquared) * 181.5;
-                vehicleHUD.SetText("speed", vel.ToString(@"N3"));
+                Speedometer.Update();
             }
-            */
         }
         public override void OnEnterVehicle(EnterVehicleEventArgs e)
         {
             base.OnEnterVehicle(e);
-            /*
-            vehicleHUD = new HUD(this, "speedometer.json");
-            vehicleHUD.SetText("speed", "0");
-            */
+
         }
         public override void OnExitVehicle(PlayerVehicleEventArgs e)
         {
             base.OnExitVehicle(e);
-            if(vehicleHUD != null)
-                vehicleHUD.Hide();
-            vehicleHUD = null;
+        }
+
+        public override void OnStateChanged(StateEventArgs e)
+        {
+            base.OnStateChanged(e);
+            if (e.NewState == PlayerState.Driving)
+            {
+                Speedometer.Show();
+            }
+            else
+            {
+                Speedometer.Hide();
+            }
         }
 
         public override void OnEnterCheckpoint(EventArgs e)
@@ -427,20 +431,6 @@ namespace SampSharpGameMode1
                 Logger.WriteLineAndClose("Player.cs - Player.SaveAccount:E: Exception thrown during SaveAccount: " + e.Message);
             }
             return mySQLConnector.RowsAffected > 0;
-        }
-
-        public static Player GetPlayerByDatabaseId(int id)
-        {
-            Player result = null;
-            foreach(Player player in Player.All)
-            {
-                if(player.DbId == id)
-                {
-                    result = player;
-                    break;
-                }
-            }
-            return result;
         }
 
         private int GetArea(Vector3 position)
@@ -894,7 +884,7 @@ namespace SampSharpGameMode1
                     }
                 }
             }
-            
+
             /*
             [CommandGroup("npc")]
             class NPCCommandClass
@@ -915,6 +905,20 @@ namespace SampSharpGameMode1
                 }
             }
             */
+
+            public static Player GetPlayerByDatabaseId(int id)
+            {
+                Player result = null;
+                foreach (Player player in Player.All)
+                {
+                    if (player.DbId == id)
+                    {
+                        result = player;
+                        break;
+                    }
+                }
+                return result;
+            }
         }
 
     }

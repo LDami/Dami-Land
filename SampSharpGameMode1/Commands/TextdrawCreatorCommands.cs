@@ -13,7 +13,7 @@ namespace SampSharpGameMode1.Commands
         private static void TDCommand(Player player)
 		{
             player.SendClientMessage("Usage: /td [action]");
-            player.SendClientMessage("Actions: init, exit, load, save, hudswitch, add box, add text, set box, set text, select, unselect");
+            player.SendClientMessage("Actions: init, exit, load, save, hudswitch, add, set box, set text, select, unselect");
         }
 
         [CommandGroup("td")]
@@ -83,7 +83,18 @@ namespace SampSharpGameMode1.Commands
             [Command("add")]
             private static void AddBox(Player player)
             {
-                player.SendClientMessage("Usage: /td add [box/text] [name]");
+                player.SendClientMessage("Usage: /td add [background/box/text] [name]");
+            }
+            [Command("add background")]
+            private static void AddBackground(Player player, string name)
+            {
+                if (player.textdrawCreator != null)
+                {
+                    player.textdrawCreator.AddBackground(name);
+                    player.SendClientMessage("Textdraw created");
+                }
+                else
+                    player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
             }
             [Command("add box")]
             private static void AddBox(Player player, string name)

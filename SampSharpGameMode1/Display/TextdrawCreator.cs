@@ -153,7 +153,7 @@ namespace SampSharpGameMode1.Display
 
         public void Init()
         {
-            player.DisablePlayerVehicleHUD();
+            player.Speedometer.Hide();
             if(tdHUD == null) player.KeyStateChanged += Player_KeyStateChanged; // la condition est juste pour éviter d'ajouter plusieurs fois l'event
             tdHUD = new TextdrawHUD(player);
             layers.Clear();
@@ -457,8 +457,9 @@ namespace SampSharpGameMode1.Display
             player.ToggleControllable(true);
             player.KeyStateChanged -= Player_KeyStateChanged;
             tdHUD.Destroy();
+            tdHUD = null;
             if(player.InAnyVehicle)
-                player.EnablePlayerVehicleHUD();
+                player.Speedometer.Show();
         }
 
         public void Update()
@@ -499,15 +500,25 @@ namespace SampSharpGameMode1.Display
                         layerIndex = layers.Count - 1;
                         foreach (textdraw textdraw in textdraws)
                         {
+                            if (textdraw.Type.Equals("background"))
+                            {
+                                layers[layerIndex].CreateBackground(player, textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY), new Vector2(textdraw.Width, textdraw.Height), textdraw.Color);
+                            }
                             if (textdraw.Type.Equals("box"))
+                            {
                                 layers[layerIndex].CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Box);
+                                layers[layerIndex].SetTextdrawColor(textdraw.Name, textdraw.Color);
+                                layers[layerIndex].SetTextdrawBoxColor(textdraw.Name, textdraw.BackColor);
+                            }
                             if (textdraw.Type.Equals("text"))
                             {
                                 layers[layerIndex].CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Text);
                                 layers[layerIndex].SetTextdrawText(textdraw.Name, textdraw.Text);
                                 layers[layerIndex].SetTextdrawFont(textdraw.Name, textdraw.Font);
                                 layers[layerIndex].SetTextdrawAlignment(textdraw.Name, textdraw.Alignment);
-                                if(textdraw.Width > 0 && textdraw.Height > 0)
+                                layers[layerIndex].SetTextdrawColor(textdraw.Name, textdraw.Color);
+                                layers[layerIndex].SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
+                                if (textdraw.Width > 0 && textdraw.Height > 0)
                                     layers[layerIndex].SetTextdrawLetterSize(textdraw.Name, textdraw.Width, textdraw.Height);
                             }
                             if (!layers[layerIndex].SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY)))
@@ -580,6 +591,22 @@ namespace SampSharpGameMode1.Display
             }
         }
 
+        public void AddBackground(string name)
+        {
+            if (isEditing)
+            {
+                if (layers.Count == 0)
+                {
+                    layerIndex = 0;
+                    layers.Add(new TextdrawLayer());
+                }
+                layers[layerIndex].CreateBackground(player, name, new Vector2(320.0f, 240.0f), new Vector2(320.0f, 240.0f), Color.White);
+                editingTDName = name;
+                Select(editingTDName);
+                tdHUD.SetMode(layers[layerIndex].GetEditingMode(editingTDName).ToString());
+            }
+        }
+
         public void AddBox(string name)
         {
             if (isEditing)
@@ -649,6 +676,7 @@ namespace SampSharpGameMode1.Display
                 {
                     layers[layerIndex].SelectTextdraw(name);
                     tdHUD.SetSelectedTextdrawName(name);
+                    tdHUD.SetMode(layers[layerIndex].GetEditingMode(editingTDName).ToString());
                     editingTDName = name;
                 }
                 catch(TextdrawNameNotFoundException ex)
