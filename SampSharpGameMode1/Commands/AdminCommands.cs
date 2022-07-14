@@ -57,6 +57,20 @@ namespace SampSharpGameMode1.Commands
             else
                 player.SendClientMessage($"{target.Name} is not admin");
         }
+        [Command("reload-td", PermissionChecker = typeof(AdminPermissionChecker))]
+        private static void ReloadTextdraws(Player player)
+        {
+            player.SendClientMessage("Reloading all player's textdraws ...");
+            foreach(Player p in Player.All)
+            {
+                p.Speedometer.Hide();
+                p.Speedometer = null;
+                p.Speedometer = new Display.Speedometer(p);
+                if (p.InAnyVehicle)
+                    p.Speedometer.Show();
+            }
+            player.SendClientMessage("Done.");
+        }
         [Command("getmodel")]
         private static void GetModel(Player player, string model)
         {
