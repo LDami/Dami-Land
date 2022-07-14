@@ -28,6 +28,11 @@ namespace SampSharpGameMode1
 
             Console.WriteLine("\n----------------------------------");
             Console.WriteLine(" LDami's gamemode");
+#if DEBUG
+            Console.WriteLine(" Mode: DEBUG");
+#else
+            Console.WriteLine(" Mode: Production");
+#endif
             Console.WriteLine("----------------------------------\n");
 
             //this.AddPlayerClass(1, 1, new Vector3(1431.6393, 1519.5398, 10.5988), 0.0f); // airlv
@@ -144,7 +149,7 @@ namespace SampSharpGameMode1
             base.OnExited(e);
         }
 
-        #endregion
+#endregion
         DateTime startedTime = DateTime.Now;
         private void CalculateWay(Vector3 from, Vector3 to)
         {
