@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Text;
-
+using System.Threading;
 using MySql.Data;
 using MySql.Data.MySqlClient;
 
@@ -66,11 +66,31 @@ namespace SampSharpGameMode1
         public void Close()
         {
             mySqlConnection.Close();
+            mySqlConnection = null;
         }
 
         public string GetState()
         {
             return mySqlConnection.State.ToString();
+        }
+
+        private void ReconnectIfNeeded()
+        {
+            if (!mySqlConnection.Ping())
+            {
+                Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.ReconnectIfNeeded:W: Connection to the database lost");
+                Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.ReconnectIfNeeded:W: Reconnecting ...");
+                Close();
+                Boolean isConnected = false;
+                while (!isConnected)
+                {
+                    Thread.Sleep(1000);
+                    if (Connect())
+                    {
+                        isConnected = true;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -81,6 +101,7 @@ namespace SampSharpGameMode1
         /// <returns>Last inserted id</returns>
         public long Execute(string query, Dictionary<string, object> parameters)
         {
+            ReconnectIfNeeded();
             if (!query.StartsWith("SELECT"))
             {
                 rowsAffected = 0;
@@ -110,6 +131,7 @@ namespace SampSharpGameMode1
         /// <param name="parameters">Dictionary(string, object) of parameters</param>
         public void OpenReader(string query, Dictionary<string, object> parameters)
         {
+            ReconnectIfNeeded();
             if (query.StartsWith("SELECT"))
             {
                 readRows = 0;
