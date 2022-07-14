@@ -7,7 +7,7 @@ using System.Text;
 
 namespace SampSharpGameMode1.Display
 {
-    class TextdrawLayer
+    public class TextdrawLayer
     {
         private Color editingColor = new Color(180, 50, 50);
 
@@ -81,35 +81,23 @@ namespace SampSharpGameMode1.Display
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].Show();
-#if DEBUG
-            Logger.WriteLineAndClose("TextdrawLayer.cs - TextdrawLayer.Show:I: Showing " + name);
-#endif
         }
         public void ShowAll()
         {
             foreach (KeyValuePair<string, Textdraw> td in textdrawList)
                 td.Value.Show();
-#if DEBUG
-            Logger.WriteLineAndClose("TextdrawLayer.cs - TextdrawLayer.Show:I: Showing all");
-#endif
         }
         public void Hide(string name)
         {
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].Hide();
-#if DEBUG
-            Logger.WriteLineAndClose("TextdrawLayer.cs - TextdrawLayer.Show:I: Hiding " + name);
-#endif
         }
 
         public void HideAll()
         {
             foreach (KeyValuePair<string, Textdraw> td in textdrawList)
                 td.Value.Hide();
-#if DEBUG
-            Logger.WriteLineAndClose("TextdrawLayer.cs - TextdrawLayer.Show:I: Hiding all");
-#endif
         }
         public void Destroy()
         {
@@ -158,7 +146,6 @@ namespace SampSharpGameMode1.Display
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].Width += offset.X;
             textdrawList[name].Height += offset.Y;
-            Console.WriteLine("new height: " + textdrawList[name].Height);
             this.UpdateTextdraw(name);
         }
         public Vector2 GetTextdrawPosition(string name)

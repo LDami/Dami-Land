@@ -12,7 +12,7 @@ namespace SampSharpGameMode1.Display
     {
         public bool HasError { get; private set; }
 
-        private TextdrawLayer layer;
+        protected TextdrawLayer layer;
         /// <summary>
         /// Create a HUD for a player from a JSON file
         /// </summary>

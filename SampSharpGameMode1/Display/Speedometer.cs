@@ -1,4 +1,5 @@
-﻿using SampSharp.GameMode.World;
+﻿using SampSharp.GameMode.SAMP;
+using SampSharp.GameMode.World;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -7,6 +8,7 @@ namespace SampSharpGameMode1.Display
 {
     public class Speedometer
     {
+        public bool IsDisplayed { get; private set; }
         private HUD hud;
         private Player player;
         private int health_icon_index = 0; // 0 does not exist: means that the icon is not displayed yet
@@ -25,14 +27,13 @@ namespace SampSharpGameMode1.Display
             Hide();
             if (!hud.HasError)
             {
+                hud.SetText("vehiclename", "Unknown model");
                 hud.SetText("speed", "0 km/h");
                 hud.SetText("health", "0 %");
-                hud.SetText("vehiclename", player.Vehicle?.ModelInfo.Name ?? "Unknown model");
                 hud.Show();
                 hud.Hide("health_icon");
+                IsDisplayed = true;
             }
-            else
-                Logger.WriteLineAndClose("has error");
         }
 
         public void Hide()
@@ -41,36 +42,50 @@ namespace SampSharpGameMode1.Display
             {
                 hud.Hide();
             }
+            IsDisplayed = false;
         }
 
         public void Update()
         {
-            double vel = Math.Sqrt(player.Vehicle.Velocity.LengthSquared) * 181.5;
-            hud.SetText("speed", vel.ToString(@"N0") + " km/h");
-            hud.SetText("health", (player.Vehicle.Health / 10).ToString(@"N0") + " %");
-            if (player.Vehicle.Health < 300)
+            if(IsDisplayed)
             {
-                if(health_icon_index == 0)
+                string model = player.Vehicle?.ModelInfo.Name ?? "Unknown model";
+                if (model.Length > 11)
                 {
-                    health_icon_index = 1;
-                    hud.SetText("health_icon", "LD_DUAL:ex1");
-                    hud.Show("health_icon");
-                    health_icon_lastUpdate = DateTime.Now;
+                    model = model.Insert(11, "\n");
                 }
-                if((DateTime.Now - health_icon_lastUpdate).TotalMilliseconds > health_icon_delay)
+                hud.SetText("vehiclename", model);
+
+                double vel = Math.Sqrt(player.Vehicle.Velocity.LengthSquared) * 181.5;
+                hud.SetText("speed", vel.ToString(@"N0") + " km/h");
+
+                hud.SetText("health", (player.Vehicle.Health / 10).ToString(@"N0") + " %");
+                if (player.Vehicle.Health < 250)
                 {
-                    health_icon_index++;
-                    if (health_icon_index > 4)
+                    hud.SetColor("health", Color.Red);
+                    if (health_icon_index == 0)
+                    {
                         health_icon_index = 1;
-                    hud.SetText("health_icon", "LD_DUAL:ex" + health_icon_index);
+                        hud.SetText("health_icon", "LD_DUAL:ex1");
+                        hud.Show("health_icon");
+                        health_icon_lastUpdate = DateTime.Now;
+                    }
+                    if ((DateTime.Now - health_icon_lastUpdate).TotalMilliseconds > health_icon_delay)
+                    {
+                        health_icon_index++;
+                        if (health_icon_index > 4)
+                            health_icon_index = 1;
+                        hud.SetText("health_icon", "LD_DUAL:ex" + health_icon_index);
+                    }
                 }
-            }
-            else
-            {
-                if(health_icon_index != 0)
+                else
                 {
-                    hud.Hide("health_icon");
-                    health_icon_index = 0;
+                    hud.SetColor("health", Color.White);
+                    if (health_icon_index != 0)
+                    {
+                        hud.Hide("health_icon");
+                        health_icon_index = 0;
+                    }
                 }
             }
         }

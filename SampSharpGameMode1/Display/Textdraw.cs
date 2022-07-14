@@ -22,7 +22,7 @@ namespace SampSharpGameMode1.Display
         public Color BackColor;
         public string Type;
     }
-    class Textdraw : PlayerTextDraw
+    public class Textdraw : PlayerTextDraw
     {
         public string name;
         public Vector2 position = Vector2.Zero;

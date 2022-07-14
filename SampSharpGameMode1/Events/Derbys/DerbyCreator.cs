@@ -18,66 +18,15 @@ namespace SampSharpGameMode1.Events.Derbys
 {
 	public class DerbyCreator : EventCreator
     {
-        class HUD
+        class HUD : Display.HUD
         {
-            TextdrawLayer layer;
-            public HUD(Player player)
+            public HUD(Player player) : base(player, "derbycreator.json")
             {
-                layer = new TextdrawLayer();
-                string filename = Directory.GetCurrentDirectory() + "\\scriptfiles\\derbycreator.json";
-                string jsonData = "";
-                if (File.Exists(filename))
-                {
-                    try
-                    {
-                        using (FileStream fs = File.Open(filename, FileMode.Open, FileAccess.Read))
-                        {
-                            byte[] output = new byte[fs.Length];
-                            int idx = 0;
-                            int blockLength = 1;
-                            byte[] tmp = new byte[blockLength];
-                            int readBytes;
-                            while ((readBytes = fs.Read(tmp, 0, blockLength)) > 0)
-                            {
-                                for (int i = 0; i < readBytes; i++)
-                                    output[idx + i] = tmp[i];
-                                idx += readBytes;
-                            }
-                            jsonData = new UTF8Encoding(true).GetString(output);
-                            List<textdraw> textdraws = JsonConvert.DeserializeObject<List<textdraw>>(jsonData);
-                            foreach (textdraw textdraw in textdraws)
-                            {
-                                if (textdraw.Type.Equals("box"))
-                                {
-                                    layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Box);
-                                    layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
-                                    layer.SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height);
-                                }
-                                if (textdraw.Type.Equals("text"))
-                                {
-                                    layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Text);
-                                    layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
-                                }
-                            }
-                            layer.SetTextdrawText("derbynamelabel", "Derby Name:");
-                            layer.SetTextdrawText("derbyname", "None");
-                            layer.SetTextdrawText("selectedidx", "Spawn nbr:");
-                            layer.SetTextdrawText("editingmode", "Mode: None");
-                            layer.UnselectAllTextdraw();
-                            fs.Close();
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        Logger.WriteLineAndClose("DerbyCreator.cs - DerbyCreator.HUD._:E: Cannot load Derby Creator HUD:");
-                        Logger.WriteLineAndClose(e.Message);
-                    }
-                    catch(TextdrawNameNotFoundException e)
-                    {
-                        Logger.WriteLineAndClose("DerbyCreator.cs - DerbyCreator.HUD._:E: Cannot load Derby Creator HUD:");
-                        Logger.WriteLineAndClose(e.Message);
-                    }
-                }
+                layer.SetTextdrawText("derbynamelabel", "Derby Name:");
+                layer.SetTextdrawText("derbyname", "None");
+                layer.SetTextdrawText("selectedidx", "Spawn nbr:");
+                layer.SetTextdrawText("editingmode", "Mode: None");
+                layer.UnselectAllTextdraw();
             }
             public void Destroy()
             {
@@ -93,10 +42,10 @@ namespace SampSharpGameMode1.Events.Derbys
             }
             public void SetEditingMode(EditingMode editingMode)
             {
-                layer.SetTextdrawText("editingmode", editingMode.ToString());
+                layer.SetTextdrawText("editingmode", "Mode: " + editingMode.ToString());
             }
         }
-        enum EditingMode { Mapping, SpawnPos }
+        enum EditingMode { None, SpawnPos }
 
         protected MySQLConnector mySQLConnector = MySQLConnector.Instance();
 
@@ -226,7 +175,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
             if (!player.InAnyVehicle)
             {
-                BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, pos, rot, 1, 1);
+                BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, pos, rot, 243, 243);
                 veh.VirtualWorld = player.VirtualWorld;
                 player.DisableRemoteVehicleCollisions(true);
                 player.PutInVehicle(veh);
@@ -239,7 +188,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
             hud = new HUD(player);
             hud.SetDerbyName(editingDerby.Name ?? "Untitled");
-            editingMode = EditingMode.Mapping;
+            editingMode = EditingMode.None;
             hud.SetEditingMode(editingMode);
         }
 
@@ -518,6 +467,8 @@ namespace SampSharpGameMode1.Events.Derbys
                                     editingDerby.SpawnPoints = spawnerCreator.GetSpawnPoints();
                                     spawnerCreator.Unload();
                                     spawnerCreator = null;
+                                    editingMode = EditingMode.None;
+                                    hud.SetEditingMode(editingMode);
                                 }
                                 else
                                 {
@@ -535,7 +486,11 @@ namespace SampSharpGameMode1.Events.Derbys
                                         {
                                             editingDerby.SpawnPoints = e.spawnPoints;
                                             player.Notificate("Spawn points updated");
+                                            editingMode = EditingMode.None;
+                                            hud.SetEditingMode(editingMode);
                                         };
+                                    editingMode = EditingMode.SpawnPos;
+                                    hud.SetEditingMode(editingMode);
                                 }
                                 break;
 							}

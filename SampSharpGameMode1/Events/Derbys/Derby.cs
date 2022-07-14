@@ -232,7 +232,7 @@ namespace SampSharpGameMode1.Events.Derbys
                     playersLiveInfoHUD[slot.Player] = new HUD(slot.Player, "derbyhud.json");
                     playersLiveInfoHUD[slot.Player].Hide("iconrockets");
                     playersLiveInfoHUD[slot.Player].Hide("remainingrockets");
-                    playersLiveInfoHUD[slot.Player].SetText("remainingplayers", "Remaining players: " + players.Count + "/" + players.Count);
+                    playersLiveInfoHUD[slot.Player].SetText("remainingplayers", slots.Count.ToString(@"000"));
 
                     slot.Player.VirtualWorld = virtualWorld;
 
@@ -382,7 +382,9 @@ namespace SampSharpGameMode1.Events.Derbys
             }
 
             players.Remove(player);
-            if(players.Count == 0) // Si c'est le vainqueur
+            foreach(Player p in players)
+                playersLiveInfoHUD[p].SetText("remainingplayers", players.Count.ToString(@"000"));
+            if (players.Count == 0) // Si c'est le vainqueur
             {
                 SampSharp.GameMode.SAMP.Timer ejectionTimer = new SampSharp.GameMode.SAMP.Timer(2000, false);
                 ejectionTimer.Tick += (object sender, EventArgs e) =>
@@ -418,6 +420,7 @@ namespace SampSharpGameMode1.Events.Derbys
         }
         public void Eject(Player player)
         {
+            playersLiveInfoHUD[player].Hide();
             players.RemoveAll(x => x.Equals(player));
             spectatingPlayers.RemoveAll(x => x.Equals(player));
 

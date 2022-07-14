@@ -18,65 +18,18 @@ namespace SampSharpGameMode1.Events.Races
 {
     public class RaceCreator : EventCreator
     {
-        class HUD
+        class HUD : Display.HUD
         {
-            TextdrawLayer layer;
-
             private string selectedIdx;
-            public HUD(Player player)
+            public HUD(Player player) : base(player, "racecreator.json")
             {
-                layer = new TextdrawLayer();
-                string filename = Directory.GetCurrentDirectory() + "\\scriptfiles\\racecreator.json";
-                string jsonData = "";
-                if (File.Exists(filename))
-                {
-                    try
-                    {
-                        using (FileStream fs = File.Open(filename, FileMode.Open, FileAccess.Read))
-                        {
-                            byte[] output = new byte[fs.Length];
-                            int idx = 0;
-                            int blockLength = 1;
-                            byte[] tmp = new byte[blockLength];
-                            int readBytes;
-                            while ((readBytes = fs.Read(tmp, 0, blockLength)) > 0)
-                            {
-                                for (int i = 0; i < readBytes; i++)
-                                    output[idx + i] = tmp[i];
-                                idx += readBytes;
-                            }
-                            jsonData = new UTF8Encoding(true).GetString(output);
-                            List<textdraw> textdraws = JsonConvert.DeserializeObject<List<textdraw>>(jsonData);
-                            foreach (textdraw textdraw in textdraws)
-                            {
-                                if (textdraw.Type.Equals("box"))
-                                {
-                                    layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Box);
-                                    layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
-                                    layer.SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height);
-                                }
-                                if (textdraw.Type.Equals("text"))
-                                {
-                                    layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Text);
-                                    layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
-                                }
-                            }
-                            layer.SetTextdrawText("racenamelabel", "Race Name:");
-                            layer.SetTextdrawText("racename", "None");
-                            layer.SetTextdrawText("selectedidx", "Selected CP: None");
-                            layer.SetTextdrawText("totalcp", "Total CP: 0");
-                            layer.SetTextdrawText("editingmode", "Mode: None");
-                            layer.UnselectAllTextdraw();
-                            layer.SetOnClickCallback("editingmode", OnEditingModeClick);
-                            fs.Close();
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        Logger.WriteLineAndClose("RaceCreator.cs - RaceCreator.HUD._:E: Cannot load Race Creator HUD:");
-                        Logger.WriteLineAndClose(e.Message);
-                    }
-                }
+                layer.SetTextdrawText("racenamelabel", "Race Name:");
+                layer.SetTextdrawText("racename", "None");
+                layer.SetTextdrawText("selectedidx", "Selected CP: None");
+                layer.SetTextdrawText("totalcp", "Total CP: 0");
+                layer.SetTextdrawText("editingmode", "Mode: None");
+                layer.UnselectAllTextdraw();
+                layer.SetOnClickCallback("editingmode", OnEditingModeClick);
             }
             public void Destroy()
             {
