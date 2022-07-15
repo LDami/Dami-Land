@@ -316,9 +316,10 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     { "@name", editingRace.Name },
                     { "@mapid", editingRace.MapId == -1 ? null : editingRace.MapId.ToString() },
+                    { "@vehicleid", editingRace.StartingVehicle },
                     { "@id", editingRace.Id }
                 };
-                mySQLConnector.Execute("UPDATE races SET race_name=@name, race_map=@mapid WHERE race_id=@id", param);
+                mySQLConnector.Execute("UPDATE races SET race_name=@name, race_map=@mapid, race_startvehicle=@vehicleid WHERE race_id=@id", param);
                 isNew = false;
                 return (mySQLConnector.RowsAffected > 0);
             }
