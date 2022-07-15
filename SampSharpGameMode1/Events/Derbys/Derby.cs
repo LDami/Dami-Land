@@ -38,6 +38,7 @@ namespace SampSharpGameMode1.Events.Derbys
         public bool IsLoaded { get; private set; }
         public bool IsCreatorMode { get; set; }
         public string Creator { get; set; }
+        public float MinimumHeight { get; set; }
 
 
         // Launcher only
@@ -71,6 +72,14 @@ namespace SampSharpGameMode1.Events.Derbys
         #endregion
 
         #region PlayerEvents
+        private void OnPlayerUpdate(object sender, PlayerUpdateEventArgs e)
+        {
+            if(((BasePlayer)sender).Position.Z < this.MinimumHeight)
+            {
+                OnPlayerFinished((Player)sender, "Fall from the map");
+                ((Player)sender).Update -= OnPlayerUpdate;
+            }
+        }
         public void OnPlayerDisconnect(object sender, DisconnectEventArgs e)
         {
             OnPlayerFinished((Player)sender, "Disconnected");
@@ -125,6 +134,7 @@ namespace SampSharpGameMode1.Events.Derbys
                         {
                             this.StartingVehicle = null;
                         }
+                        this.MinimumHeight = (float)Convert.ToDouble(row["derby_minheight"]);
                     }
                     else
 					{
@@ -236,6 +246,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
                     slot.Player.VirtualWorld = virtualWorld;
 
+                    slot.Player.Update += OnPlayerUpdate;
                     slot.Player.ExitVehicle += OnPlayerExitVehicle;
                     slot.Player.KeyStateChanged += OnPlayerKeyStateChanged;
                     slot.Player.Disconnected += OnPlayerDisconnect;
@@ -434,6 +445,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 }
                 player.DisableCheckpoint();
                 player.DisableRaceCheckpoint();
+                player.Update -= OnPlayerUpdate;
                 player.ExitVehicle -= OnPlayerExitVehicle;
                 player.KeyStateChanged -= OnPlayerKeyStateChanged;
                 player.Disconnected -= OnPlayerDisconnect;
