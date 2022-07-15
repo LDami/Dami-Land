@@ -1,4 +1,5 @@
 ﻿using SampSharp.Core;
+using SampSharp.Core.Logging;
 
 namespace SampSharpGameMode1
 {

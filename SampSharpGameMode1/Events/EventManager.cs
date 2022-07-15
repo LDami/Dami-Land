@@ -1,11 +1,14 @@
-﻿using SampSharp.GameMode.Definitions;
+﻿using Google.Protobuf;
+using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
 using SampSharp.GameMode.SAMP;
 using SampSharpGameMode1.Events.Races;
+using SampSharpGameMode1.Events.Derbys;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using SampSharpGameMode1.Display;
 
 namespace SampSharpGameMode1.Events
 {
@@ -22,21 +25,46 @@ namespace SampSharpGameMode1.Events
 
         public Event openedEvent;
         private List<Event> eventList;
+        private List<int> usedIds;
 
         public EventManager()
         {
             openedEvent = null;
             eventList = new List<Event>();
+            usedIds = new List<int>();
         }
 
-        public void ShowManagerDialog(Player player)
+        public void PurgeEvents(Player player)
+		{
+            MessageDialog confirmation = new MessageDialog("Confirmation", "Are you sure you want to delete upcoming events ?", "Yes", "No/Cancel");
+			confirmation.Response += (object sender, SampSharp.GameMode.Events.DialogResponseEventArgs e) =>
+            {
+                if(e.DialogButton == DialogButton.Left)
+                {
+                    foreach(Event evt in eventList.Where(ev => ev.Status == EventStatus.Loaded))
+                    {
+                        usedIds.RemoveAll(x => x == evt.Id);
+                    }
+                    int nbr = eventList.RemoveAll(ev => ev.Status == EventStatus.Loaded);
+                    player.Notificate(nbr + " event(s) removed");
+                }
+            };
+            confirmation.Show(player);
+		}
+
+		public void ShowManagerDialog(Player player)
         {
             ListDialog managerDialog = new ListDialog("Event manager", "Select", "Cancel");
             managerDialog.AddItem(Color.Green + "Create event");
-            foreach (Event evt in eventList)
+            if (player.Adminlevel > 0)
             {
-                managerDialog.AddItem(Color.White + "[" + evt.Status.ToString() + "]" + evt.Name);
+                foreach (Event evt in eventList)
+                {
+                    managerDialog.AddItem(Color.White + "[" + evt.Status.ToString() + "]" + evt.Name);
+                }
             }
+            else
+                managerDialog.AddItem(Color.Red + "Only admins can manage already opened events");
 
             managerDialog.Show(player);
             managerDialog.Response += (sender, eventArgs) =>
@@ -45,10 +73,13 @@ namespace SampSharpGameMode1.Events
                 {
                     if(eventArgs.ListItem == 0) // Create event
                     {
-                        ShowCreateEventTypeDialog(player);
+                        if(openedEvent == null)
+                            ShowCreateEventTypeDialog(player);
+                        else
+                            player.SendClientMessage(ColorPalette.Error.Main + "There is already an opened event");
                     }
                     else
-                        ShowEventOptionDialog(player, eventList.ElementAt(eventArgs.ListItem + 1));
+                        if (player.Adminlevel > 0) ShowEventOptionDialog(player, eventList.ElementAt(eventArgs.ListItem - 1));
                 }
                 else
                 {
@@ -62,7 +93,10 @@ namespace SampSharpGameMode1.Events
             ListDialog createEventDialog = new ListDialog("Create an event", "Create", "Cancel");
             foreach (EventType t in (EventType[])Enum.GetValues(typeof(EventType)))
             {
-                createEventDialog.AddItem(t.ToString());
+                if(t.ToString() != "Unknown")
+                {
+                    createEventDialog.AddItem(t.ToString());
+                }
             }
 
             createEventDialog.Show(player);
@@ -76,7 +110,7 @@ namespace SampSharpGameMode1.Events
                     else
                     {
                         ShowCreateEventTypeDialog(player);
-                        player.Notificate("Unable to parse event type");
+                        player.Notificate("Unable to parse event type: " + eventArgs.InputText);
                     }
                 }
                 else
@@ -92,7 +126,7 @@ namespace SampSharpGameMode1.Events
             ListDialog managerOptionDialog = new ListDialog(evt.Name, "Select", "Cancel");
             if (evt.Status == EventStatus.Loaded)
                 managerOptionDialog.AddItem("Open event to players");
-            if (evt.Status == EventStatus.Waiting)
+            else if (evt.Status == EventStatus.Waiting)
                 managerOptionDialog.AddItem("Start event");
             managerOptionDialog.AddItem(Color.Red + "Abort event");
 
@@ -101,20 +135,47 @@ namespace SampSharpGameMode1.Events
             {
                 if (eventArgs.DialogButton == DialogButton.Left)
                 {
-                    if (eventArgs.ListItem == 0) // Open / Start
+                    if(evt.Status == EventStatus.Loaded || evt.Status == EventStatus.Waiting)
                     {
-                        if (evt.Status == EventStatus.Loaded)
+                        if (eventArgs.ListItem == 0) // Open / Start
                         {
-                            evt.Open();
+                            if (evt.Status == EventStatus.Loaded)
+                            {
+                                if(openedEvent == null)
+                                {
+                                    evt.Open();
+                                    player.Notificate("Event opened");
+                                }
+                                else
+								{
+                                    player.SendClientMessage(Color.Red + "You cannot open this event because there is already an event in Waiting status");
+								}
+                            }
+                            else if (evt.Status == EventStatus.Waiting)
+                            {
+                                if (evt.Start(evt.Slots)) player.Notificate("Event started");
+                                else player.SendClientMessage(Color.Red + "The event cannot be started (there are maybe no player)");
+                            }
                         }
-                        if (evt.Status == EventStatus.Waiting)
+                        else if (eventArgs.ListItem == 1) // Abort
                         {
-                            evt.Start();
+                            eventList.Remove(evt);
+                            if(openedEvent == evt)
+                                openedEvent = null;
+                            evt.End(EventFinishedReason.Aborted);
+                            player.Notificate("Event cancelled");
                         }
                     }
-                    else if(eventArgs.ListItem == 1) // Abort
+                    else
                     {
-                        evt.End();
+                        if (eventArgs.ListItem == 0) // Abort
+                        {
+                            eventList.Remove(evt);
+                            if (openedEvent == evt)
+                                openedEvent = null;
+                            evt.End(EventFinishedReason.Aborted);
+                            player.Notificate("Event cancelled");
+                        }
                     }
                 }
             };
@@ -122,60 +183,75 @@ namespace SampSharpGameMode1.Events
 
         public void ShowCreateEventNameDialog(Player player, EventType eventType)
         {
-            switch(eventType)
+            InputDialog createEventNameDialog = new InputDialog(eventType.ToString() + " name", "Type the " + eventType.ToString() + " name you are looking for, or empty for random. You can also search by creator name", false, "Search", "Cancel");
+            createEventNameDialog.Show(player);
+            createEventNameDialog.Response += (sender, eventArgs) =>
             {
-                case EventType.Race:
-                    {
-                        InputDialog createEventNameDialog = new InputDialog("Race name", "Type the race name you are looking for, or empty for random", false, "Search", "Cancel");
-                        createEventNameDialog.Show(player);
-                        createEventNameDialog.Response += (sender, eventArgs) =>
-                        {
-                            if (eventArgs.DialogButton == DialogButton.Left)
-                            {
-                                ShowCreateEventSearchDialog(player, EventType.Race, eventArgs.InputText);
-                            }
-                            else
-                            {
-                                player.Notificate("Cancelled");
-                                ShowCreateEventTypeDialog(player);
-                            }
-                        };
-                        break;
-                    }
-            }
+                if (eventArgs.DialogButton == DialogButton.Left)
+                {
+                    ShowCreateEventSearchDialog(player, eventType, eventArgs.InputText);
+                }
+                else
+                {
+                    player.Notificate("Cancelled");
+                    ShowCreateEventTypeDialog(player);
+                }
+            };
         }
 
         public void ShowCreateEventSearchDialog(Player player, EventType eventType, string str)
         {
+            string query = "";
+            string key_id = "", key_name = "", key_creator = "";
+            switch(eventType)
+			{
+                case EventType.Race:
+					{
+                        query = "SELECT race_id, race_name, race_creator FROM races WHERE race_name LIKE @name OR race_creator LIKE @name";
+                        key_id = "race_id";
+                        key_name = "race_name";
+                        key_creator = "race_creator";
+                        break;
+					}
+                case EventType.Derby:
+                    {
+                        query = "SELECT derby_id, derby_name, derby_creator FROM derbys WHERE derby_name LIKE @name OR derby_creator LIKE @name";
+                        key_id = "derby_id";
+                        key_name = "derby_name";
+                        key_creator = "derby_creator";
+                        break;
+					}
+			}
             Dictionary<string, string> row;
             Dictionary<string, object> param = new Dictionary<string, object>
                 {
                     { "@name", str }
                 };
-            GameMode.mySQLConnector.OpenReader("SELECT race_id, race_name FROM races WHERE race_name LIKE @name", param);
+            GameMode.mySQLConnector.OpenReader(query, param);
             row = GameMode.mySQLConnector.GetNextRow();
             if(row.Count == 0)
             {
-                player.Notificate("No race found");
+                player.Notificate("No results");
                 GameMode.mySQLConnector.CloseReader();
                 ShowCreateEventNameDialog(player, eventType);
             }
             else
             {
-                List<int> foundRaces = new List<int>();
-                ListDialog eventSearchDialog = new ListDialog("Found races", "Launch", "Cancel");
+                List<int> foundEvents = new List<int>();
+                ListDialog eventSearchDialog = new ListDialog("Found " + eventType.ToString() + "s", "Launch", "Cancel");
                 while (row.Count > 0)
                 {
-                    foundRaces.Add(Convert.ToInt32(row["race_id"]));
-                    eventSearchDialog.AddItem(row["race_id"] + "_" + row["race_name"]);
+                    foundEvents.Add(Convert.ToInt32(row[key_id]));
+                    eventSearchDialog.AddItem(row[key_id] + "_" + Display.ColorPalette.Primary.Main + row[key_name] + Display.ColorPalette.Primary.Lighten + " by " + Display.ColorPalette.Primary.Main + row[key_creator]);
                     row = GameMode.mySQLConnector.GetNextRow();
                 }
+                GameMode.mySQLConnector.CloseReader();
                 eventSearchDialog.Show(player);
                 eventSearchDialog.Response += (sender, eventArgs) =>
                 {
                     if (eventArgs.DialogButton == DialogButton.Left)
                     {
-                        CreateEvent(player, eventType, foundRaces[eventArgs.ListItem]);
+                        CreateEvent(player, eventType, foundEvents[eventArgs.ListItem]);
                     }
                     else
                     {
@@ -183,26 +259,24 @@ namespace SampSharpGameMode1.Events
                         ShowCreateEventTypeDialog(player);
                     }
                 };
-
-                GameMode.mySQLConnector.CloseReader();
             }
         }
 
         public void CreateEvent(Player player, EventType type, int id)
         {
-            switch(type)
+            int eventId = CheckForAvailableId(usedIds);
+            switch (type)
             {
                 case EventType.Race:
                     {
-                        Event newEvent = new RaceEvent(id);
-                        player.SendClientMessage(Color.Green, "Loading Race #" + id);
+                        Event newEvent = new RaceEvent(eventId);
                         newEvent.Loaded += (sender, eventArgs) =>
                         {
                             if (eventArgs.ErrorMessage == null)
                             {
-                                if(player.IsConnected) player.SendClientMessage(Color.Green, "Race loaded !");
+                                if (player.IsConnected) player.SendClientMessage(ColorPalette.Primary.Main + $"Race {eventArgs.EventLoaded.Id} {Color.Green}loaded ! (Race)");
                                 eventList.Add(eventArgs.EventLoaded);
-                                if(openedEvent == null)
+                                if (openedEvent == null)
                                 {
                                     openedEvent = eventArgs.EventLoaded;
                                     eventArgs.EventLoaded.Open();
@@ -213,9 +287,53 @@ namespace SampSharpGameMode1.Events
                             else
                                 if (player.IsConnected) player.SendClientMessage(Color.Red, "Cannot load the race: " + eventArgs.ErrorMessage);
                         };
+                        player.SendClientMessage(ColorPalette.Primary.Main + $"Loading Race #{eventId}");
+                        newEvent.Load(id);
+                        usedIds.Add(eventId);
+                        break;
+                    }
+                case EventType.Derby:
+                    {
+                        Event newEvent = new DerbyEvent(eventId);
+                        newEvent.Loaded += (sender, eventArgs) =>
+                        {
+                            if (eventArgs.ErrorMessage == null)
+                            {
+                                if (player.IsConnected) player.SendClientMessage(ColorPalette.Primary.Main + $"Race {eventArgs.EventLoaded.Id} {Color.Green}loaded ! (Derby)");
+                                eventList.Add(eventArgs.EventLoaded);
+                                if (openedEvent == null)
+                                {
+                                    openedEvent = eventArgs.EventLoaded;
+                                    eventArgs.EventLoaded.Open();
+                                    eventArgs.EventLoaded.Started += (sender, eventArgs) => { openedEvent = null; };
+                                    eventArgs.EventLoaded.Ended += (sender, eventArgs) => { eventList.Remove((Event)sender); };
+                                }
+                            }
+                            else
+                                if (player.IsConnected) player.SendClientMessage(Color.Red, "Cannot load the derby: " + eventArgs.ErrorMessage);
+                        };
+                        player.SendClientMessage(ColorPalette.Primary.Main + $"Loading Derby #{eventId}");
+                        newEvent.Load(id);
+                        usedIds.Add(eventId);
                         break;
                     }
             }
+        }
+
+        private int CheckForAvailableId(List<int> alreadyUsedIds)
+        {
+            alreadyUsedIds.Sort();
+            if (alreadyUsedIds.Count > 0)
+            {
+                int a = alreadyUsedIds.First();
+                int b = alreadyUsedIds.Last();
+                List<int> list2 = Enumerable.Range(a, b - a + 1).ToList();
+                List<int> remaining = list2.Except(alreadyUsedIds).ToList();
+                return remaining.Count > 0 ? remaining[0] : b + 1;
+            }
+            else
+                return 1;
+
         }
 
     }

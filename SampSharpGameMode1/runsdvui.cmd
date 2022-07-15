@@ -1,0 +1,2 @@
+cd /d "C:\Users\ldami\source\repos\SampSharpGameMode1\SampSharpGameMode1" &msbuild "SampSharpGameMode1.csproj" /t:sdvViewer /p:configuration="Debug" /p:platform="Any CPU" /p:SolutionDir="C:\Users\ldami\source\repos\SampSharpGameMode1" 
+exit %errorlevel% 

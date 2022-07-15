@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "Open.mp": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Serveur OpenMP\\omp-server.exe",
+      "commandLineArgs": "--script empty.amx",
+      "workingDirectory": "C:\\Serveur OpenMP"
+    },
+    "SA-MP": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Serveur SA-MP CSharp\\samp-server.exe",
+      "workingDirectory": "C:\\Serveur SA-MP CSharp"
+    }
+  }
+}

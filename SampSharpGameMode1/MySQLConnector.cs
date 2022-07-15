@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Text;
-
+using System.Threading;
 using MySql.Data;
 using MySql.Data.MySqlClient;
 
@@ -11,7 +11,6 @@ namespace SampSharpGameMode1
     public class MySQLConnector
     {
         private static MySQLConnector _instance = null;
-        private MySqlConnection mySqlConnection = null;
 
         public MySQLConnector()
         {
@@ -24,6 +23,17 @@ namespace SampSharpGameMode1
             return _instance;
         }
 
+        private MySqlConnection mySqlConnection = null;
+
+        private MySqlDataReader reader = null;
+        private int readRows;
+        private int rowsAffected;
+        public int RowsAffected { get => rowsAffected; private set => rowsAffected = value; }
+
+        /// <summary>
+        ///     Connects to the server configured in ConfigurationManager
+        /// </summary>
+        /// <returns>true if connection succeed, else false</returns>
         public Boolean Connect()
         {
             if (mySqlConnection == null)
@@ -40,13 +50,12 @@ namespace SampSharpGameMode1
                 {
                     mySqlConnection = new MySqlConnection(connstring);
                     mySqlConnection.Open();
-                    Console.WriteLine("MySQLConnector.cs - MySQLConnector.Connect:I: Connected to the database");
+                    Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.Connect:I: Connected to the database");
                     return true;
                 }
                 catch (MySqlException e)
                 {
-                    //Console.WriteLine("MySQLConnector.cs - MySQLConnector.Connect:E: MySQL Exception: " + e);
-                    Console.WriteLine("MySQLConnector.cs - MySQLConnector.Connect:E: Unable to connect to the database");
+                    Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.Connect:E: Unable to connect to the database: " + e.Code);
                     mySqlConnection = null;
                     return false;
                 }
@@ -57,6 +66,7 @@ namespace SampSharpGameMode1
         public void Close()
         {
             mySqlConnection.Close();
+            mySqlConnection = null;
         }
 
         public string GetState()
@@ -64,28 +74,68 @@ namespace SampSharpGameMode1
             return mySqlConnection.State.ToString();
         }
 
-        private int rowsAffected;
-        public int RowsAffected { get => rowsAffected; private set => rowsAffected = value; }
-        public void Execute(string query, Dictionary<string, object> parameters)
+        private void ReconnectIfNeeded()
         {
+            if (!mySqlConnection.Ping())
+            {
+                Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.ReconnectIfNeeded:W: Connection to the database lost");
+                Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.ReconnectIfNeeded:W: Reconnecting ...");
+                Close();
+                Boolean isConnected = false;
+                while (!isConnected)
+                {
+                    Thread.Sleep(1000);
+                    if (Connect())
+                    {
+                        isConnected = true;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        ///     Executes a SQL query
+        /// </summary>
+        /// <param name="query">The query string to execute</param>
+        /// <param name="parameters">Dictionary(string, object) of parameters</param>
+        /// <returns>Last inserted id</returns>
+        public long Execute(string query, Dictionary<string, object> parameters)
+        {
+            ReconnectIfNeeded();
             if (!query.StartsWith("SELECT"))
             {
                 rowsAffected = 0;
+                /*
+                Console.WriteLine("MySQLConnector.cs - MySQLConnector.Execute:I: Executing query: {0}", query);
+                Console.WriteLine("With params:");
+                foreach (KeyValuePair<string, object> kvp in parameters)
+                {
+                    Console.WriteLine("\t- {0} = {1}", kvp.Key, kvp.Value);
+                }
+                */
                 var cmd = new MySqlCommand(query, mySqlConnection);
                 foreach (KeyValuePair<string, object> kvp in parameters)
                     cmd.Parameters.AddWithValue(kvp.Key, kvp.Value);
 
                 rowsAffected = cmd.ExecuteNonQuery();
+                return cmd.LastInsertedId;
             }
+            else
+                return -1;
         }
 
-        private MySqlDataReader reader = null;
-        private int readRows;
+        /// <summary>
+        ///     Opens a SQL recordset
+        /// </summary>
+        /// <param name="query">The query string to execute</param>
+        /// <param name="parameters">Dictionary(string, object) of parameters</param>
         public void OpenReader(string query, Dictionary<string, object> parameters)
         {
+            ReconnectIfNeeded();
             if (query.StartsWith("SELECT"))
             {
                 readRows = 0;
+                /*
                 Console.WriteLine("MySQLConnector.cs - MySQLConnector.OpenReader:I: Fetching query: {0}", query);
                 Console.WriteLine("With params:");
                 foreach (KeyValuePair<string, object> kvp in parameters)
@@ -95,7 +145,7 @@ namespace SampSharpGameMode1
                     else
                         Console.WriteLine("\t- {0} = {1}", kvp.Key, kvp.Value);
                 }
-
+                */
                 var cmd = new MySqlCommand(query, mySqlConnection);
                 foreach (KeyValuePair<string, object> kvp in parameters)
                 {
@@ -106,16 +156,24 @@ namespace SampSharpGameMode1
                 }
 
                 reader = cmd.ExecuteReader();
-                Console.WriteLine("MySQLConnector.cs - MySQLConnector.OpenReader:I: Reader has rows: {0}", reader.HasRows);
+                //Console.WriteLine("MySQLConnector.cs - MySQLConnector.OpenReader:I: Reader has rows: {0}", reader.HasRows);
             }
         }
 
+        /// <summary>
+        ///     Closes the last opened recordset
+        /// </summary>
         public void CloseReader()
         {
-            Console.WriteLine("MySQLConnector.cs - MySQLConnector.OpenReader:I: Read rows: {0}", readRows);
+            //Console.WriteLine("MySQLConnector.cs - MySQLConnector.CloseReader:I: Read rows: {0}", readRows);
             if (!reader.IsClosed)
                 reader.Close();
         }
+
+        /// <summary>
+        ///     Get the next row of the opened SQL recordset
+        /// </summary>
+        /// <returns>Dictionary(column-name: string, value: string) of the row</returns>
         public Dictionary<string, string> GetNextRow()
         {
             Dictionary<string, string> result = new Dictionary<string, string>();
@@ -126,7 +184,10 @@ namespace SampSharpGameMode1
                     readRows++;
                     for (int i = 0; i < reader.FieldCount; i++)
                     {
-                        result.Add(reader.GetName(i), reader.GetString(i));
+                        if(reader.IsDBNull(i))
+                            result.Add(reader.GetName(i), "[null]");
+                        else
+                            result.Add(reader.GetName(i), reader.GetString(i));
                     }
                 }
             }
@@ -137,10 +198,15 @@ namespace SampSharpGameMode1
         {
             private static Dictionary<string, string> field = new Dictionary<string, string>()
             {
+                /* Race */
                 {"race_id", "Race ID"},
                 {"race_name", "Race Name"},
                 {"race_creator", "Race Creator"},
-                {"race_type", "Race Type"}
+                {"race_type", "Race Type"},
+                /* Derby */
+                {"derby_id", "Derby ID"},
+                {"derby_name", "Derby Name"},
+                {"derby_creator", "Derby Creator"},
             };
             
             public static string GetFieldName(string name)
@@ -149,8 +215,8 @@ namespace SampSharpGameMode1
                     return field[name];
                 else
                 {
-                    Console.WriteLine("MySQLConnector.cs - MySQLConnector.Field.GetFieldName:W: No field name for " + name);
-                    Console.WriteLine("Returning empty string");
+                    Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.Field.GetFieldName:W: No field name for " + name);
+                    Logger.WriteLineAndClose("Returning empty string");
                     return "";
                 }
             }

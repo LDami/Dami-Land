@@ -1,8 +1,7 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
+using SampSharp.GameMode.World;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace SampSharpGameMode1
 {
@@ -81,6 +80,13 @@ namespace SampSharpGameMode1
                 player.Position.Y > (target.Y + range) &&
                 player.Position.Y < (target.Y - range)
             );
+        }
+
+        public static Vector3 GetPositionFrontOfPlayer(BasePlayer player, float distance = 8f)
+        {
+            float angle = player.InAnyVehicle ? player.Vehicle.Angle : player.Angle;
+            angle = (float)(angle * Math.PI) / 180;
+            return player.Position + new Vector3(-distance * Math.Sin(angle), distance * Math.Cos(angle), 0);
         }
     }
 }

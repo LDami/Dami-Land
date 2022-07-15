@@ -10,19 +10,20 @@ namespace SampSharpGameMode1.Events.Races
     {
         private Race loadedRace;
 
-        public RaceEvent(int _id)
+        public RaceEvent(int eventId)
         {
-            if (_id > 0)
+            if (eventId > 0)
             {
-                this.Id = _id;
+                this.Id = eventId;
+                this.VirtualWorld = (int)VirtualWord.Events + eventId;
             }
         }
 
-        public override void Load()
+        public override void Load(int _id)
         {
             Race loadingRace = new Race();
             loadingRace.Loaded += LoadingRace_Loaded;
-            loadingRace.Load(this.Id);
+            loadingRace.Load(_id, this.VirtualWorld);
         }
 
         private void LoadingRace_Loaded(object sender, RaceLoadedEventArgs e)
@@ -30,27 +31,40 @@ namespace SampSharpGameMode1.Events.Races
             if (e.race.IsPlayable())
             {
                 loadedRace = e.race;
+                this.Name = e.race.Name;
+                this.Status = EventStatus.Loaded;
+                this.Type = EventType.Race;
+                this.Source = loadedRace;
+                this.AvailableSlots = e.availableSlots;
                 OnLoaded(new EventLoadedEventArgs { EventLoaded = this, ErrorMessage = null });
             }
-            else OnLoaded(new EventLoadedEventArgs { ErrorMessage = "This race is not playable !" });
+            else OnLoaded(new EventLoadedEventArgs { ErrorMessage = "This " + this.Type.ToString() + " is not playable !" });
         }
 
-        public override void Start()
+        public override bool Start(List<EventSlot> slots)
         {
-            if(loadedRace != null && this.players.Count > Race.MIN_PLAYERS_IN_RACE)
+            if (loadedRace != null && slots.Count > Race.MIN_PLAYERS_IN_RACE)
             {
-                loadedRace.Prepare(this.players, 1);
-                Player.SendClientMessageToAll("[Event] The " + this.Type.ToString() + " is starting, you cannot longer join it !");
+                loadedRace.Prepare(slots);
+                Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " is starting, you cannot longer join it !");
                 this.Status = EventStatus.Running;
-                loadedRace.Finished += (sender, eventArgs) => { this.End(); } ;
-                this.OnStarted(new EventStartedOrEndedEventArgs { });
+                loadedRace.Finished += (sender, eventArgs) => { this.End(EventFinishedReason.Terminated); };
+                this.OnStarted(new EventArgs { });
+                return true;
+            }
+            else
+            {
+                Logger.WriteLineAndClose($"RaceEvent.cs - RaceEvent.Start:E: The race {this.loadedRace?.Name ?? "N/A"} cannot be started");
+                return false;
             }
         }
-        public override void End()
+        public override void End(EventFinishedReason reason)
         {
+            if(this.Status >= EventStatus.Waiting && this.Status != EventStatus.Running)
+                Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.Red + " The " + this.Type.ToString() + " has been aborted !");
+            this.loadedRace.Unload();
             this.Status = EventStatus.Finished;
-            players.Clear();
-            this.OnEnded(new EventStartedOrEndedEventArgs { });
+            this.OnEnded(new EventFinishedEventArgs { Reason = reason });
         }
     }
 }

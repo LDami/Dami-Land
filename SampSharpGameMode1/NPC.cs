@@ -172,6 +172,7 @@ namespace SampSharpGameMode1
 
         public void Connect(Player player)
         {
+            /*
             bot = SampSharp.GameMode.SAMP.Server.ConnectNPC("testman", "npctest2");
             bot.SetSpawnInfo(0, 0, new SampSharp.GameMode.Vector3(1431.6393f, 1519.5398f, 10.5988f), 0.0f);
             bot.Spawn();
@@ -181,6 +182,7 @@ namespace SampSharpGameMode1
 
             BaseVehicle vehicle = BaseVehicle.Create(SampSharp.GameMode.Definitions.VehicleModelType.Buccaneer, new SampSharp.GameMode.Vector3(1431.6393f, 1519.5398f, 10.5988f), 0.0f, 1, 1);
             bot.PutInVehicle(vehicle, 0);
+            */
         }
 
         public void Dispose()
