@@ -34,6 +34,7 @@ namespace SampSharpGameMode1.Commands
                     $"{ColorPalette.Primary.Main}/mapping addo [modelid] {ColorPalette.Primary.Darken}Add an object with specified modelid" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping delo [objectid] {ColorPalette.Primary.Darken}Delete the object" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping replace [objectid] [modelid] {ColorPalette.Primary.Darken}Replace the object by the s modelid" + "\n" +
+                    $"{ColorPalette.Primary.Main}/mapping dupl [objectid] {ColorPalette.Primary.Darken}Duplicate the object" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping marker [1-2] {ColorPalette.Primary.Darken}Edit the marker position to get distance" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping dist {ColorPalette.Primary.Darken}Displays the distance between the markers" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping edit [objectid] {ColorPalette.Primary.Darken}Edit position/rotation of object" + "\n" +
@@ -186,6 +187,14 @@ namespace SampSharpGameMode1.Commands
             {
                 if (!(player.mapCreator is null))
                     player.mapCreator.ReplaceObject(objectid, modelid);
+                else
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+            }
+            [Command("dupl")]
+            private static void DuplicateCommand(Player player, int objectid)
+            {
+                if (!(player.mapCreator is null))
+                    player.mapCreator.DuplicateObject(objectid);
                 else
                     player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
             }
