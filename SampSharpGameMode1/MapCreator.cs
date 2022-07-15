@@ -218,6 +218,11 @@ namespace SampSharpGameMode1
 
 		public void AddObject(int modelid, Vector3? position = null, Vector3? rotation = null)
 		{
+			if(editingMap.Objects.Count >= MAX_OBJECTS_PER_MAP)
+            {
+				player.SendClientMessage(Color.Red, "You reached the max number of objects per map");
+				return;
+            }
 			MapObject mapObject = new MapObject(
 				-1,
 				modelid,
