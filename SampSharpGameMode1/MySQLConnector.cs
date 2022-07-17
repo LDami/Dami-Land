@@ -202,11 +202,16 @@ namespace SampSharpGameMode1
                 {"race_id", "Race ID"},
                 {"race_name", "Race Name"},
                 {"race_creator", "Race Creator"},
-                {"race_type", "Race Type"},
                 /* Derby */
                 {"derby_id", "Derby ID"},
                 {"derby_name", "Derby Name"},
                 {"derby_creator", "Derby Creator"},
+                /* Map */
+                {"map_id", "Map ID"},
+                {"map_name", "Map Name"},
+                {"map_creator", "Map Creator"},
+                {"map_creationdate", "Map Creation date"},
+                {"map_lasteditdate", "Map Last edit date"},
             };
             
             public static string GetFieldName(string name)

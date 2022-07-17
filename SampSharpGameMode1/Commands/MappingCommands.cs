@@ -12,12 +12,66 @@ namespace SampSharpGameMode1.Commands
 {
 	class MappingCommands
     {
+
+        /* Display a list of all the player's maps */
+        [Command("mymaps")]
+        private static void MyMapsCommands(Player player)
+        {
+            List<string> maps = Map.GetPlayerMapList(player);
+            if (maps.Count == 0)
+                player.SendClientMessage("You don't have any maps");
+            else
+            {
+                ListDialog list = new ListDialog(player.Name + "'s maps", "Options", "Close");
+                list.AddItems(maps);
+                list.Response += (object sender, DialogResponseEventArgs e) =>
+                {
+                    if (e.DialogButton == DialogButton.Left)
+                    {
+                        ListDialog actionList = new ListDialog("Action", "Select", "Cancel");
+                        actionList.AddItem("Infos ...");
+                        actionList.AddItem("Edit");
+                        actionList.AddItem("Delete");
+                        actionList.Response += (object sender, DialogResponseEventArgs ev) =>
+                        {
+                            if (ev.DialogButton == DialogButton.Left)
+                            {
+                                try
+                                {
+                                    int mapid = Convert.ToInt32(maps[e.ListItem].Substring(0, maps[e.ListItem].IndexOf('_')));
+                                    switch (ev.ListItem)
+                                    {
+                                        case 0: // Infos
+                                            MappingCommandClass.GetInfo(player, mapid);
+                                            break;
+                                        case 1: // Edit
+                                            MappingCommandClass.LoadCommand(player, mapid);
+                                            break;
+                                        case 2: // Delete
+                                            player.SendClientMessage(Color.Red + "This function is not developped yet");
+                                            break;
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    MySQLConnector.Instance().CloseReader();
+                                    Logger.WriteLineAndClose("MappingCommands.cs - MappingCommands.MyMapsCommands:E: Exception raised: " + ex.Message);
+                                    player.SendClientMessage(Color.Red + "An error occured");
+                                }
+                            }
+                        };
+                        actionList.Show(player);
+                    }
+                };
+                list.Show(player);
+            }
+        }
         [Command("mapping", Shortcut = "map")]
         private static void MappingCommand(Player player)
         {
             player.SendClientMessage($"Usage: {ColorPalette.Secondary.Main}/mapping [action]");
             player.SendClientMessage($"Global Actions: {ColorPalette.Secondary.Main}help, create, loadc, exit");
-            player.SendClientMessage($"On map editing Actions: {ColorPalette.Secondary.Main}help, save, exit, list, addo, delo, replace, marker, dist, edit");
+            player.SendClientMessage($"On map editing Actions: {ColorPalette.Secondary.Main}help, save, exit, info, addo, delo, replace, marker, dist, edit");
         }
         [CommandGroup("mapping", "map")]
         class MappingCommandClass
@@ -29,16 +83,15 @@ namespace SampSharpGameMode1.Commands
                     $"{ColorPalette.Primary.Main}/mapping create {ColorPalette.Primary.Darken}Create a new map" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping loadc [id] {ColorPalette.Primary.Darken}Load a map" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping save {ColorPalette.Primary.Darken}Save the map" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping exit {ColorPalette.Primary.Darken}Close the editor without saving the map" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping list {ColorPalette.Primary.Darken}List all your races" + "\n" +
+                    $"{ColorPalette.Primary.Main}/mapping exit {ColorPalette.Primary.Darken}Close the editor (save your map first !)" + "\n" +
+                    $"{ColorPalette.Primary.Main}/mapping info [id] {ColorPalette.Primary.Darken}Display the info of a map" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping addo [modelid] {ColorPalette.Primary.Darken}Add an object with specified modelid" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping delo [objectid] {ColorPalette.Primary.Darken}Delete the object" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping replace [objectid] [modelid] {ColorPalette.Primary.Darken}Replace the object by the s modelid" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping dupl [objectid] {ColorPalette.Primary.Darken}Duplicate the object" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping marker [1-2] {ColorPalette.Primary.Darken}Edit the marker position to get distance" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping dist {ColorPalette.Primary.Darken}Displays the distance between the markers" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping edit [objectid] {ColorPalette.Primary.Darken}Edit position/rotation of object" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping exit {ColorPalette.Primary.Darken}Close the editor"
+                    $"{ColorPalette.Primary.Main}/mapping edit [objectid] {ColorPalette.Primary.Darken}Edit position/rotation of object";
                     ;
                 MessageDialog dialog = new MessageDialog("Command list", list, "Close");
                 dialog.Show(player);
@@ -52,7 +105,7 @@ namespace SampSharpGameMode1.Commands
                 player.mapCreator.CreateMap();
             }
             [Command("loadc")]
-            private static void LoadCommand(Player player, int id)
+            public static void LoadCommand(Player player, int id)
             {
                 if (player.pEvent != null)
                     return;
@@ -221,6 +274,31 @@ namespace SampSharpGameMode1.Commands
                     player.mapCreator.EditObject(objectid);
                 else
                     player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+            }
+
+            [Command("info")]
+            public static void GetInfo(Player player, int id)
+            {
+                Dictionary<string, string> result = Map.GetInfo(id);
+                if (result.Count == 0)
+                    player.SendClientMessage("No map found !");
+                else
+                {
+                    var infoList = new ListDialog("Map info", "Ok", "");
+                    string str = "";
+                    foreach (KeyValuePair<string, string> kvp in result)
+                    {
+                        str = Display.ColorPalette.Primary.Main + kvp.Key + ": " + new Color(255, 255, 255) + kvp.Value;
+                        if (str.Length >= 64)
+                        {
+                            infoList.AddItem(str.Substring(0, 63));
+                            infoList.AddItem(str.Substring(63));
+                        }
+                        else
+                            infoList.AddItem(str);
+                    }
+                    infoList.Show(player);
+                }
             }
         }
     }
