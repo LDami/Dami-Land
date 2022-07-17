@@ -127,16 +127,17 @@ namespace SampSharpGameMode1
             return pool;
         }
 
-        public static Dictionary<int, string> FindAll(string str)
+        public static Dictionary<int, string> FindAll(string str, Player owner)
         {
             Dictionary<int, string> results = new Dictionary<int, string>();
 
             MySQLConnector mySQLConnector = MySQLConnector.Instance();
             Dictionary<string, object> param = new Dictionary<string, object>
                 {
-                    { "@name", str }
+                    { "@name", str },
+                    { "@playerid", owner.DbId }
                 };
-            mySQLConnector.OpenReader("SELECT map_id, map_name FROM maps WHERE map_name LIKE @name", param);
+            mySQLConnector.OpenReader("SELECT map_id, map_name FROM maps WHERE map_name LIKE @name AND map_creator = @playerid", param);
             Dictionary<string, string> row = mySQLConnector.GetNextRow();
 
             while(row.Count > 0)
