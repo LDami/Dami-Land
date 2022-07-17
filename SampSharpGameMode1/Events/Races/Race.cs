@@ -653,6 +653,11 @@ namespace SampSharpGameMode1.Events.Races
             if (cp == this.checkpoints[this.checkpoints.Count - 1]) // If it's the last checkpoint
             {
                 player.SetRaceCheckpoint(cp.Type + 1, cp.Position, Vector3.Zero, cp.Size);
+                foreach (Player p in spectatingPlayers)
+                {
+                    if (players[playersData[p].spectatePlayerIndex] == player)
+                        p.SetRaceCheckpoint(cp.Type + 1, cp.Position, Vector3.Zero, cp.Size);
+                }
             }
             else
             {
@@ -660,6 +665,11 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     Checkpoint nextcp = this.checkpoints[cp.Idx + 1];
                     player.SetRaceCheckpoint(cp.Type, cp.Position, nextcp.Position, cp.Size);
+                    foreach(Player p in spectatingPlayers)
+                    {
+                        if(players[playersData[p].spectatePlayerIndex] == player)
+                            p.SetRaceCheckpoint(cp.Type, cp.Position, nextcp.Position, cp.Size);
+                    }
                 }
                 catch (KeyNotFoundException e)
                 {
