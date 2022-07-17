@@ -227,6 +227,7 @@ namespace SampSharpGameMode1
 			{
 				player.VirtualWorld = 0;
 				player.CancelEdit();
+				player.Disconnected -= Player_Disconnected;
 				player.KeyStateChanged -= Player_KeyStateChanged;
 			}
 		}
