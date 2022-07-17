@@ -35,9 +35,19 @@ namespace SampSharpGameMode1
 #endif
             Console.WriteLine("----------------------------------\n");
 
-            //this.AddPlayerClass(1, 1, new Vector3(1431.6393, 1519.5398, 10.5988), 0.0f); // airlv
+            SetGameModeText("Free/Race/Derby");
+
+            this.AddPlayerClass(1, 0, new Vector3(2486.5537, 1531.3606, 10.8191), 316.3417f);
             this.AddPlayerClass(1, 1, new Vector3(2486.5537, 1531.3606, 10.8191), 316.3417f);
-            //this.AddPlayerClass(1, 1, new Vector3(-2699.6025,2381.6885,66.8945), 0.0f);
+            this.AddPlayerClass(1, 2, new Vector3(2486.5537, 1531.3606, 10.8191), 316.3417f);
+            this.AddPlayerClass(1, 7, new Vector3(2486.5537, 1531.3606, 10.8191), 316.3417f);
+            this.AddPlayerClass(1, 8, new Vector3(2486.5537, 1531.3606, 10.8191), 316.3417f);
+            this.AddPlayerClass(1, 12, new Vector3(2486.5537, 1531.3606, 10.8191), 316.3417f);
+            this.AddPlayerClass(1, 13, new Vector3(2486.5537, 1531.3606, 10.8191), 316.3417f);
+            this.AddPlayerClass(1, 17, new Vector3(2486.5537, 1531.3606, 10.8191), 316.3417f);
+            this.AddPlayerClass(1, 19, new Vector3(2486.5537, 1531.3606, 10.8191), 316.3417f);
+            this.AddPlayerClass(1, 21, new Vector3(2486.5537, 1531.3606, 10.8191), 316.3417f);
+            this.AddPlayerClass(1, 15, new Vector3(2486.5537, 1531.3606, 10.8191), 316.3417f);
 
             Logger.Init();
 
