@@ -29,7 +29,6 @@ namespace SampSharpGameMode1.Events.Races
                 layer.SetTextdrawText("totalcp", "Total CP: 0");
                 layer.SetTextdrawText("editingmode", "Mode: None");
                 layer.UnselectAllTextdraw();
-                layer.SetOnClickCallback("editingmode", OnEditingModeClick);
             }
             public void Destroy()
             {
@@ -56,10 +55,6 @@ namespace SampSharpGameMode1.Events.Races
                 layer.SetTextdrawText("editingmode", editingMode.ToString());
                 this.SetSelectedIdx(selectedIdx, editingMode);
             }
-            private void OnEditingModeClick()
-			{
-                Player.SendClientMessageToAll("EditingMode textdraw clicked !");
-			}
         }
         enum EditingMode { Checkpoints, SpawnPos }
 
@@ -1080,8 +1075,7 @@ namespace SampSharpGameMode1.Events.Races
             mySQLConnector.CloseReader();
 
             // On récupère la zone du premier checkpoint
-            Zone zone = new Zone();
-            string zoneStr = zone.GetZoneName(firstCheckpointPos);
+            string zoneStr = Zone.GetZoneName(firstCheckpointPos);
             results.Add("Zone", zoneStr);
 
             mySQLConnector.OpenReader("SELECT COUNT(spawn_index) as nbr " +

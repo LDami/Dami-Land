@@ -433,7 +433,7 @@ namespace SampSharpGameMode1.Display
                                         string[] posStr = input.Split(";");
                                         if(double.TryParse(posStr[0], out double posX) && double.TryParse(posStr[1], out double posY))
                                         {
-                                            layers[layerIndex].SetTextdrawPos(editingTDName, new Vector2(posX, posY));
+                                            layers[layerIndex].SetTextdrawPosition(editingTDName, new Vector2(posX, posY));
                                             UpdateRuler();
                                         }
                                         else player.SendClientMessage(Color.Red, "Format error");
