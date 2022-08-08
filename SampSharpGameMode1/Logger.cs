@@ -8,8 +8,7 @@ namespace SampSharpGameMode1
 {
     class Logger
     {
-        private static string filename = Directory.GetCurrentDirectory() + "\\scriptfiles\\gamemode.log";
-        //private static string filename = BaseMode.Instance.Client.ServerPath + "..\\..\\scriptfiles\\gamemode.log";
+        private static string filename = Directory.GetCurrentDirectory() + "/scriptfiles/gamemode.log";
 
         FileStream fileStream = null;
 
@@ -48,12 +47,23 @@ namespace SampSharpGameMode1
         {
             try
             {
+                filename = Path.GetFullPath(filename);
                 FileStream fs = File.Open(filename, FileMode.Create, FileAccess.Write);
                 fs.Close();
-                Logger.WriteLineAndClose("Logger.cs - Logger.Init:I: Logger initialized at " + DateTime.Now.ToString(), false);
-                Console.WriteLine("Logger.cs - Logger.Init:I: Logger initialized");
+                if(File.Exists(filename))
+                {
+                    Logger.WriteLineAndClose("Logger.cs - Logger.Init:I: Logger initialized at " + DateTime.Now.ToString(), false);
+                    Console.WriteLine("Logger.cs - Logger.Init:I: Logger initialized in " + filename);
+                }
+                else
+                    Console.WriteLine("Logger.cs - Logger.Init:E: Error during Logger init, file could not be created");
             }
             catch (IOException e)
+            {
+                Console.WriteLine("Logger.cs - Logger.Init:E: Cannot delete logger file: ");
+                Console.WriteLine(e.Message);
+            }
+            catch (UnauthorizedAccessException e)
             {
                 Console.WriteLine("Logger.cs - Logger.Init:E: Cannot delete logger file: ");
                 Console.WriteLine(e.Message);

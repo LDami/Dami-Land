@@ -77,7 +77,7 @@ namespace SampSharpGameMode1
             //Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths", 54);
             for (int i = 0; i < 64; i++)
             {
-                Civilisation.PathExtractor.Extract(ConfigurationManager.AppSettings["gta_basefolder"] + "\\data\\Paths", i);
+                Civilisation.PathExtractor.Extract(ConfigurationManager.AppSettings["gta_basefolder"] + "/data/Paths", i);
             }
             sw.Stop();
             Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: PathExtractor.Extract => {sw.ElapsedMilliseconds} ms");

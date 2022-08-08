@@ -193,7 +193,7 @@ namespace SampSharpGameMode1.Civilisation
 
         public static void Load()
         {
-            string heightmapFile = Directory.GetCurrentDirectory() + "\\scriptfiles\\SAfull.hmap";
+            string heightmapFile = Directory.GetCurrentDirectory() + "/scriptfiles/SAfull.hmap";
             using (FileStream fs = File.Open(heightmapFile, FileMode.Open, FileAccess.Read))
             {
                 long fsLen = fs.Length;
@@ -220,7 +220,7 @@ namespace SampSharpGameMode1.Civilisation
             {
                 try
                 {
-                    string filename = path + "\\NODES" + index + ".DAT";
+                    string filename = path + "/NODES" + index + ".DAT";
                     Random rdm = new Random();
                     using (FileStream fs = File.Open(filename, FileMode.Open, FileAccess.Read))
                     {

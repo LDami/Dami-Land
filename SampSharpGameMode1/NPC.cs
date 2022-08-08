@@ -153,7 +153,7 @@ namespace SampSharpGameMode1
 
             try
             {
-                string filename = SampSharp.GameMode.BaseMode.Instance.Client.ServerPath + "\\npcmodes\\recordings\\npctest.rec";
+                string filename = SampSharp.GameMode.BaseMode.Instance.Client.ServerPath + "/npcmodes/recordings/npctest.rec";
                 using (FileStream fs = File.Open(filename, FileMode.OpenOrCreate, FileAccess.Write))
                 {
                     foreach (byte headerbyte in header)

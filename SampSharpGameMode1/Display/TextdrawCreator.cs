@@ -25,7 +25,7 @@ namespace SampSharpGameMode1.Display
             {
                 isSwitched = false;
                 layer = new TextdrawLayer();
-                string filename = Directory.GetCurrentDirectory() + "\\scriptfiles\\tdcreator.json";
+                string filename = Directory.GetCurrentDirectory() + "/scriptfiles/tdcreator.json";
                 string jsonData = "";
                 if (File.Exists(filename))
                 {
@@ -473,7 +473,7 @@ namespace SampSharpGameMode1.Display
         }
         public void Load(string name)
         {
-            string filename = Directory.GetCurrentDirectory() + "\\scriptfiles\\" + name + ".json";
+            string filename = Directory.GetCurrentDirectory() + "/scriptfiles/" + name + ".json";
             string jsonData = "";
             if (File.Exists(filename))
             {
@@ -566,7 +566,7 @@ namespace SampSharpGameMode1.Display
             output = JsonConvert.SerializeObject(listOfTextdraw, Formatting.Indented);
             player.SendClientMessage(output);
 
-            string filename = Directory.GetCurrentDirectory() + "\\scriptfiles\\" + name + ".json";
+            string filename = Directory.GetCurrentDirectory() + "/scriptfiles/" + name + ".json";
             
             try
             {
