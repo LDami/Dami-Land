@@ -51,8 +51,11 @@ namespace SampSharpGameMode1.Commands
         {
             if (player.LastSavedPosition.Position != Vector3.Zero)
             {
-                player.Teleport(player.LastSavedPosition.Position + Vector3.UnitZ);
-                player.Angle = player.LastSavedPosition.Rotation;
+                if (!player.IsInEvent)
+                {
+                    player.Teleport(player.LastSavedPosition.Position + Vector3.UnitZ);
+                    player.Angle = player.LastSavedPosition.Rotation;
+                }
             }
             else
                 player.SendClientMessage(ColorPalette.Error.Main + "Set the position with /s first");
