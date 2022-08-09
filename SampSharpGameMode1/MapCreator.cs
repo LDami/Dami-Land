@@ -113,8 +113,7 @@ namespace SampSharpGameMode1
 			hud.SetText("totalobj", "Total: " + editingMap.Objects.Count.ToString() + " objects");
 			Magnet = true;
 			player.SendClientMessage("Here are the controls:");
-			player.SendClientMessage("    submission key (2/é):                    Open menu");
-			player.SendClientMessage("    Y/N:                    Unfreeze/Freeze");
+			player.SendClientMessage("    Y/N:                    Unfreeze/Freeze (usefull in Jetpack !)");
 		}
 
         private void Player_Disconnected(object sender, DisconnectEventArgs e)
