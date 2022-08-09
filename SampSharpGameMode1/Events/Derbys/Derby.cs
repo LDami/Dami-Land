@@ -38,6 +38,7 @@ namespace SampSharpGameMode1.Events.Derbys
         public bool IsLoaded { get; private set; }
         public bool IsCreatorMode { get; set; }
         public string Creator { get; set; }
+        public float MinimumHeight { get; set; }
 
 
         // Launcher only
@@ -71,6 +72,14 @@ namespace SampSharpGameMode1.Events.Derbys
         #endregion
 
         #region PlayerEvents
+        private void OnPlayerUpdate(object sender, PlayerUpdateEventArgs e)
+        {
+            if(((BasePlayer)sender).Position.Z < this.MinimumHeight)
+            {
+                OnPlayerFinished((Player)sender, "Fall from the map");
+                ((Player)sender).Update -= OnPlayerUpdate;
+            }
+        }
         public void OnPlayerDisconnect(object sender, DisconnectEventArgs e)
         {
             OnPlayerFinished((Player)sender, "Disconnected");
@@ -125,6 +134,7 @@ namespace SampSharpGameMode1.Events.Derbys
                         {
                             this.StartingVehicle = null;
                         }
+                        this.MinimumHeight = (float)Convert.ToDouble(row["derby_minheight"]);
                     }
                     else
 					{
@@ -236,6 +246,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
                     slot.Player.VirtualWorld = virtualWorld;
 
+                    slot.Player.Update += OnPlayerUpdate;
                     slot.Player.ExitVehicle += OnPlayerExitVehicle;
                     slot.Player.KeyStateChanged += OnPlayerKeyStateChanged;
                     slot.Player.Disconnected += OnPlayerDisconnect;
@@ -434,6 +445,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 }
                 player.DisableCheckpoint();
                 player.DisableRaceCheckpoint();
+                player.Update -= OnPlayerUpdate;
                 player.ExitVehicle -= OnPlayerExitVehicle;
                 player.KeyStateChanged -= OnPlayerKeyStateChanged;
                 player.Disconnected -= OnPlayerDisconnect;
@@ -468,6 +480,80 @@ namespace SampSharpGameMode1.Events.Derbys
         public bool IsPlayerSpectating(Player player)
         {
             return this.spectatingPlayers.Contains(player);
+        }
+
+        public static List<string> GetPlayerDerbyList(Player player)
+        {
+            MySQLConnector mySQLConnector = MySQLConnector.Instance();
+            mySQLConnector = MySQLConnector.Instance();
+            Dictionary<string, object> param = new Dictionary<string, object>
+                {
+                    { "@name", player.Name }
+                };
+            mySQLConnector.OpenReader("SELECT derby_id, derby_name FROM derbys WHERE derby_creator = @name", param);
+            List<string> result = new List<string>();
+            Dictionary<string, string> row = mySQLConnector.GetNextRow();
+            while (row.Count > 0)
+            {
+                result.Add(row["derby_id"] + "_" + Display.ColorPalette.Primary.Main + row["derby_name"]);
+                row = mySQLConnector.GetNextRow();
+            }
+            mySQLConnector.CloseReader();
+
+            return result;
+        }
+
+        public static Dictionary<string, string> Find(string str)
+        {
+            MySQLConnector mySQLConnector = MySQLConnector.Instance();
+            mySQLConnector = MySQLConnector.Instance();
+            Dictionary<string, object> param = new Dictionary<string, object>
+                {
+                    { "@name", str }
+                };
+            mySQLConnector.OpenReader("SELECT derby_id, derby_name FROM derbys WHERE derby_name LIKE @name", param);
+            Dictionary<string, string> results = mySQLConnector.GetNextRow();
+            mySQLConnector.CloseReader();
+            return results;
+        }
+        public static Dictionary<string, string> GetInfo(int id)
+        {
+            // id, name, creator, number of spawn points, number of pickups, number of map objects
+            Dictionary<string, string> results = new Dictionary<string, string>();
+            Dictionary<string, string> row;
+            bool exists = false;
+
+            MySQLConnector mySQLConnector = MySQLConnector.Instance();
+            Dictionary<string, object> param = new Dictionary<string, object>
+                {
+                    { "@id", id }
+                };
+
+            mySQLConnector.OpenReader("SELECT derby_id, derby_name, derby_creator, map_name FROM derbys LEFT JOIN maps ON (derby_name = map_id) WHERE derby_id = @id", param);
+
+            row = mySQLConnector.GetNextRow();
+            if (row.Count > 0) exists = true;
+            foreach (KeyValuePair<string, string> kvp in row)
+                results.Add(MySQLConnector.Field.GetFieldName(kvp.Key), kvp.Value);
+
+            mySQLConnector.CloseReader();
+
+            if (exists)
+            {
+                mySQLConnector.OpenReader("SELECT COUNT(*) as nbr " +
+                    "FROM derby_spawn WHERE derby_id = @id", param);
+                row = mySQLConnector.GetNextRow();
+                results.Add("Spawn points", row["nbr"]);
+                mySQLConnector.CloseReader();
+
+                mySQLConnector.OpenReader("SELECT COUNT(*) as nbr " +
+                    "FROM derby_pickups WHERE derby_id = @id", param);
+                row = mySQLConnector.GetNextRow();
+                results.Add("Pickups", row["nbr"]);
+                mySQLConnector.CloseReader();
+            }
+
+            return results;
         }
     }
 }

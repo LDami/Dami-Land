@@ -87,6 +87,9 @@ namespace SampSharpGameMode1
 
             if(!this.IsNPC)
             {
+#if DEBUG
+                this.Notificate("DEBUG");
+#endif
                 isAuthenticated = false;
                 Adminlevel = 0;
 
@@ -243,7 +246,7 @@ namespace SampSharpGameMode1
                 }
             }
 		}
-		#endregion
+#endregion
 
 		public void Notificate(string message, int style = 3)
         {

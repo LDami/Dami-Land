@@ -73,7 +73,7 @@ namespace SampSharpGameMode1.Civilisation
         /// <param name="filename">File name with .rec extension</param>
         public void Save(string filename)
         {
-            using (FileStream fs = File.Open(Directory.GetCurrentDirectory() + "\\npcmodes\\recordings\\" + filename, FileMode.Create, FileAccess.Write))
+            using (FileStream fs = File.Open(Directory.GetCurrentDirectory() + "/npcmodes/recordings/" + filename, FileMode.Create, FileAccess.Write))
             {
                 byte[] buffer;
 

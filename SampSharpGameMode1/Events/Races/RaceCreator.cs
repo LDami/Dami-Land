@@ -29,7 +29,6 @@ namespace SampSharpGameMode1.Events.Races
                 layer.SetTextdrawText("totalcp", "Total CP: 0");
                 layer.SetTextdrawText("editingmode", "Mode: None");
                 layer.UnselectAllTextdraw();
-                layer.SetOnClickCallback("editingmode", OnEditingModeClick);
             }
             public void Destroy()
             {
@@ -56,10 +55,6 @@ namespace SampSharpGameMode1.Events.Races
                 layer.SetTextdrawText("editingmode", editingMode.ToString());
                 this.SetSelectedIdx(selectedIdx, editingMode);
             }
-            private void OnEditingModeClick()
-			{
-                Player.SendClientMessageToAll("EditingMode textdraw clicked !");
-			}
         }
         enum EditingMode { Checkpoints, SpawnPos }
 
@@ -316,9 +311,10 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     { "@name", editingRace.Name },
                     { "@mapid", editingRace.MapId == -1 ? null : editingRace.MapId.ToString() },
+                    { "@vehicleid", editingRace.StartingVehicle },
                     { "@id", editingRace.Id }
                 };
-                mySQLConnector.Execute("UPDATE races SET race_name=@name, race_map=@mapid WHERE race_id=@id", param);
+                mySQLConnector.Execute("UPDATE races SET race_name=@name, race_map=@mapid, race_startvehicle=@vehicleid WHERE race_id=@id", param);
                 isNew = false;
                 return (mySQLConnector.RowsAffected > 0);
             }
@@ -657,7 +653,7 @@ namespace SampSharpGameMode1.Events.Races
 
         private void ShowLoadMapDialog(string text)
         {
-            Dictionary<int, string> maps = Map.FindAll(text);
+            Dictionary<int, string> maps = Map.FindAll(text, player);
             if (maps.Count == 0)
             {
                 player.Notificate("No results");
@@ -999,99 +995,6 @@ namespace SampSharpGameMode1.Events.Races
                 player.cameraController.SetBehindPlayer();
                 player.cameraController.Enabled = true;
             }
-        }
-
-        public static List<string> GetPlayerRaceList(Player player)
-		{
-
-            MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>
-                {
-                    { "@name", player.Name }
-                };
-            mySQLConnector.OpenReader("SELECT race_id, race_name FROM races WHERE race_creator = @name", param);
-            List<string> result = new List<string>();
-            Dictionary<string, string> row = mySQLConnector.GetNextRow();
-            while(row.Count > 0)
-			{
-                result.Add(row["race_id"] + "_" + Display.ColorPalette.Primary.Main + row["race_name"]);
-                row = mySQLConnector.GetNextRow();
-            }
-            mySQLConnector.CloseReader();
-
-            return result;
-		}
-
-        public static Dictionary<string, string> Find(string str)
-        {
-            MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>
-                {
-                    { "@name", str }
-                };
-            mySQLConnector.OpenReader("SELECT race_id, race_name FROM races WHERE race_name LIKE @name", param);
-            Dictionary<string, string> results = mySQLConnector.GetNextRow();
-            mySQLConnector.CloseReader();
-            return results;
-        }
-
-        public static Dictionary<string, string> GetInfo(int id)
-        {
-            // id, name, creator, type, number of checkpoints, zone, number of spawnpoints
-            Dictionary<string, string> results = new Dictionary<string, string>();
-            Dictionary<string, string> row;
-
-            MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>
-                {
-                    { "@id", id }
-                };
-
-            mySQLConnector.OpenReader("SELECT race_id, race_name, race_creator FROM races WHERE race_id = @id", param);
-
-            row = mySQLConnector.GetNextRow();
-            foreach (KeyValuePair<string, string> kvp in row)
-                results.Add(MySQLConnector.Field.GetFieldName(kvp.Key), kvp.Value);
-
-            mySQLConnector.CloseReader();
-
-            mySQLConnector.OpenReader("SELECT checkpoint_id, checkpoint_number, checkpoint_pos_x, checkpoint_pos_y, checkpoint_pos_z " +
-                "FROM race_checkpoints WHERE race_id = @id", param);
-            int nbrOfCheckpoints = 0;
-            row = mySQLConnector.GetNextRow();
-            Vector3 firstCheckpointPos = new Vector3();
-            while(row.Count > 0)
-            {
-                nbrOfCheckpoints++;
-                if(row["checkpoint_number"] == "0")
-                {
-                    firstCheckpointPos = new Vector3(
-                        (float)Convert.ToDouble(row["checkpoint_pos_x"]),
-                        (float)Convert.ToDouble(row["checkpoint_pos_y"]),
-                        (float)Convert.ToDouble(row["checkpoint_pos_z"])
-                    );
-                }
-                row = mySQLConnector.GetNextRow();
-            }
-            results.Add("Number of checkpoints", nbrOfCheckpoints.ToString());
-            mySQLConnector.CloseReader();
-
-            // On récupère la zone du premier checkpoint
-            Zone zone = new Zone();
-            string zoneStr = zone.GetZoneName(firstCheckpointPos);
-            results.Add("Zone", zoneStr);
-
-            mySQLConnector.OpenReader("SELECT COUNT(spawn_index) as nbr " +
-                "FROM race_spawn WHERE race_id = @id", param);
-            row = mySQLConnector.GetNextRow();
-            if (row.Count == 0)
-                results.Add("Number of spawn points", Color.Red + "No spawn point");
-            else
-                results.Add("Number of spawn points", row["nbr"]);
-            mySQLConnector.CloseReader();
-            return results;
         }
     }
 }

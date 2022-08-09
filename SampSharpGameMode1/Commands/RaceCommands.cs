@@ -27,7 +27,7 @@ namespace SampSharpGameMode1.Commands
 		[Command("myraces")]
         private static void MyRacesCommand(Player player)
 		{
-            List<string> races = RaceCreator.GetPlayerRaceList(player);
+            List<string> races = Race.GetPlayerRaceList(player);
             if (races.Count == 0)
                 player.SendClientMessage("You don't have any races");
             else
@@ -64,6 +64,7 @@ namespace SampSharpGameMode1.Commands
                                 }
                                 catch (Exception ex)
                                 {
+                                    MySQLConnector.Instance().CloseReader();
                                     Logger.WriteLineAndClose("RaceCommands.cs - RaceCommands.MyRacesCommand:E: Exception raised: " + ex.Message);
                                     player.SendClientMessage(Color.Red + "An error occured");
                                 }
@@ -229,7 +230,7 @@ namespace SampSharpGameMode1.Commands
             [Command("find")]
             private static void FindRace(Player player, string name)
             {
-                Dictionary<string, string> result = RaceCreator.Find(name);
+                Dictionary<string, string> result = Race.Find(name);
                 if (result.Count == 0)
                     player.SendClientMessage("No race found !");
                 else
@@ -244,7 +245,7 @@ namespace SampSharpGameMode1.Commands
             [Command("info")]
             public static void GetInfo(Player player, int id)
             {
-                Dictionary<string, string> result = RaceCreator.GetInfo(id);
+                Dictionary<string, string> result = Race.GetInfo(id);
                 if (result.Count == 0)
                     player.SendClientMessage("No race found !");
                 else
@@ -253,7 +254,7 @@ namespace SampSharpGameMode1.Commands
                     string str = "";
                     foreach (KeyValuePair<string, string> kvp in result)
                     {
-                        str = new Color(50, 50, 255) + kvp.Key + ": " + new Color(255, 255, 255) + kvp.Value;
+                        str = Display.ColorPalette.Primary.Main + kvp.Key + ": " + new Color(255, 255, 255) + kvp.Value;
                         if (str.Length >= 64)
                         {
                             infoList.AddItem(str.Substring(0, 63));

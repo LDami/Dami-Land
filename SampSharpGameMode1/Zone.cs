@@ -7,7 +7,7 @@ namespace SampSharpGameMode1
 {
     class Zone
     {
-        class Limit
+        public class Limit
         {
             public float Xmin;
             public float Ymin;
@@ -25,7 +25,7 @@ namespace SampSharpGameMode1
                 this.Zmax = (float)Zmax;
             }
         }
-        Dictionary<string, Limit> SAMPZone = new Dictionary<string, Limit>();
+        protected static Dictionary<string, Limit> SAMPZone = new Dictionary<string, Limit>();
         public Zone()
         {
             SAMPZone = new Dictionary<string, Limit>();
@@ -399,7 +399,7 @@ namespace SampSharpGameMode1
             SAMPZone.Add("Whetstone", new Limit(-2997.40, -2892.90, -242.90, -1213.90, -1115.50, 900.00));
         }
 
-        public string GetZoneName(Vector3 pos)
+        public static string GetZoneName(Vector3 pos)
         {
             string result = "";
             foreach(KeyValuePair<string, Limit> kvp in SAMPZone)

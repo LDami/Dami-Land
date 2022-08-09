@@ -127,16 +127,17 @@ namespace SampSharpGameMode1
             return pool;
         }
 
-        public static Dictionary<int, string> FindAll(string str)
+        public static Dictionary<int, string> FindAll(string str, Player owner)
         {
             Dictionary<int, string> results = new Dictionary<int, string>();
 
             MySQLConnector mySQLConnector = MySQLConnector.Instance();
             Dictionary<string, object> param = new Dictionary<string, object>
                 {
-                    { "@name", str }
+                    { "@name", str },
+                    { "@playerid", owner.DbId }
                 };
-            mySQLConnector.OpenReader("SELECT map_id, map_name FROM maps WHERE map_name LIKE @name", param);
+            mySQLConnector.OpenReader("SELECT map_id, map_name FROM maps WHERE map_name LIKE @name AND map_creator = @playerid", param);
             Dictionary<string, string> row = mySQLConnector.GetNextRow();
 
             while(row.Count > 0)
@@ -145,6 +146,93 @@ namespace SampSharpGameMode1
                 row = mySQLConnector.GetNextRow();
             }
             mySQLConnector.CloseReader();
+            return results;
+        }
+        public static List<string> GetPlayerMapList(Player player)
+        {
+            MySQLConnector mySQLConnector = MySQLConnector.Instance();
+            mySQLConnector = MySQLConnector.Instance();
+            Dictionary<string, object> param = new Dictionary<string, object>
+                {
+                    { "@playerid", player.DbId }
+                };
+            mySQLConnector.OpenReader("SELECT map_id, map_name FROM maps WHERE map_creator = @playerid", param);
+            List<string> result = new List<string>();
+            Dictionary<string, string> row = mySQLConnector.GetNextRow();
+            while (row.Count > 0)
+            {
+                result.Add(row["map_id"] + "_" + Display.ColorPalette.Primary.Main + row["map_name"]);
+                row = mySQLConnector.GetNextRow();
+            }
+            mySQLConnector.CloseReader();
+
+            return result;
+        }
+        public static Dictionary<string, string> GetInfo(int id)
+        {
+            // id, name, creator, zone, number of objects, creation date, last update date
+            Dictionary<string, string> results = new Dictionary<string, string>();
+            Dictionary<string, string> row;
+
+            MySQLConnector mySQLConnector = MySQLConnector.Instance();
+            Dictionary<string, object> param = new Dictionary<string, object>
+                {
+                    { "@id", id }
+                };
+
+            mySQLConnector.OpenReader("SELECT map_id, map_name, map_creator, map_creationdate, map_lasteditdate FROM maps WHERE map_id = @id", param);
+
+            row = mySQLConnector.GetNextRow();
+            foreach (KeyValuePair<string, string> kvp in row)
+                results.Add(MySQLConnector.Field.GetFieldName(kvp.Key), kvp.Value);
+
+            mySQLConnector.CloseReader();
+
+            mySQLConnector.OpenReader("SELECT obj_id, obj_pos_x, obj_pos_y, obj_pos_z " +
+                "FROM mapobjects WHERE map_id = @id", param);
+            int nbrOfObjects = 0;
+            row = mySQLConnector.GetNextRow();
+            Vector3 firstObjectPos = Vector3.Zero;
+            while (row.Count > 0)
+            {
+                nbrOfObjects++;
+                if (firstObjectPos == Vector3.Zero)
+                {
+                    firstObjectPos = new Vector3(
+                        (float)Convert.ToDouble(row["obj_pos_x"]),
+                        (float)Convert.ToDouble(row["obj_pos_y"]),
+                        (float)Convert.ToDouble(row["obj_pos_z"])
+                    );
+                }
+                row = mySQLConnector.GetNextRow();
+            }
+            results.Add("Number of objects", nbrOfObjects.ToString());
+            mySQLConnector.CloseReader();
+
+            string zoneStr = Zone.GetZoneName(firstObjectPos);
+            results.Add("Zone", zoneStr);
+
+            List<string> usedBy = new List<string>();
+
+            mySQLConnector.OpenReader("SELECT race_id, race_name FROM races WHERE race_map = @id", param);
+            row = mySQLConnector.GetNextRow();
+            while (row.Count > 0)
+            {
+                usedBy.Add($"[Race] {row["race_id"]}_{row["race_name"]}");
+                row = mySQLConnector.GetNextRow();
+            }
+            mySQLConnector.CloseReader();
+            mySQLConnector.OpenReader("SELECT derby_id, derby_name FROM derbys WHERE derby_map = @id", param);
+            row = mySQLConnector.GetNextRow();
+            while (row.Count > 0)
+            {
+                usedBy.Add($"[Derby] {row["derby_id"]}_{row["derby_name"]}");
+                row = mySQLConnector.GetNextRow();
+            }
+            mySQLConnector.CloseReader();
+
+            results.Add("Used in", $"{usedBy.Count} events");
+            usedBy.ForEach(evt => results.Add("", evt));
             return results;
         }
     }

@@ -3,8 +3,7 @@ using SampSharp.GameMode.World;
 using SampSharp.Streamer;
 using SampSharp.Streamer.World;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 using System.Threading;
 
 namespace SampSharpGameMode1.Physics
@@ -36,7 +35,10 @@ namespace SampSharpGameMode1.Physics
 					}
 					if(collisionTarget.distance < 10.0 || collisionWithVehicle)
 					{
-						BasePlayer.CreateExplosionForAll(objPos, SampSharp.GameMode.Definitions.ExplosionType.LargeVisibleDamageFire, 50.0f);
+						foreach(BasePlayer p in BasePlayer.GetAll<BasePlayer>().Where(p => p.VirtualWorld == sender.VirtualWorld))
+                        {
+							p.CreateExplosion(obj.Position, SampSharp.GameMode.Definitions.ExplosionType.LargeVisibleDamageFire, 50.0f);
+                        }
 						obj.Dispose();
 					}
 					Thread.Sleep(500);

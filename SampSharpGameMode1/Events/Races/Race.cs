@@ -653,6 +653,11 @@ namespace SampSharpGameMode1.Events.Races
             if (cp == this.checkpoints[this.checkpoints.Count - 1]) // If it's the last checkpoint
             {
                 player.SetRaceCheckpoint(cp.Type + 1, cp.Position, Vector3.Zero, cp.Size);
+                foreach (Player p in spectatingPlayers)
+                {
+                    if (players[playersData[p].spectatePlayerIndex] == player)
+                        p.SetRaceCheckpoint(cp.Type + 1, cp.Position, Vector3.Zero, cp.Size);
+                }
             }
             else
             {
@@ -660,6 +665,11 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     Checkpoint nextcp = this.checkpoints[cp.Idx + 1];
                     player.SetRaceCheckpoint(cp.Type, cp.Position, nextcp.Position, cp.Size);
+                    foreach(Player p in spectatingPlayers)
+                    {
+                        if(players[playersData[p].spectatePlayerIndex] == player)
+                            p.SetRaceCheckpoint(cp.Type, cp.Position, nextcp.Position, cp.Size);
+                    }
                 }
                 catch (KeyNotFoundException e)
                 {
@@ -884,6 +894,97 @@ namespace SampSharpGameMode1.Events.Races
         public bool IsPlayerSpectating(Player player)
         {
             return this.spectatingPlayers.Contains(player);
+        }
+
+
+        public static List<string> GetPlayerRaceList(Player player)
+        {
+            MySQLConnector mySQLConnector = MySQLConnector.Instance();
+            mySQLConnector = MySQLConnector.Instance();
+            Dictionary<string, object> param = new Dictionary<string, object>
+                {
+                    { "@name", player.Name }
+                };
+            mySQLConnector.OpenReader("SELECT race_id, race_name FROM races WHERE race_creator = @name", param);
+            List<string> result = new List<string>();
+            Dictionary<string, string> row = mySQLConnector.GetNextRow();
+            while (row.Count > 0)
+            {
+                result.Add(row["race_id"] + "_" + Display.ColorPalette.Primary.Main + row["race_name"]);
+                row = mySQLConnector.GetNextRow();
+            }
+            mySQLConnector.CloseReader();
+
+            return result;
+        }
+
+        public static Dictionary<string, string> Find(string str)
+        {
+            MySQLConnector mySQLConnector = MySQLConnector.Instance();
+            mySQLConnector = MySQLConnector.Instance();
+            Dictionary<string, object> param = new Dictionary<string, object>
+                {
+                    { "@name", str }
+                };
+            mySQLConnector.OpenReader("SELECT race_id, race_name FROM races WHERE race_name LIKE @name", param);
+            Dictionary<string, string> results = mySQLConnector.GetNextRow();
+            mySQLConnector.CloseReader();
+            return results;
+        }
+
+        public static Dictionary<string, string> GetInfo(int id)
+        {
+            // id, name, creator, number of checkpoints, zone, number of spawnpoints
+            Dictionary<string, string> results = new Dictionary<string, string>();
+            Dictionary<string, string> row;
+
+            MySQLConnector mySQLConnector = MySQLConnector.Instance();
+            Dictionary<string, object> param = new Dictionary<string, object>
+                {
+                    { "@id", id }
+                };
+
+            mySQLConnector.OpenReader("SELECT race_id, race_name, race_creator, map_name FROM races LEFT JOIN maps ON (race_map = map_id) WHERE race_id = @id", param);
+
+            row = mySQLConnector.GetNextRow();
+            foreach (KeyValuePair<string, string> kvp in row)
+                results.Add(MySQLConnector.Field.GetFieldName(kvp.Key), kvp.Value);
+
+            mySQLConnector.CloseReader();
+
+            mySQLConnector.OpenReader("SELECT checkpoint_id, checkpoint_number, checkpoint_pos_x, checkpoint_pos_y, checkpoint_pos_z " +
+                "FROM race_checkpoints WHERE race_id = @id", param);
+            int nbrOfCheckpoints = 0;
+            row = mySQLConnector.GetNextRow();
+            Vector3 firstCheckpointPos = new Vector3();
+            while (row.Count > 0)
+            {
+                nbrOfCheckpoints++;
+                if (row["checkpoint_number"] == "0")
+                {
+                    firstCheckpointPos = new Vector3(
+                        (float)Convert.ToDouble(row["checkpoint_pos_x"]),
+                        (float)Convert.ToDouble(row["checkpoint_pos_y"]),
+                        (float)Convert.ToDouble(row["checkpoint_pos_z"])
+                    );
+                }
+                row = mySQLConnector.GetNextRow();
+            }
+            results.Add("Number of checkpoints", nbrOfCheckpoints.ToString());
+            mySQLConnector.CloseReader();
+
+            string zoneStr = Zone.GetZoneName(firstCheckpointPos);
+            results.Add("Zone", zoneStr);
+
+            mySQLConnector.OpenReader("SELECT COUNT(spawn_index) as nbr " +
+                "FROM race_spawn WHERE race_id = @id", param);
+            row = mySQLConnector.GetNextRow();
+            if (row.Count == 0)
+                results.Add("Number of spawn points", Color.Red + "No spawn point");
+            else
+                results.Add("Number of spawn points", row["nbr"]);
+            mySQLConnector.CloseReader();
+            return results;
         }
     }
 }

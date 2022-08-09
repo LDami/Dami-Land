@@ -33,7 +33,7 @@ CREATE TABLE `derby_pickups` (
   PRIMARY KEY (`pickup_id`),
   KEY `derby_pickups_FK` (`derby_id`),
   CONSTRAINT `derby_pickups_FK` FOREIGN KEY (`derby_id`) REFERENCES `derbys` (`derby_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -53,7 +53,7 @@ CREATE TABLE `derby_spawn` (
   PRIMARY KEY (`spawn_id`),
   KEY `derby_spawnpos_FK` (`derby_id`),
   CONSTRAINT `derby_spawnpos_FK` FOREIGN KEY (`derby_id`) REFERENCES `derbys` (`derby_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -69,10 +69,11 @@ CREATE TABLE `derbys` (
   `derby_creator` varchar(50) NOT NULL,
   `derby_startvehicle` int(11) NOT NULL DEFAULT 509,
   `derby_map` int(11) DEFAULT NULL,
+  `derby_minheight` float NOT NULL DEFAULT 0,
   PRIMARY KEY (`derby_id`),
   KEY `derbys_FK` (`derby_map`),
   CONSTRAINT `derbys_FK` FOREIGN KEY (`derby_map`) REFERENCES `maps` (`map_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -95,7 +96,7 @@ CREATE TABLE `mapobjects` (
   PRIMARY KEY (`obj_id`),
   KEY `mapobjects_FK` (`map_id`),
   CONSTRAINT `mapobjects_FK` FOREIGN KEY (`map_id`) REFERENCES `maps` (`map_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=115 DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -112,7 +113,7 @@ CREATE TABLE `maps` (
   `map_creationdate` datetime DEFAULT NULL,
   `map_lasteditdate` datetime DEFAULT NULL,
   PRIMARY KEY (`map_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -156,7 +157,7 @@ CREATE TABLE `race_checkpoints` (
   PRIMARY KEY (`checkpoint_id`),
   KEY `race_checkpoints_FK` (`race_id`),
   CONSTRAINT `race_checkpoints_FK` FOREIGN KEY (`race_id`) REFERENCES `races` (`race_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=768 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1005 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -176,7 +177,7 @@ CREATE TABLE `race_records` (
   KEY `race_records_FK_1` (`player_id`),
   CONSTRAINT `race_records_FK` FOREIGN KEY (`race_id`) REFERENCES `races` (`race_id`),
   CONSTRAINT `race_records_FK_1` FOREIGN KEY (`player_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=68 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=93 DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -197,7 +198,7 @@ CREATE TABLE `race_spawn` (
   PRIMARY KEY (`spawn_id`),
   KEY `race_spawnpos_FK` (`race_id`),
   CONSTRAINT `race_spawnpos_FK` FOREIGN KEY (`race_id`) REFERENCES `races` (`race_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=482 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=628 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -218,7 +219,26 @@ CREATE TABLE `races` (
   PRIMARY KEY (`race_id`),
   KEY `races_FK` (`race_map`),
   CONSTRAINT `races_FK` FOREIGN KEY (`race_map`) REFERENCES `maps` (`map_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `teleportations`
+--
+
+DROP TABLE IF EXISTS `teleportations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `teleportations` (
+  `teleport_id` int(11) NOT NULL AUTO_INCREMENT,
+  `teleport_name` varchar(100) NOT NULL,
+  `teleport_pos_x` float NOT NULL,
+  `teleport_pos_y` float NOT NULL,
+  `teleport_pos_z` float NOT NULL,
+  `teleport_angle` float NOT NULL,
+  `teleport_zone` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`teleport_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -250,4 +270,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2022-06-28  4:05:30
+-- Dump completed on 2022-07-17 17:48:04

@@ -21,7 +21,7 @@ namespace SampSharpGameMode1.Display
         public HUD(Player player, string jsonFilename)
         {
             layer = new TextdrawLayer();
-            string filename = Directory.GetCurrentDirectory() + "\\scriptfiles\\" + jsonFilename;
+            string filename = Directory.GetCurrentDirectory() + "/scriptfiles/" + jsonFilename;
             string jsonData = "";
             if (File.Exists(filename))
             {

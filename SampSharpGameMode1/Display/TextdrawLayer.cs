@@ -9,6 +9,11 @@ namespace SampSharpGameMode1.Display
 {
     public class TextdrawLayer
     {
+        public class TextdrawEventArgs : EventArgs
+        {
+            public string TextdrawName { get; set; }
+        }
+
         private Color editingColor = new Color(180, 50, 50);
 
         Dictionary<string, Textdraw> textdrawList = new Dictionary<string, Textdraw>();
@@ -19,6 +24,13 @@ namespace SampSharpGameMode1.Display
 
         public enum TextdrawType { Background, Box, Text };
         public enum EditingMode { Unselected, Position, WidthHeight };
+
+
+        public event EventHandler<TextdrawEventArgs> TextdrawClicked;
+        protected virtual void OnTextdrawClicked(TextdrawEventArgs e)
+        {
+            TextdrawClicked?.Invoke(this, e);
+        }
 
         public Dictionary<string, Textdraw> GetTextdrawList()
         {
@@ -39,13 +51,14 @@ namespace SampSharpGameMode1.Display
             textdrawList[name].type = "background";
             textdrawList[name].ForeColor = color;
 
+
             textdrawType[name] = TextdrawType.Background;
             textdrawEditMode[name] = EditingMode.Position;
             textdrawOrder.Add(name);
             textdrawList[name].Show();
             return textdrawList[name];
         }
-        public Textdraw CreateTextdraw(BasePlayer owner, string name, TextdrawType type)
+        public Textdraw CreateTextdraw(BasePlayer owner, string name, TextdrawType type, string text = "")
         {
             textdrawList.Add(name, new Textdraw(owner, name));
             textdrawList[name].Position = new Vector2(320.0f, 240.0f);
@@ -61,7 +74,7 @@ namespace SampSharpGameMode1.Display
             }
             else if (type == TextdrawType.Text)
             {
-                textdrawList[name].text = name;
+                textdrawList[name].text = text;
                 textdrawList[name].type = "text";
                 textdrawType[name] = TextdrawType.Text;
             }
@@ -105,16 +118,11 @@ namespace SampSharpGameMode1.Display
                 td.Value.AutoDestroy = true;
             this.HideAll();
         }
-
-        public Boolean SetTextdrawPosition(string name, Vector2 position)
+        public Vector2 GetTextdrawSize(string name)
         {
-            if (!textdrawList.ContainsKey(name))
+            if (!textdrawType.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
-            float newPosX, newPosY;
-            newPosX = (position.X >= 0) ? position.X : textdrawList[name].Position.X;
-            newPosY = (position.Y >= 0) ? position.Y : textdrawList[name].Position.Y;
-            textdrawList[name].Position = new Vector2(newPosX, newPosY);
-            return true;
+            return new Vector2(textdrawList[name].Width, textdrawList[name].Height);
         }
         public Boolean SetTextdrawSize(string name, float width, float height)
         {
@@ -154,11 +162,15 @@ namespace SampSharpGameMode1.Display
                 throw new TextdrawNameNotFoundException(name);
             return textdrawList[name].Position;
         }
-        public void SetTextdrawPos(string name, Vector2 pos)
+        public Boolean SetTextdrawPosition(string name, Vector2 position)
         {
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
-            textdrawList[name].Position = pos;
+            float newPosX, newPosY;
+            newPosX = (position.X >= 0) ? position.X : textdrawList[name].Position.X;
+            newPosY = (position.Y >= 0) ? position.Y : textdrawList[name].Position.Y;
+            textdrawList[name].Position = new Vector2(newPosX, newPosY);
+            return true;
         }
 
         public void SetTextdrawType(string name, TextdrawType type)
@@ -284,14 +296,14 @@ namespace SampSharpGameMode1.Display
             textdrawList[name].Show();
         }
 
-        public void SetOnClickCallback(string name, Action callback)
+        public void SetClickable(string name)
         {
             textdrawList[name].Selectable = true;
             textdrawList[name].Click += (object sender, SampSharp.GameMode.Events.ClickPlayerTextDrawEventArgs e) =>
             {
-                callback();
+                OnTextdrawClicked(new TextdrawEventArgs { TextdrawName = name });
             };
-		}
+        }
 
         public bool SelectTextdraw(string name)
         {

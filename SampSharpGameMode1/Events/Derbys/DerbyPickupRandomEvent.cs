@@ -3,7 +3,7 @@ using SampSharp.GameMode.Events;
 using SampSharp.GameMode.World;
 using SampSharp.Streamer.World;
 using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace SampSharpGameMode1.Events.Derbys
@@ -130,17 +130,26 @@ namespace SampSharpGameMode1.Events.Derbys
 					SampSharp.GameMode.SAMP.Timer.RunOnce(8000, () =>
 					{
 						explosionOffset = new Vector3(rdm.Next(-MaxAirSupportRdmRange, MaxAirSupportRdmRange), rdm.Next(-MaxAirSupportRdmRange, MaxAirSupportRdmRange), 0.0);
-						BasePlayer.CreateExplosionForAll(markerPos + explosionOffset, SampSharp.GameMode.Definitions.ExplosionType.LargeVisibleDamageFire, 50.0f);
+						foreach (BasePlayer p in BasePlayer.GetAll<BasePlayer>().Where(p => p.VirtualWorld == this.Player.VirtualWorld))
+						{
+							p.CreateExplosion(markerPos + explosionOffset, SampSharp.GameMode.Definitions.ExplosionType.LargeVisibleDamageFire, 50.0f);
+						}
 					});
 					SampSharp.GameMode.SAMP.Timer.RunOnce(8100, () =>
 					{
 						explosionOffset = new Vector3(rdm.Next(-MaxAirSupportRdmRange, MaxAirSupportRdmRange), rdm.Next(-MaxAirSupportRdmRange, MaxAirSupportRdmRange), 0.0);
-						BasePlayer.CreateExplosionForAll(markerPos + explosionOffset, SampSharp.GameMode.Definitions.ExplosionType.LargeVisibleDamageFire, 50.0f);
+						foreach (BasePlayer p in BasePlayer.GetAll<BasePlayer>().Where(p => p.VirtualWorld == this.Player.VirtualWorld))
+						{
+							p.CreateExplosion(markerPos + explosionOffset, SampSharp.GameMode.Definitions.ExplosionType.LargeVisibleDamageFire, 50.0f);
+						}
 					});
 					SampSharp.GameMode.SAMP.Timer.RunOnce(8200, () =>
 					{
 						explosionOffset = new Vector3(rdm.Next(-MaxAirSupportRdmRange, MaxAirSupportRdmRange), rdm.Next(-MaxAirSupportRdmRange, MaxAirSupportRdmRange), 0.0);
-						BasePlayer.CreateExplosionForAll(markerPos + explosionOffset, SampSharp.GameMode.Definitions.ExplosionType.LargeVisibleDamageFire, 50.0f);
+						foreach (BasePlayer p in BasePlayer.GetAll<BasePlayer>().Where(p => p.VirtualWorld == this.Player.VirtualWorld))
+						{
+							p.CreateExplosion(markerPos + explosionOffset, SampSharp.GameMode.Definitions.ExplosionType.LargeVisibleDamageFire, 50.0f);
+						}
 					});
 					SampSharp.GameMode.SAMP.Timer.RunOnce(10000, () =>
 					{

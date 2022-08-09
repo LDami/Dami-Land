@@ -293,9 +293,11 @@ namespace SampSharpGameMode1.Events.Derbys
                 {
                     { "@name", editingDerby.Name },
                     { "@mapid", editingDerby.MapId == -1 ? null : editingDerby.MapId.ToString() },
+                    { "@vehicleid", editingDerby.StartingVehicle },
+                    { "@minheight", editingDerby.MinimumHeight },
                     { "@id", editingDerby.Id }
                 };
-                mySQLConnector.Execute("UPDATE derbys SET derby_name=@name, derby_map=@mapid WHERE derby_id=@id", param);
+                mySQLConnector.Execute("UPDATE derbys SET derby_name=@name, derby_map=@mapid, derby_startvehicle=@vehicleid, derby_minheight=@minheight WHERE derby_id=@id", param);
                 isNew = false;
                 return (mySQLConnector.RowsAffected > 0);
             }
@@ -310,11 +312,12 @@ namespace SampSharpGameMode1.Events.Derbys
                 {
                     { "@derby_name", name },
                     { "@derby_creator", player.Name },
-                    { "@derby_startvehicle", editingDerby.StartingVehicle }
+                    { "@derby_startvehicle", editingDerby.StartingVehicle },
+                    { "@derby_minheight", editingDerby.MinimumHeight },
                 };
                 editingDerby.Id = (int)mySQLConnector.Execute("INSERT INTO derbys " +
-                    "(derby_name, derby_creator, derby_startvehicle) VALUES" +
-                    "(@derby_name, @derby_creator, @derby_startvehicle)", param);
+                    "(derby_name, derby_creator, derby_startvehicle, derby_minheight) VALUES" +
+                    "(@derby_name, @derby_creator, @derby_startvehicle, @derby_minheight)", param);
                 if (mySQLConnector.RowsAffected > 0)
                 {
                     editingDerby.Name = name;
@@ -407,6 +410,7 @@ namespace SampSharpGameMode1.Events.Derbys
             derbyDialog.AddItem("Edit derby name");
             derbyDialog.AddItem("Start Spawn creator");
             derbyDialog.AddItem("Load a map ...");
+            derbyDialog.AddItem("Set minimum height");
 
             derbyDialog.Show(player);
             derbyDialog.Response += DerbyDialog_Response;
@@ -493,8 +497,8 @@ namespace SampSharpGameMode1.Events.Derbys
                                     hud.SetEditingMode(editingMode);
                                 }
                                 break;
-							}
-                        case 3:
+                            }
+                        case 3: // Load a map
                             {
                                 InputDialog findMapDialog = new InputDialog("Find a map", "Type the name of the map you want to load, or empty for full list", false, "Search", "Cancel");
                                 findMapDialog.Show(player);
@@ -512,13 +516,32 @@ namespace SampSharpGameMode1.Events.Derbys
                                 };
                                 break;
                             }
+                        case 4: // Set minimum height
+                            {
+                                MessageDialog minHeightDialog = new MessageDialog("Setting minimum height", "This setting is used to determinate when player fall from the map. Place yourself on the lowest part of your derby, when you are ready press \"SET\"", "SET", "Cancel");
+                                minHeightDialog.Response += (sender, eventArgs) =>
+                                {
+                                    if (eventArgs.DialogButton == DialogButton.Left)
+                                    {
+                                        editingDerby.MinimumHeight = player.Position.Z - 10.0f;
+                                        player.Notificate("Minimum height set");
+                                    }
+                                    else
+                                    {
+                                        player.Notificate("Cancelled");
+                                        ShowDerbyDialog();
+                                    }
+                                };
+                                minHeightDialog.Show(player);
+                                break;
+                            }
                     }
                 }
             }
         }
         private void ShowLoadMapDialog(string text)
         {
-            Dictionary<int, string> maps = Map.FindAll(text);
+            Dictionary<int, string> maps = Map.FindAll(text, player);
             if (maps.Count == 0)
             {
                 player.Notificate("No results");
@@ -631,65 +654,6 @@ namespace SampSharpGameMode1.Events.Derbys
 			}
             if(e.EditObjectResponse == EditObjectResponse.Final || e.EditObjectResponse == EditObjectResponse.Cancel)
                 lastPickedUpPickup = null;
-        }
-
-        public static Dictionary<string, string> Find(string str)
-        {
-            MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>
-                {
-                    { "@name", str }
-                };
-            mySQLConnector.OpenReader("SELECT derby_id, derby_name FROM derbys WHERE derby_name LIKE @name", param);
-            Dictionary<string, string> results = mySQLConnector.GetNextRow();
-            mySQLConnector.CloseReader();
-            return results;
-        }
-        public static Dictionary<string, string> GetInfo(int id)
-        {
-            // id, name, creator, type, number of spawn points, number of pickups, number of map objects
-            Dictionary<string, string> results = new Dictionary<string, string>();
-            Dictionary<string, string> row;
-            bool exists = false;
-
-            MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>
-                {
-                    { "@id", id }
-                };
-
-            mySQLConnector.OpenReader("SELECT derby_id, derby_name, derby_creator FROM derbys WHERE derby_id = @id", param);
-
-            row = mySQLConnector.GetNextRow();
-            if (row.Count > 0) exists = true;
-            foreach (KeyValuePair<string, string> kvp in row)
-                results.Add(MySQLConnector.Field.GetFieldName(kvp.Key), kvp.Value);
-
-            mySQLConnector.CloseReader();
-
-            if(exists)
-            {
-                mySQLConnector.OpenReader("SELECT COUNT(*) as nbr " +
-                    "FROM derby_spawn WHERE derby_id = @id", param);
-                row = mySQLConnector.GetNextRow();
-                results.Add("Spawn points", row["nbr"]);
-                mySQLConnector.CloseReader();
-
-                mySQLConnector.OpenReader("SELECT COUNT(*) as nbr " +
-                    "FROM derby_pickups WHERE derby_id = @id", param);
-                row = mySQLConnector.GetNextRow();
-                results.Add("Pickups", row["nbr"]);
-                mySQLConnector.CloseReader();
-
-                mySQLConnector.OpenReader("SELECT COUNT(*) as nbr " +
-                    "FROM derby_mapobjects WHERE derby_id = @id", param);
-                row = mySQLConnector.GetNextRow();
-                results.Add("Map objects", row["nbr"]);
-                mySQLConnector.CloseReader();
-            }
-
-            return results;
         }
     }
 }

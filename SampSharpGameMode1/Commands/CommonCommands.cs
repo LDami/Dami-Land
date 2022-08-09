@@ -13,24 +13,31 @@ namespace SampSharpGameMode1.Commands
 {
     class CommonCommands
     {
+        [Command("help")]
+        private static void HelpCommand(Player player)
+        {
+            player.SendClientMessage(ColorPalette.Primary.Main + "This is a SA-MP where you can create your own maps, races and derbies !");
+            player.SendClientMessage($"Type {ColorPalette.Secondary.Main}/event-infos{Color.White} to get more information about how to create a map, a race, or a derby.");
+            player.SendClientMessage($"Teleport yourself where you want with {ColorPalette.Secondary.Main}/tlps");
+            player.SendClientMessage($"This server is still in beta, type {ColorPalette.Secondary.Main}/beta{Color.White} to see what is coming soon !");
+        }
         [Command("beta")]
         private static void BetaCommand(Player player)
         {
             player.SendClientMessage(ColorPalette.Primary.Main + "These features are still in development and will be ready to test soon:");
-            player.SendClientMessage(ColorPalette.Secondary.Main + " - Map creator (in progress)");
-            player.SendClientMessage(ColorPalette.Secondary.Main + " - Derby creator and Derby events (need to implement Map creator first)");
-            player.SendClientMessage(ColorPalette.Secondary.Main + " - AI / NPC to play with");
-            player.SendClientMessage(ColorPalette.Secondary.Main + " - More event types");
+            player.SendClientMessage(" - AI / NPC to play with");
+            player.SendClientMessage(" - More event types");
         }
         [Command("event-infos")]
         private static void EventInfosCommand(Player player)
         {
             player.SendClientMessage(ColorPalette.Primary.Main + "On this server you can create your own races and derbies, so please read the following instructions:");
-            player.SendClientMessage(ColorPalette.Secondary.Main + " - Use /race to see race creator commands, and /derby for derby creator commands");
-            player.SendClientMessage(ColorPalette.Secondary.Main + " - Make sure you use a keyboard with numpad (controllers are not supported yet)");
-            player.SendClientMessage(ColorPalette.Secondary.Main + " - You can only edit your own event");
-            player.SendClientMessage(ColorPalette.Secondary.Main + " - If you want to add a map to your event, create the map first with /map commands, then load it into your event");
-            player.SendClientMessage(ColorPalette.Secondary.Main + " - Once your event is playable, everybody can load it and join it");
+            player.SendClientMessage($" - Use {ColorPalette.Secondary.Main}/race{Color.White} to see race creator commands, and {ColorPalette.Secondary.Main}/derby{Color.White} for derby creator commands");
+            player.SendClientMessage($" - Make sure you use a keyboard with numpad (controllers are not supported yet)");
+            player.SendClientMessage($" - You can only edit your own event");
+            player.SendClientMessage($" - If you want to add a map to your event, create the map first with {ColorPalette.Secondary.Main}/map{Color.White} commands, then load it into your event");
+            player.SendClientMessage($" - Don't forget to save your creations with {ColorPalette.Secondary.Main}/race save{Color.White}, {ColorPalette.Secondary.Main}/derby save{Color.White} or {ColorPalette.Secondary.Main}/map save{Color.White}");
+            player.SendClientMessage($" - Once your event is playable, everybody can load it and join it");
         }
 
         [Command("s")]
@@ -44,8 +51,11 @@ namespace SampSharpGameMode1.Commands
         {
             if (player.LastSavedPosition.Position != Vector3.Zero)
             {
-                player.Teleport(player.LastSavedPosition.Position + Vector3.UnitZ);
-                player.Angle = player.LastSavedPosition.Rotation;
+                if (!player.IsInEvent)
+                {
+                    player.Teleport(player.LastSavedPosition.Position + Vector3.UnitZ);
+                    player.Angle = player.LastSavedPosition.Rotation;
+                }
             }
             else
                 player.SendClientMessage(ColorPalette.Error.Main + "Set the position with /s first");

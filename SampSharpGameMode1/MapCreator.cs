@@ -16,11 +16,25 @@ namespace SampSharpGameMode1
 	public class MapCreator
 	{
 		const int MAX_OBJECTS_PER_MAP = 1000;
+		enum Axis
+		{
+			X, Y, Z
+		};
 
 		public Map editingMap = null;
 
 		private bool isNew;
 		public bool IsNew { get { return isNew; } private set { isNew = value; } }
+
+		private bool magnet; // If true, the edited object will try to stick to other objects
+		public bool Magnet {
+			get { return magnet; }
+			set {
+				magnet = value;
+				hud.SetText("magnet", "Magnet: " + (value ? "On" : "Off"));
+				hud.SetColor("magnet", value ? Color.Green : Color.White);
+			}
+		}
 
 
 		private Player player;
@@ -97,9 +111,9 @@ namespace SampSharpGameMode1
 			hud = new HUD(player, "mapcreator.json");
 			hud.SetText("mapname", editingMap.Name);
 			hud.SetText("totalobj", "Total: " + editingMap.Objects.Count.ToString() + " objects");
+			Magnet = true;
 			player.SendClientMessage("Here are the controls:");
-			player.SendClientMessage("    submission key (2/é):                    Open menu");
-			player.SendClientMessage("    Y/N:                    Unfreeze/Freeze");
+			player.SendClientMessage("    Y/N:                    Unfreeze/Freeze (usefull in Jetpack !)");
 		}
 
         private void Player_Disconnected(object sender, DisconnectEventArgs e)
@@ -212,12 +226,25 @@ namespace SampSharpGameMode1
 			{
 				player.VirtualWorld = 0;
 				player.CancelEdit();
+				player.Disconnected -= Player_Disconnected;
 				player.KeyStateChanged -= Player_KeyStateChanged;
 			}
 		}
 
-		public void AddObject(int modelid, Vector3? position = null, Vector3? rotation = null)
+		/// <summary>
+		/// Creates a new object and returns its ID
+		/// </summary>
+		/// <param name="modelid">Model ID of the object to create</param>
+		/// <param name="position">Position of the new object</param>
+		/// <param name="rotation">Rotation of the new object</param>
+		/// <returns>Returns the object ID, -1 if the object is not created</returns>
+		public int AddObject(int modelid, Vector3? position = null, Vector3? rotation = null)
 		{
+			if(editingMap.Objects.Count >= MAX_OBJECTS_PER_MAP)
+            {
+				player.SendClientMessage(Color.Red, "You reached the max number of objects per map");
+				return -1;
+            }
 			MapObject mapObject = new MapObject(
 				-1,
 				modelid,
@@ -226,18 +253,84 @@ namespace SampSharpGameMode1
 				player.VirtualWorld
 			);
 			mapObject.Edit(player);
+			Axis editedAxis = Axis.X;
+			Vector3 lastObjectPos = mapObject.Position; // Used to detect which axis is being modified
+			Vector3 lastObjectRot = mapObject.Rotation; // Used to detect which axis is being modified
 			mapObject.Edited += (object sender, SampSharp.Streamer.Events.PlayerEditEventArgs e) =>
 			{
-				mapObject.Position = e.Position;
-				mapObject.Rotation = e.Rotation;
+				Vector3 newPosition = e.Position;
+				Vector3 newRotation = e.Rotation;
+				if(magnet)
+				{
+					if (newPosition.X != lastObjectPos.X)
+						editedAxis = Axis.X;
+					if (newPosition.Y != lastObjectPos.Y)
+						editedAxis = Axis.Y;
+					if (newPosition.Z != lastObjectPos.Z)
+						editedAxis = Axis.Z;
+
+					if (newRotation.X != lastObjectRot.X)
+						editedAxis = Axis.X;
+					if (newRotation.Y != lastObjectRot.Y)
+						editedAxis = Axis.Y;
+					if (newRotation.Z != lastObjectRot.Z)
+						editedAxis = Axis.Z;
+
+					MapObject nearestObject = null;
+					float nearestObjectDistance = 99999.0f;
+					foreach (MapObject obj in editingMap.Objects)
+					{
+						if (Vector3.Distance(obj.Position, e.Position) < 50.0 && obj.Id != mapObject.Id)
+						{
+							if (nearestObject == null || Vector3.Distance(obj.Position, e.Position) < nearestObjectDistance)
+							{
+								nearestObject = obj;
+								nearestObjectDistance = Vector3.Distance(obj.Position, e.Position);
+							}
+						}
+					}
+					if(nearestObjectDistance < 3.0f)
+					{
+						Console.WriteLine("Nearest object detected: " + nearestObject.Id + " " + nearestObjectDistance);
+						Console.WriteLine("edited axis: " + editedAxis.ToString());
+						if (Math.Abs(nearestObject.Position.X - mapObject.Position.X) < 3.0f && editedAxis == Axis.X)
+							newPosition = new Vector3(nearestObject.Position.X, newPosition.Y, newPosition.Z);
+						if (Math.Abs(nearestObject.Position.Y - mapObject.Position.Y) < 3.0f && editedAxis == Axis.Y)
+							newPosition = new Vector3(newPosition.X, nearestObject.Position.Y, newPosition.Z);
+						if (Math.Abs(nearestObject.Position.Z - mapObject.Position.Z) < 3.0f && editedAxis == Axis.Z)
+							newPosition = new Vector3(newPosition.X, newPosition.Y, nearestObject.Position.Z);
+
+
+						if (Math.Abs(nearestObject.Rotation.X - mapObject.Rotation.X) < 3.0f && editedAxis == Axis.X)
+							newRotation = new Vector3(nearestObject.Rotation.X, newRotation.Y, newRotation.Z);
+						if (Math.Abs(nearestObject.Rotation.Y - mapObject.Rotation.Y) < 3.0f && editedAxis == Axis.Y)
+							newRotation = new Vector3(newRotation.X, nearestObject.Rotation.Y, newRotation.Z);
+						if (Math.Abs(nearestObject.Rotation.Z - mapObject.Rotation.Z) < 3.0f && editedAxis == Axis.Z)
+							newRotation = new Vector3(newRotation.X, newRotation.Y, nearestObject.Rotation.Z);
+					}
+				}
+				mapObject.Position = newPosition;
+				mapObject.Rotation = newRotation;
 				textLabels[mapObject.Id].Position = e.Position;
+				if (e.Response == SampSharp.GameMode.Definitions.EditObjectResponse.Final || e.Response == SampSharp.GameMode.Definitions.EditObjectResponse.Cancel)
+					textLabels[mapObject.Id].Text = $"Object #{mapObject.Id}";
+				else if(e.Response == SampSharp.GameMode.Definitions.EditObjectResponse.Update)
+					textLabels[mapObject.Id].Text = $"Object #{mapObject.Id}\nPos: {mapObject.Position.ToString()}\nRot: {mapObject.Rotation.ToString()}";
+
+				lastObjectPos = newPosition;
+				lastObjectRot = newRotation;
 			};
 			editingMap.Objects.Add(mapObject);
 			textLabels.Add(mapObject.Id, new DynamicTextLabel($"Object #{mapObject.Id}", Color.White, mapObject.Position, 100.0f, null, null, false));
 			player.SendClientMessage($"Object #{mapObject.Id} created with model {modelid}");
 			hud.SetText("totalobj", "Total: " + editingMap.Objects.Count.ToString() + " objects");
+			return mapObject.Id;
 		}
 
+		/// <summary>
+		/// Deletes an object
+		/// </summary>
+		/// <param name="objectid">Object ID of the object to delete</param>
 		public void DelObject(int objectid)
 		{
 			if (editingMap.Objects.Find(obj => obj.Id == objectid) is MapObject obj)
@@ -252,6 +345,12 @@ namespace SampSharpGameMode1
 			else
 				player.SendClientMessage("Unknown object id");
 		}
+
+		/// <summary>
+		/// Replaces the model ID of an object
+		/// </summary>
+		/// <param name="objectid">Object ID to replace</param>
+		/// <param name="modelid">Model ID to replace with</param>
 		public void ReplaceObject(int objectid, int modelid)
 		{
 			if (editingMap.Objects.Find(obj => obj.Id == objectid) is MapObject obj)
@@ -266,6 +365,26 @@ namespace SampSharpGameMode1
 			else
 				player.SendClientMessage("Unknown object id");
 		}
+
+		/// <summary>
+		/// Duplicates an object
+		/// </summary>
+		/// <param name="objectid">Object ID to duplicate</param>
+		public void DuplicateObject(int objectid)
+		{
+			if (editingMap.Objects.Find(obj => obj.Id == objectid) is MapObject obj)
+			{
+				AddObject(obj.ModelId, obj.Position, obj.Rotation);
+				hud.SetText("totalobj", "Total: " + editingMap.Objects.Count.ToString() + " objects");
+			}
+			else
+				player.SendClientMessage("Unknown object id");
+		}
+
+		/// <summary>
+		/// Open the in-game position editor for an object
+		/// </summary>
+		/// <param name="objectid">Object ID to edit</param>
 		public void EditObject(int objectid)
 		{
 			if(editingMap.Objects.Find(obj => obj.Id == objectid) is MapObject obj)

@@ -15,6 +15,11 @@ namespace SampSharpGameMode1.Display
 			{
 				this.color = Color.FromArgb(clr.A, clr.R, clr.G, clr.B);
 			}
+			public SampSharp.GameMode.SAMP.Color GetColor()
+            {
+				return new SampSharp.GameMode.SAMP.Color(color.R, color.G, color.B, color.A);
+
+			}
 			public override string ToString()
 			{
 				return "{" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2") + "}";
