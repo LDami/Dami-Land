@@ -108,7 +108,7 @@ namespace SampSharpGameMode1.Commands
             [Command("create")]
             private static void CreateRace(Player player)
             {
-                if (player.pEvent != null)
+                if (player.pEvent != null || player.mapCreator != null)
                     return;
                 if (!(player.eventCreator is RaceCreator))
                 {
@@ -121,7 +121,7 @@ namespace SampSharpGameMode1.Commands
             [Command("loadc")]
             public static void LoadRaceCreator(Player player, int id)
             {
-                if (player.pEvent != null)
+                if (player.pEvent != null || player.mapCreator != null)
                     return;
                 if (!(player.eventCreator is RaceCreator))
 				{
