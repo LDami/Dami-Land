@@ -91,7 +91,8 @@ namespace SampSharpGameMode1.Commands
                     $"{ColorPalette.Primary.Main}/mapping dupl [objectid] {ColorPalette.Primary.Darken}Duplicate the object" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping marker [1-2] {ColorPalette.Primary.Darken}Edit the marker position to get distance" + "\n" +
                     $"{ColorPalette.Primary.Main}/mapping dist {ColorPalette.Primary.Darken}Displays the distance between the markers" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping edit [objectid] {ColorPalette.Primary.Darken}Edit position/rotation of object";
+                    $"{ColorPalette.Primary.Main}/mapping edit [objectid] {ColorPalette.Primary.Darken}Edit position/rotation of object" + "\n" +
+                    $"{ColorPalette.Primary.Main}/mapping magnet {ColorPalette.Primary.Darken}Toggle magnet on objects during edition";
                     ;
                 MessageDialog dialog = new MessageDialog("Command list", list, "Close");
                 dialog.Show(player);
@@ -272,6 +273,14 @@ namespace SampSharpGameMode1.Commands
             {
                 if (!(player.mapCreator is null))
                     player.mapCreator.EditObject(objectid);
+                else
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+            }
+            [Command("magnet")]
+            private static void MagnetCommand(Player player)
+            {
+                if (!(player.mapCreator is null))
+                    player.mapCreator.Magnet = !player.mapCreator.Magnet;
                 else
                     player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
             }
