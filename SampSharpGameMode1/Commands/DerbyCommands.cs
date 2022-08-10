@@ -81,7 +81,7 @@ namespace SampSharpGameMode1.Commands
             [Command("create")]
             private static void CreateDerby(Player player)
             {
-                if (player.pEvent != null)
+                if (player.pEvent != null || player.mapCreator != null)
                     return;
                 if (!(player.eventCreator is DerbyCreator))
                 {
@@ -93,7 +93,7 @@ namespace SampSharpGameMode1.Commands
             [Command("loadc")]
             public static void LoadDerbyCreator(Player player, int id)
             {
-                if (player.pEvent != null)
+                if (player.pEvent != null || player.mapCreator != null)
                     return;
                 if (!(player.eventCreator is DerbyCreator))
                 {

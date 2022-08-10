@@ -114,6 +114,7 @@ namespace SampSharpGameMode1
 			Magnet = true;
 			player.SendClientMessage("Here are the controls:");
 			player.SendClientMessage("    Y/N:                    Unfreeze/Freeze (usefull in Jetpack !)");
+			player.SendClientMessage("    Z/LShift:              Move camera during object edition");
 		}
 
         private void Player_Disconnected(object sender, DisconnectEventArgs e)
@@ -260,7 +261,7 @@ namespace SampSharpGameMode1
 			{
 				Vector3 newPosition = e.Position;
 				Vector3 newRotation = e.Rotation;
-				if(magnet)
+				if(Magnet)
 				{
 					if (newPosition.X != lastObjectPos.X)
 						editedAxis = Axis.X;
@@ -291,8 +292,6 @@ namespace SampSharpGameMode1
 					}
 					if(nearestObjectDistance < 3.0f)
 					{
-						Console.WriteLine("Nearest object detected: " + nearestObject.Id + " " + nearestObjectDistance);
-						Console.WriteLine("edited axis: " + editedAxis.ToString());
 						if (Math.Abs(nearestObject.Position.X - mapObject.Position.X) < 3.0f && editedAxis == Axis.X)
 							newPosition = new Vector3(nearestObject.Position.X, newPosition.Y, newPosition.Z);
 						if (Math.Abs(nearestObject.Position.Y - mapObject.Position.Y) < 3.0f && editedAxis == Axis.Y)

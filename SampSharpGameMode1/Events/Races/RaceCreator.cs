@@ -127,7 +127,6 @@ namespace SampSharpGameMode1.Events.Races
                     checkpointIndex = 0;
                     editingRace = e.race;
                     spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
-                    UpdatePlayerCheckpoint();
 
                     if (map != null)
                         map.Unload();
@@ -154,9 +153,6 @@ namespace SampSharpGameMode1.Events.Races
         {
             player.VirtualWorld = (int)VirtualWord.EventCreators + player.Id;
             player.EnablePlayerCameraTarget(true);
-            player.KeyStateChanged += Player_KeyStateChanged;
-            player.EnterCheckpoint += Player_EnterCheckpoint;
-            player.EnterRaceCheckpoint += Player_EnterRaceCheckpoint;
 
             Vector3 pos;
             float rot = 0;
@@ -193,6 +189,10 @@ namespace SampSharpGameMode1.Events.Races
             player.SendClientMessage("    keypad 6:                                Go to next checkpoint");
             player.SendClientMessage("    submission key (2/é):                    Open Race menu");
             player.SendClientMessage("    /race help                               Show the controls list");
+            player.KeyStateChanged += Player_KeyStateChanged;
+            player.EnterCheckpoint += Player_EnterCheckpoint;
+            player.EnterRaceCheckpoint += Player_EnterRaceCheckpoint;
+            UpdatePlayerCheckpoint();
         }
 
         public void Unload()
@@ -956,7 +956,7 @@ namespace SampSharpGameMode1.Events.Races
                 Vector3 nextPos = (nextCp != null) ? nextCp.Position : Vector3.Zero;
 
                 if (shownCheckpoint == null || shownCheckpoint.IsDisposed)
-                    shownCheckpoint = new DynamicRaceCheckpoint(cp.Type, cp.Position, nextPos, cp.Size, player.VirtualWorld);
+                    shownCheckpoint = new DynamicRaceCheckpoint(cp.Type, cp.Position, nextPos, cp.Size, player.VirtualWorld, streamdistance: 500);
                 else
                 {
                     shownCheckpoint.Position = cp.Position;
