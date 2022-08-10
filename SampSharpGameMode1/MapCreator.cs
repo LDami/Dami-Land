@@ -114,6 +114,7 @@ namespace SampSharpGameMode1
 			Magnet = true;
 			player.SendClientMessage("Here are the controls:");
 			player.SendClientMessage("    Y/N:                    Unfreeze/Freeze (usefull in Jetpack !)");
+			player.SendClientMessage("    Z/LShift:              Move camera during object edition");
 		}
 
         private void Player_Disconnected(object sender, DisconnectEventArgs e)
