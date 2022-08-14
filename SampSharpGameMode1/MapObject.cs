@@ -20,29 +20,5 @@ namespace SampSharpGameMode1
 			this.DbId = dbid;
 			this.Modified = false;
 		}
-
-		/*
-		private static readonly Dictionary<int, int> dbDict = new Dictionary<int, int>(); // pool[objectid] = dbid
-
-		public static void AddDbPool(int objectid, int dbid)
-		{
-			dbDict[objectid] = dbid;
-		}
-		public static void RemoveFromDbPool(int objectid)
-		{
-			dbDict.Remove(objectid);
-		}
-		public static int GetObjectDbId(int objectid)
-		{
-			if (dbDict.ContainsKey(objectid))
-				return dbDict[objectid];
-			else
-				return -1;
-		}
-		public static int GetPoolSize()
-		{
-			return dbDict.Count;
-		}
-		*/
 	}
 }
