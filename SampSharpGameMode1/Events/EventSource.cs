@@ -63,6 +63,11 @@ namespace SampSharpGameMode1.Events
         /// <param name="player">Player</param>
         /// <returns>True if player is spectating the event, False otherwise</returns>
         public bool IsPlayerSpectating(Player player);
+        /// <summary>
+        ///     Returns all the players playing in the event
+        /// </summary>
+        /// <returns>List of players</returns>
+        public List<Player> GetPlayers();
         #endregion
     }
 }

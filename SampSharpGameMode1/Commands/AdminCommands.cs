@@ -387,5 +387,20 @@ namespace SampSharpGameMode1.Commands
         {
             player.SendClientMessage($"Position of {targetPlayer.Name}: {targetPlayer.Position} ; VirtualWorld: {targetPlayer.VirtualWorld}");
         }
+        [Command("pickup", PermissionChecker = typeof(AdminPermissionChecker))]
+        private static void PickupCommand(Player player)
+        {
+            player.SendClientMessage("Available pickups:");
+            int length = Enum.GetValues(typeof(Events.Derbys.DerbyPickupRandomEvent.AvailableEvents)).Length;
+            for(int i=0; i < length; i++)
+            {
+                player.SendClientMessage(i + ": " + Enum.GetValues(typeof(Events.Derbys.DerbyPickupRandomEvent.AvailableEvents)).GetValue(i));
+            }
+        }
+        [Command("pickup", PermissionChecker = typeof(AdminPermissionChecker))]
+        private static void PickupCommand(Player player, int id)
+        {
+            Events.Derbys.DerbyPickupRandomEvent pickup = new Events.Derbys.DerbyPickupRandomEvent(player, id);
+        }
     }
 }

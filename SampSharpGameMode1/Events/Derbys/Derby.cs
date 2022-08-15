@@ -482,6 +482,11 @@ namespace SampSharpGameMode1.Events.Derbys
             return this.spectatingPlayers.Contains(player);
         }
 
+        public List<Player> GetPlayers()
+        {
+            return this.players;
+        }
+
         public static List<string> GetPlayerDerbyList(Player player)
         {
             MySQLConnector mySQLConnector = MySQLConnector.Instance();

@@ -77,7 +77,7 @@ namespace SampSharpGameMode1.Events.Derbys
 				switch (Event)
 				{
 					case PickupEvent.Random:
-						DerbyPickupRandomEvent randomEvent = new DerbyPickupRandomEvent(e.Player);
+						DerbyPickupRandomEvent randomEvent = new DerbyPickupRandomEvent((Player)e.Player);
 						break;
 					case PickupEvent.ChangeVehicle:
 						Vector3 pos = Vector3.Zero;
