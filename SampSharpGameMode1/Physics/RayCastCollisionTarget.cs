@@ -9,14 +9,14 @@ namespace SampSharpGameMode1.Physics
 	{
 		public RayCastCollisionTarget(Vector3 pos, float dist, int mid)
 		{
-			this.position = pos;
-			this.distance = dist;
-			this.modelid = mid;
-			this.index = -1;
+			this.Position = pos;
+			this.Distance = dist;
+			this.ModelId = mid;
+			this.Index = -1;
 		}
-		public Vector3 position { get; set; }
-		public float distance { get; set; }
-		public int modelid { get; set; }
-		public int index { get; set; }
+		public Vector3 Position { get; set; }
+		public float Distance { get; set; }
+		public int ModelId { get; set; }
+		public int Index { get; set; }
 	}
 }

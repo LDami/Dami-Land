@@ -88,5 +88,24 @@ namespace SampSharpGameMode1
             angle = (float)(angle * Math.PI) / 180;
             return player.Position + new Vector3(-distance * Math.Sin(angle), distance * Math.Cos(angle), 0);
         }
+
+        /// <summary>
+        ///  This function returns True if <paramref name="check"/> is between <paramref name="pos1"/> and <paramref name="pos2"/>
+        /// </summary>
+        /// <param name="pos1">The first position</param>
+        /// <param name="pos2">The second position</param>
+        /// <param name="check">The position to check</param>
+        /// <returns>True if <paramref name="check"/> is between <paramref name="pos1"/> and <paramref name="pos2"/></returns>
+        public static bool IsInTwoVectors(Vector3 pos1, Vector3 pos2, Vector3 check)
+        {
+            float minX = Math.Min(pos1.X, pos2.X);
+            float maxX = Math.Max(pos1.X, pos2.X);
+            float minY = Math.Min(pos1.Y, pos2.Y);
+            float maxY = Math.Max(pos1.Y, pos2.Y);
+            float minZ = Math.Min(pos1.Z, pos2.Z);
+            float maxZ = Math.Max(pos1.Z, pos2.Z);
+            return check.X >= minX && check.X <= maxX && check.Y >= minY && check.Y <= maxY
+                && check.Z >= minZ && check.Z <= maxZ;
+        }
     }
 }

@@ -33,7 +33,7 @@ namespace SampSharpGameMode1.Physics
 						if(!veh.IsDisposed)
 							if(veh.GetDistanceFromPoint(objPos) < 5.0 && !sender.Vehicle.Equals(veh)) collisionWithVehicle = true;
 					}
-					if(collisionTarget.distance < 10.0 || collisionWithVehicle)
+					if(collisionTarget.Distance < 10.0 || collisionWithVehicle)
 					{
 						foreach(BasePlayer p in BasePlayer.GetAll<BasePlayer>().Where(p => p.VirtualWorld == sender.VirtualWorld))
                         {

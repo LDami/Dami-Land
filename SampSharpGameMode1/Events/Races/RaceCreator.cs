@@ -347,6 +347,8 @@ namespace SampSharpGameMode1.Events.Races
 
         public void AddCheckpoint(Vector3 position)
         {
+            Physics.RayCastCollisionTarget collisionTarget = Physics.ColAndreas.RayCastLine(position + Vector3.UnitZ * 2, position - Vector3.UnitZ * 2);
+            position = collisionTarget.Position + Vector3.UnitZ;
             editingMode = EditingMode.Checkpoints;
             if (editingRace.checkpoints.Count == 0)
             {
@@ -407,6 +409,56 @@ namespace SampSharpGameMode1.Events.Races
                 player.SendClientMessage(Color.Red, "Error, place a checkpoint first ! (/race addcp)");
             }
 		}
+        public void SelectPreviousCP()
+        {
+            if (checkpointIndex > 0) checkpointIndex--;
+            if (checkpointIndex == 0)
+            {
+                hud.SetSelectedIdx("S", editingMode);
+                player.GameText("CP: Start", 500, 3);
+            }
+            else
+            {
+                hud.SetSelectedIdx(checkpointIndex.ToString(), editingMode);
+                player.GameText("CP: " + checkpointIndex, 500, 3);
+            }
+            UpdatePlayerCheckpoint();
+        }
+        public void SelectNextCP()
+        {
+            if (checkpointIndex < editingRace.checkpoints.Count - 1) checkpointIndex++;
+            if (checkpointIndex == editingRace.checkpoints.Count - 1)
+            {
+                hud.SetSelectedIdx("F", editingMode);
+                player.GameText("CP: Finish", 500, 3);
+            }
+            else
+            {
+                hud.SetSelectedIdx(checkpointIndex.ToString(), editingMode);
+                player.GameText("CP: " + checkpointIndex, 500, 3);
+            }
+            UpdatePlayerCheckpoint();
+        }
+        public void SelectCP(int index)
+        {
+            if (index >= 0 && index <= editingRace.checkpoints.Count - 1) checkpointIndex = index;
+            if (checkpointIndex == 0)
+            {
+                hud.SetSelectedIdx("S", editingMode);
+                player.GameText("CP: Start", 500, 3);
+            }
+            else if (checkpointIndex == editingRace.checkpoints.Count - 1)
+            {
+                hud.SetSelectedIdx("F", editingMode);
+                player.GameText("CP: Finish", 500, 3);
+            }
+            else
+            {
+                hud.SetSelectedIdx(checkpointIndex.ToString(), editingMode);
+                player.GameText("CP: " + checkpointIndex, 500, 3);
+            }
+            UpdatePlayerCheckpoint();
+        }
         public void AddSpectatorGroup(Vector3 position)
         {
             spectatorGroups.Add(new Civilisation.SpectatorGroup(player, position + new Vector3(0.0, 5.0, 0.0), player.VirtualWorld));
@@ -422,18 +474,7 @@ namespace SampSharpGameMode1.Events.Races
                         {
                             case EditingMode.Checkpoints:
                                 {
-                                    if (checkpointIndex > 0) checkpointIndex--;
-                                    if (checkpointIndex == 0)
-                                    {
-                                        hud.SetSelectedIdx("S", editingMode);
-                                        player.GameText("CP: Start", 500, 3);
-                                    }
-                                    else
-                                    {
-                                        hud.SetSelectedIdx(checkpointIndex.ToString(), editingMode);
-                                        player.GameText("CP: " + checkpointIndex, 500, 3);
-                                    }
-                                    UpdatePlayerCheckpoint();
+                                    SelectPreviousCP();
                                     break;
                                 }
                             case EditingMode.SpawnPos:
@@ -450,18 +491,7 @@ namespace SampSharpGameMode1.Events.Races
                         {
                             case EditingMode.Checkpoints:
                                 {
-                                    if (checkpointIndex < editingRace.checkpoints.Count - 1) checkpointIndex++;
-                                    if (checkpointIndex == editingRace.checkpoints.Count - 1)
-                                    {
-                                        hud.SetSelectedIdx("F", editingMode);
-                                        player.GameText("CP: Finish", 500, 3);
-                                    }
-                                    else
-                                    {
-                                        hud.SetSelectedIdx(checkpointIndex.ToString(), editingMode);
-                                        player.GameText("CP: " + checkpointIndex, 500, 3);
-                                    }
-                                    UpdatePlayerCheckpoint();
+                                    SelectNextCP();
                                     break;
                                 }
                             case EditingMode.SpawnPos:
@@ -986,9 +1016,13 @@ namespace SampSharpGameMode1.Events.Races
         {
             if (editingMode == EditingMode.Checkpoints)
             {
-                moverObject.Position = e.Position;
-                editingRace.checkpoints[checkpointIndex].Position = e.Position - moverObjectOffset;
+                Physics.RayCastCollisionTarget collisionTarget = Physics.ColAndreas.RayCastLine(e.Position + Vector3.UnitZ*2, e.Position - Vector3.UnitZ*2);
+                editingRace.checkpoints[checkpointIndex].Position = new Vector3(e.Position.X, e.Position.Y, collisionTarget.Position.Z) + Vector3.UnitZ;
                 UpdatePlayerCheckpoint();
+                if(e.EditObjectResponse == EditObjectResponse.Final)
+                {
+                    moverObject.Position = new Vector3(e.Position.X, e.Position.Y, collisionTarget.Position.Z) + Vector3.UnitZ;
+                }
             }
             if (e.EditObjectResponse == EditObjectResponse.Cancel)
             {

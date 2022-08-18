@@ -42,6 +42,7 @@ namespace SampSharpGameMode1
 		private PlayerObject[] markers;
 		private Dictionary<int, DynamicTextLabel> textLabels;
 		private MySQLConnector mySQLConnector = MySQLConnector.Instance();
+		private List<int> deletedObjects; // Contains list of MapObject's DbId that must be deleted on save
 
 		public MapCreator(Player p)
 		{
@@ -51,6 +52,7 @@ namespace SampSharpGameMode1
 				editingMap = null;
 				markers = new PlayerObject[2];
 				textLabels = new Dictionary<int, DynamicTextLabel>();
+				deletedObjects = new List<int>();
 				p.SendClientMessage("Map creator initialized");
 				p.SendClientMessage("/mapping help for command list");
 			}
@@ -112,6 +114,7 @@ namespace SampSharpGameMode1
 			hud.SetText("mapname", editingMap.Name);
 			hud.SetText("totalobj", "Total: " + editingMap.Objects.Count.ToString() + " objects");
 			Magnet = true;
+			deletedObjects = new List<int>();
 			player.SendClientMessage("Here are the controls:");
 			player.SendClientMessage("    Y/N:                    Unfreeze/Freeze (usefull in Jetpack !)");
 			player.SendClientMessage("    Z/LShift:              Move camera during object edition");
@@ -178,6 +181,14 @@ namespace SampSharpGameMode1
 					}
 				}
 			}
+			string queryDelete = "DELETE FROM mapobjects WHERE obj_id = @id";
+			foreach(int id in deletedObjects)
+            {
+				param.Clear();
+				param.Add("@id", id);
+				mySQLConnector.Execute(queryDelete, param);
+            }
+			deletedObjects.Clear();
 
 			param.Clear();
 			param.Add("@name", editingMap.Name);
@@ -334,6 +345,8 @@ namespace SampSharpGameMode1
 		{
 			if (editingMap.Objects.Find(obj => obj.Id == objectid) is MapObject obj)
 			{
+				if(obj.DbId != -1)
+					deletedObjects.Add(obj.DbId);
 				obj?.Dispose();
 				editingMap.Objects.Remove(obj);
 				textLabels[obj.Id].Dispose();

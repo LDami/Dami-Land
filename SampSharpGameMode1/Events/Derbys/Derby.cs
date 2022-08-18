@@ -352,6 +352,8 @@ namespace SampSharpGameMode1.Events.Derbys
 
         public void OnPlayerFinished(Player player, string reason)
         {
+            if (!players.Contains(player))
+                return;
             if (reason.Equals("Finished"))
             {
                 int place = players.Count;
@@ -480,6 +482,11 @@ namespace SampSharpGameMode1.Events.Derbys
         public bool IsPlayerSpectating(Player player)
         {
             return this.spectatingPlayers.Contains(player);
+        }
+
+        public List<Player> GetPlayers()
+        {
+            return this.players;
         }
 
         public static List<string> GetPlayerDerbyList(Player player)

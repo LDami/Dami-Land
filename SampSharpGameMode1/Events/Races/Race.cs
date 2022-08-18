@@ -896,6 +896,11 @@ namespace SampSharpGameMode1.Events.Races
             return this.spectatingPlayers.Contains(player);
         }
 
+        public List<Player> GetPlayers()
+        {
+            return this.players;
+        }
+
 
         public static List<string> GetPlayerRaceList(Player player)
         {
