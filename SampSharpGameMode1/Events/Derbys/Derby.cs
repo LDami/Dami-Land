@@ -352,6 +352,8 @@ namespace SampSharpGameMode1.Events.Derbys
 
         public void OnPlayerFinished(Player player, string reason)
         {
+            if (!players.Contains(player))
+                return;
             if (reason.Equals("Finished"))
             {
                 int place = players.Count;
