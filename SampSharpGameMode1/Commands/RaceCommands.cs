@@ -88,25 +88,23 @@ namespace SampSharpGameMode1.Commands
         class RaceCommandsClass
         {
             [Command("help")]
-            private static void HelpRace(Player player)
+            private static void HelpCommand(Player player)
 			{
-                string list =
-                    "/race create               Create a new race" + "\n" +
-                    "/race loadc [id]           Loading an existing race" + "\n" +
-                    "/race find [name]          Find an existing race" + "\n" +
-                    "/race addcp                Add a checkpoint" + "\n" +
-                    "/race set current          Move the current checkpoint to your position" + "\n" +
-                    "/race teleport             Teleport yourself to the current checkpoint" + "\n" +
-                    "/race prevcp               Select the previous CP (shortcut: numpad 4)" + "\n" +
-                    "/race nextcp               Select the next CP (shortcut: numpad 6)" + "\n" +
-                    "/race selectcp [index]     Select the specified CP" + "\n" +
-                    "/race teleport             Teleport yourself to the current checkpoint" + "\n" +
-                    "/race addsg                Add a spectator group" + "\n" +
-                    "/race save                 Save the editing race" + "\n" +
-                    "/race exit                 Close the editor"
-                    ;
-                MessageDialog dialog = new MessageDialog("Command list", list, "Close");
-                dialog.Show(player);
+                Display.CommandList commandList = new Display.CommandList("Race command list");
+                commandList.Add("/race create", "Create a new race");
+                commandList.Add("/race loadc [id]", "Loading an existing race");
+                commandList.Add("/race find [name]", "Find an existing race");
+                commandList.Add("/race addcp", "Add a checkpoint");
+                commandList.Add("/race set current", "Move the current checkpoint to your position");
+                commandList.Add("/race teleport", "Teleport yourself to the current checkpoint");
+                commandList.Add("/race prevcp", "Select the previous CP (shortcut: numpad 4)");
+                commandList.Add("/race nextcp", "Select the next CP (shortcut: numpad 6)");
+                commandList.Add("/race selectcp [index]", "Select the specified CP");
+                commandList.Add("/race teleport", "Teleport yourself to the current checkpoint");
+                commandList.Add("/race addsg", "Add a spectator group");
+                commandList.Add("/race save", "Save the editing race");
+                commandList.Add("/race exit", "Close the editor");
+                commandList.Show(player);
 			}
 
             [Command("create")]

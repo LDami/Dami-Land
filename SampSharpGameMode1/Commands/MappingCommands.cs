@@ -79,23 +79,21 @@ namespace SampSharpGameMode1.Commands
             [Command("help")]
             private static void HelpCommand(Player player)
             {
-                string list =
-                    $"{ColorPalette.Primary.Main}/mapping create {ColorPalette.Primary.Darken}Create a new map" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping loadc [id] {ColorPalette.Primary.Darken}Load a map" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping save {ColorPalette.Primary.Darken}Save the map" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping exit {ColorPalette.Primary.Darken}Close the editor (save your map first !)" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping info [id] {ColorPalette.Primary.Darken}Display the info of a map" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping addo [modelid] {ColorPalette.Primary.Darken}Add an object with specified modelid" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping delo [objectid] {ColorPalette.Primary.Darken}Delete the object" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping replace [objectid] [modelid] {ColorPalette.Primary.Darken}Replace the object by the s modelid" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping dupl [objectid] {ColorPalette.Primary.Darken}Duplicate the object" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping marker [1-2] {ColorPalette.Primary.Darken}Edit the marker position to get distance" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping dist {ColorPalette.Primary.Darken}Displays the distance between the markers" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping edit [objectid] {ColorPalette.Primary.Darken}Edit position/rotation of object" + "\n" +
-                    $"{ColorPalette.Primary.Main}/mapping magnet {ColorPalette.Primary.Darken}Toggle magnet on objects during edition";
-                    ;
-                MessageDialog dialog = new MessageDialog("Command list", list, "Close");
-                dialog.Show(player);
+                Display.CommandList commandList = new Display.CommandList("Event command list");
+                commandList.Add("/mapping create", "Create a new map");
+                commandList.Add("/mapping loadc [id]", "Load a map");
+                commandList.Add("/mapping save", "Save the map");
+                commandList.Add("/mapping exit", "Close the editor (save your map first !)");
+                commandList.Add("/mapping info [id]", "Display the info of a map");
+                commandList.Add("/mapping addo [modelid]", "Add an object with specified modelid");
+                commandList.Add("/mapping delo [objectid]", "Delete the object");
+                commandList.Add("/mapping replace [objectid] [modelid]", "Replace the object by the s modelid");
+                commandList.Add("/mapping dupl [objectid]", "Duplicate the object");
+                commandList.Add("/mapping marker [1-2]", "Edit the marker position to get distance");
+                commandList.Add("/mapping dist", "Displays the distance between the markers");
+                commandList.Add("/mapping edit [objectid]", "Edit position/rotation of object");
+                commandList.Add("/mapping magnet", "Toggle magnet on objects during");
+                commandList.Show(player);
             }
             [Command("create")]
             private static void CreateCommand(Player player)

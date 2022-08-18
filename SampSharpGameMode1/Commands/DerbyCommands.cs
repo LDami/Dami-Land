@@ -76,7 +76,20 @@ namespace SampSharpGameMode1.Commands
         [CommandGroup("derby")]
         class DerbyCommandsClass
         {
-            // Creator
+            [Command("help")]
+            private static void HelpCommand(Player player)
+            {
+                Display.CommandList commandList = new Display.CommandList("Derby command list");
+                commandList.Add("/derby create", "Create a new race");
+                commandList.Add("/derby loadc [id]", "Loading an existing race");
+                commandList.Add("/derby find [name]", "Find an existing race");
+                commandList.Add("/derby addp", "Add a pickup");
+                commandList.Add("/derby delp [id]", "Delete a pickup");
+                commandList.Add("/derby editp [id]", "Edit a pickup");
+                commandList.Add("/derby save", "Save the editing race");
+                commandList.Add("/derby exit", "Close the editor");
+                commandList.Show(player);
+            }
 
             [Command("create")]
             private static void CreateDerby(Player player)

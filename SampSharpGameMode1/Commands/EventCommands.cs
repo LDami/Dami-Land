@@ -20,14 +20,12 @@ namespace SampSharpGameMode1.Commands
             [Command("help")]
             private static void HelpCommand(Player player)
             {
-                string list =
-                    $"{ColorPalette.Primary.Main}/event manage {ColorPalette.Primary.Darken}Open the event manager" + "\n" +
-                    $"{ColorPalette.Primary.Main}/event purge {ColorPalette.Primary.Darken}Remove all upcoming events (admin only)" + "\n" +
-                    $"{ColorPalette.Primary.Main}/event join (shortcut: /join) {ColorPalette.Primary.Darken}Join the opened event" + "\n" +
-                    $"{ColorPalette.Primary.Main}/event leave (shortcut: /leave) {ColorPalette.Primary.Darken}Leave the event you are in" + "\n"
-                    ;
-                MessageDialog dialog = new MessageDialog("Command list", list, "Close");
-                dialog.Show(player);
+                Display.CommandList commandList = new Display.CommandList("Event command list");
+                commandList.Add("/event manage", "Open the event manager");
+                commandList.Add("/event purge", "Remove all upcoming events (admin only)");
+                commandList.Add("/event join (shortcut: /join)", "Join the opened event");
+                commandList.Add("/event leave (shortcut: /leave)", "Leave the event you are in");
+                commandList.Show(player);
             }
             [Command("manage", PermissionChecker = typeof(AdminPermissionChecker))]
             private static void CreateEvent(Player player)
