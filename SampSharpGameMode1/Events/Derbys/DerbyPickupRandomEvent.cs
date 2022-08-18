@@ -189,10 +189,10 @@ namespace SampSharpGameMode1.Events.Derbys
 											collisionWithVehicle = veh.Id;
 									}
 								}
-								if (collisionTarget.distance < LaserRange)
+								if (collisionTarget.Distance < LaserRange)
 								{
-									float rotZ = (player.Vehicle.Position.Y > collisionTarget.position.Y) ? 0 : 180;
-									DynamicObject sparks = new DynamicObject(18718, collisionTarget.position, new Vector3(0.0, 90.0, rotZ), worldid: player.VirtualWorld);
+									float rotZ = (player.Vehicle.Position.Y > collisionTarget.Position.Y) ? 0 : 180;
+									DynamicObject sparks = new DynamicObject(18718, collisionTarget.Position, new Vector3(0.0, 90.0, rotZ), worldid: player.VirtualWorld);
 									SampSharp.GameMode.SAMP.Timer.RunOnce(500, () =>
 									{
 										sparks.Dispose();

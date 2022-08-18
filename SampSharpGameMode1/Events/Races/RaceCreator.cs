@@ -347,6 +347,8 @@ namespace SampSharpGameMode1.Events.Races
 
         public void AddCheckpoint(Vector3 position)
         {
+            Physics.RayCastCollisionTarget collisionTarget = Physics.ColAndreas.RayCastLine(position + Vector3.UnitZ * 2, position - Vector3.UnitZ * 2);
+            position = collisionTarget.Position + Vector3.UnitZ;
             editingMode = EditingMode.Checkpoints;
             if (editingRace.checkpoints.Count == 0)
             {
@@ -1014,9 +1016,13 @@ namespace SampSharpGameMode1.Events.Races
         {
             if (editingMode == EditingMode.Checkpoints)
             {
-                moverObject.Position = e.Position;
-                editingRace.checkpoints[checkpointIndex].Position = e.Position - moverObjectOffset;
+                Physics.RayCastCollisionTarget collisionTarget = Physics.ColAndreas.RayCastLine(e.Position + Vector3.UnitZ*2, e.Position - Vector3.UnitZ*2);
+                editingRace.checkpoints[checkpointIndex].Position = new Vector3(e.Position.X, e.Position.Y, collisionTarget.Position.Z) + Vector3.UnitZ;
                 UpdatePlayerCheckpoint();
+                if(e.EditObjectResponse == EditObjectResponse.Final)
+                {
+                    moverObject.Position = new Vector3(e.Position.X, e.Position.Y, collisionTarget.Position.Z) + Vector3.UnitZ;
+                }
             }
             if (e.EditObjectResponse == EditObjectResponse.Cancel)
             {
