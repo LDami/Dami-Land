@@ -97,6 +97,10 @@ namespace SampSharpGameMode1.Commands
                     "/race addcp                Add a checkpoint" + "\n" +
                     "/race set current          Move the current checkpoint to your position" + "\n" +
                     "/race teleport             Teleport yourself to the current checkpoint" + "\n" +
+                    "/race prevcp               Select the previous CP (shortcut: numpad 4)" + "\n" +
+                    "/race nextcp               Select the next CP (shortcut: numpad 6)" + "\n" +
+                    "/race selectcp [index]     Select the specified CP" + "\n" +
+                    "/race teleport             Teleport yourself to the current checkpoint" + "\n" +
                     "/race addsg                Add a spectator group" + "\n" +
                     "/race save                 Save the editing race" + "\n" +
                     "/race exit                 Close the editor"
@@ -207,6 +211,30 @@ namespace SampSharpGameMode1.Commands
                 if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
                 {
                     (player.eventCreator as RaceCreator).TeleportToCurrent();
+                }
+            }
+            [Command("prevcp")]
+            private static void PrevCPCommand(Player player)
+            {
+                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
+                {
+                    (player.eventCreator as RaceCreator).SelectPreviousCP();
+                }
+            }
+            [Command("nextcp")]
+            private static void NextCPCommand(Player player)
+            {
+                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
+                {
+                    (player.eventCreator as RaceCreator).SelectNextCP();
+                }
+            }
+            [Command("selectcp")]
+            private static void SelectCPCommand(Player player, int index)
+            {
+                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
+                {
+                    (player.eventCreator as RaceCreator).SelectCP(index);
                 }
             }
             [Command("addcp")]
