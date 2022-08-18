@@ -7,7 +7,6 @@ using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using static SampSharpGameMode1.Civilisation.PathExtractor;
 
 namespace SampSharpGameMode1.Events.Races
 {
@@ -742,33 +741,35 @@ namespace SampSharpGameMode1.Events.Races
                 TimeSpan duration = DateTime.Now - startedTime;
                 playersTimeSpan[player] = duration;
                 int place = playersTimeSpan.Count;
+                string coloredPlaceStr = "";
                 string placeStr = "";
                 int money = 0;
                 switch (place)
                 {
                     case 1:
+                        coloredPlaceStr = $"{Color.Gold}1st{Color.White}";
                         placeStr = "1st";
                         money = 1000;
-                        player.SendClientMessage(Color.Wheat, $"[Event]{Color.White} You finished {Color.Green}{placeStr}{Color.White}, you won {money}$");
                         winner = player;
                         break;
                     case 2:
+                        coloredPlaceStr = $"{Color.Silver}2nd{Color.White}";
                         placeStr = "2nd";
                         money = 750;
-                        player.SendClientMessage(Color.Wheat, $"[Event]{Color.White} You finished {Color.Orange}{placeStr}{Color.White}, you won {money}$");
                         break;
                     case 3:
+                        coloredPlaceStr = $"{Color.OrangeRed}3rd{Color.White}";
                         placeStr = "3rd";
                         money = 500;
-                        player.SendClientMessage(Color.Wheat, $"[Event]{Color.White} You finished {Color.OrangeRed}{placeStr}{Color.White}, you won {money}$");
                         break;
                     default:
                         money = 0;
-                        player.SendClientMessage(Color.Wheat, $"[Event]{Color.White} You finished {placeStr}");
-                        placeStr = place + "th";
+                        coloredPlaceStr = place + "th";
                         break;
                 }
                 player.GiveMoney(money);
+                Event.SendEventMessageToAll(player.pEvent, $"{Color.Orange}{player.Name}{Color.White} finished the race at {coloredPlaceStr} place");
+                Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} finished the race {this.Name} at {placeStr} place");
 
                 string finishText = placeStr + " place !~n~" + duration.ToString(@"hh\:mm\:ss\.fff");
                 bool isNewRecord = false;
@@ -798,18 +799,19 @@ namespace SampSharpGameMode1.Events.Races
                     param.Add("@record_duration", duration.ToString(@"hh\:mm\:ss\.ffffff"));
                     GameMode.mySQLConnector.Execute("INSERT INTO race_records (race_id, player_id, record_duration) VALUES (@race_id, @player_id, @record_duration)", param);
                 }
-                Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} finished the race {this.Name} at {placeStr} place");
             }
             else if (reason.Equals("Leave"))
             {
+                Event.SendEventMessageToPlayer(player, "You left the race");
                 Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} left the race {this.Name}");
-                player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You left the race");
+                Event.SendEventMessageToAll(player.pEvent, $"{Color.Orange}{player.Name}{Color.White} has left the race");
                 player.GameText("GAME OVER", 5000, 4);
             }
             else
             {
+                Event.SendEventMessageToPlayer(player, "You lost (reason: " + reason + ")");
                 Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} has been ejected from the race {this.Name} (reason: {reason})");
-                player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You lost (reason: " + reason + ")");
+                Event.SendEventMessageToAll(player.pEvent, $"{Color.Orange}{player.Name}{Color.White} has lost the race (reason: {reason})");
                 player.GameText("GAME OVER", 5000, 4);
             }
 

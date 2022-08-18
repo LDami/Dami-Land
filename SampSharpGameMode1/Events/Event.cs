@@ -114,13 +114,13 @@ namespace SampSharpGameMode1.Events
         public abstract void End(EventFinishedReason reason);
 
 
-        public void SendEventMessage(BasePlayer player, string msg)
+        public static void SendEventMessageToPlayer(BasePlayer player, string msg)
         {
             player.SendClientMessage(Color.Wheat, "[Event] " + Color.White + msg);
         }
-        public void SendEventMessageToAll(string msg)
+        public static void SendEventMessageToAll(Event evt, string msg)
         {
-            foreach (Player p in Source.GetPlayers())
+            foreach (Player p in evt.Source.GetPlayers())
                 p.SendClientMessage(Color.Wheat, "[Event] " + Color.White + msg);
         }
     }

@@ -29,7 +29,7 @@ namespace SampSharpGameMode1.Events.Derbys
 		const float LaserRange = 20.0f;
 
 		private Player Player {get;set; }
-		private AvailableEvents Event { get; set; }
+		private AvailableEvents PickupEvent { get; set; }
 		private bool EventConsumed { get; set; }
 
 		private DynamicObject marker;
@@ -41,9 +41,9 @@ namespace SampSharpGameMode1.Events.Derbys
 			Array events = Enum.GetValues(typeof(AvailableEvents));
 			Random rdm = new Random();
 			if (eventid == -1 || eventid > events.Length)
-				this.Event = (AvailableEvents)events.GetValue(rdm.Next(events.Length));
+				this.PickupEvent = (AvailableEvents)events.GetValue(rdm.Next(events.Length));
 			else
-				this.Event = (AvailableEvents)eventid;
+				this.PickupEvent = (AvailableEvents)eventid;
 			this.EventConsumed = false;
 			this.Execute();
 		}
@@ -51,14 +51,14 @@ namespace SampSharpGameMode1.Events.Derbys
 		protected void Execute()
 		{
 			Random rdm = new Random();
-			switch (this.Event)
+			switch (this.PickupEvent)
 			{
 				case AvailableEvents.FlatSomeTires:
 					if(this.Player.InAnyVehicle)
 					{
 						this.Player.SendClientMessage("Be carefull, your vehicle has some flat tires !");
 						if (this.Player.pEvent != null)
-							this.Player.pEvent.SendEventMessageToAll($"{this.Player.Name} has some flat tires !");
+							Event.SendEventMessageToAll(this.Player.pEvent, $"{this.Player.Name} has some flat tires !");
 						int panels, doors, lights, tires;
 						this.Player.Vehicle.GetDamageStatus(out panels, out doors, out lights, out tires);
 						this.Player.Vehicle.UpdateDamageStatus(panels, doors, lights, rdm.Next(15));
@@ -78,7 +78,7 @@ namespace SampSharpGameMode1.Events.Derbys
 					{
 						this.Player.SendClientMessage("You received an air support ! Place the target with the submission key and wait !");
 						if (this.Player.pEvent != null)
-							this.Player.pEvent.SendEventMessageToAll($"{this.Player.Name} received an air support !");
+							Event.SendEventMessageToAll(this.Player.pEvent, $"{this.Player.Name} received an air support !");
 						marker = new DynamicObject(19133, this.Player.Position + new Vector3(0.0, 10.0, 0.0), new Vector3(0.0, 90.0, 0.0), 0, -1, this.Player);
 						marker.ShowForPlayer(this.Player);
 						marker.AttachTo(this.Player.Vehicle, new Vector3(0.0, 10.0, 0.0), Vector3.Zero);
@@ -90,7 +90,7 @@ namespace SampSharpGameMode1.Events.Derbys
 					{
 						this.Player.SendClientMessage("You received a missile ! Launch it with the submission key !");
 						if (this.Player.pEvent != null)
-							this.Player.pEvent.SendEventMessageToAll($"{this.Player.Name} received a missile !");
+							Event.SendEventMessageToAll(this.Player.pEvent, $"{this.Player.Name} received a missile !");
 						this.Player.KeyStateChanged += OnPlayerKeyStateChanged;
 					}
 					break;
@@ -99,7 +99,7 @@ namespace SampSharpGameMode1.Events.Derbys
 					{
 						this.Player.SendClientMessage("You received a protective sphere for 10 seconds !");
 						if (this.Player.pEvent != null)
-							this.Player.pEvent.SendEventMessageToAll($"{this.Player.Name} received a protective sphere !");
+							Event.SendEventMessageToAll(this.Player.pEvent, $"{this.Player.Name} received a protective sphere !");
 						protectiveSphere = new DynamicObject(11712, this.Player.Position, default, 0, -1);
 						protectiveSphere.AttachTo(this.Player.Vehicle, new Vector3(0.0,0.0,1.0), Vector3.Zero);
 						//UpdateProtectiveSpherePosition();
@@ -144,7 +144,7 @@ namespace SampSharpGameMode1.Events.Derbys
 						long delay = rdm.Next(3000, 10000);
 						this.Player.SendClientMessage($"You have shutdown all the concurrent vehicles for {delay / 1000} seconds !");
 						if (this.Player.pEvent != null)
-							this.Player.pEvent.SendEventMessageToAll($"{this.Player.Name} has shutdown all the concurrent vehicles for {delay / 1000} seconds !");
+							Event.SendEventMessageToAll(this.Player.pEvent, $"{this.Player.Name} has shutdown all the concurrent vehicles for {delay / 1000} seconds !");
 						ToggleAllPlayersVehicle(false);
 						SampSharp.GameMode.SAMP.Timer.RunOnce(delay, () =>
 						{
@@ -157,7 +157,7 @@ namespace SampSharpGameMode1.Events.Derbys
 					{
 						this.Player.SendClientMessage("You received a super powered laser ! You can explode the other competitor with it !");
 						if(this.Player.pEvent != null)
-							this.Player.pEvent.SendEventMessageToAll($"{this.Player.Name} has a super powered laser !");
+							Event.SendEventMessageToAll(this.Player.pEvent, $"{this.Player.Name} has a super powered laser !");
 						float frontOfVehicle = BaseVehicle.GetModelInfo(this.Player.Vehicle.Model, SampSharp.GameMode.Definitions.VehicleModelInfoType.Size).Z / 2;
 						DynamicObject laser = new DynamicObject(18643, this.Player.Vehicle.Position, new Vector3(0.0, 0.0, 90.0), this.Player.VirtualWorld);
 						laser.AttachTo(this.Player.Vehicle, new Vector3(0.0, frontOfVehicle, 0.0), new Vector3(0.0, 0.0, 90.0));
@@ -205,7 +205,7 @@ namespace SampSharpGameMode1.Events.Derbys
 									{
 										p.CreateExplosion(v.Position, SampSharp.GameMode.Definitions.ExplosionType.LargeVisibleDamageFire, 50.0f);
 										if (p.pEvent != null)
-											p.pEvent.SendEventMessage(p, $"You've been blasted by the laser of {player.Name}");
+											Event.SendEventMessageToPlayer(p, $"You've been blasted by the laser of {player.Name}");
 									}
 								}
 							}
@@ -224,7 +224,7 @@ namespace SampSharpGameMode1.Events.Derbys
 		{
 			if (eventArgs.NewKeys == SampSharp.GameMode.Definitions.Keys.Submission && !this.EventConsumed && this.Player.InAnyVehicle)
 			{
-				if(this.Event == AvailableEvents.GiveAirSupport && !marker.IsDisposed)
+				if(this.PickupEvent == AvailableEvents.GiveAirSupport && !marker.IsDisposed)
 				{
 					Vector3 markerPos = Utils.GetPositionFrontOfPlayer(this.Player, 10);
 					marker.Dispose();
@@ -262,7 +262,7 @@ namespace SampSharpGameMode1.Events.Derbys
 					this.EventConsumed = true;
 					this.Player.KeyStateChanged -= OnPlayerKeyStateChanged;
 				}
-				else if(this.Event == AvailableEvents.GiveMissile)
+				else if(this.PickupEvent == AvailableEvents.GiveMissile)
 				{
 					// Creating missile
 					float roofZ = BaseVehicle.GetModelInfo(this.Player.Vehicle.Model, SampSharp.GameMode.Definitions.VehicleModelInfoType.Size).Z / 2;

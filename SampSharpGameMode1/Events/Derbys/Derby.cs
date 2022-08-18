@@ -357,40 +357,51 @@ namespace SampSharpGameMode1.Events.Derbys
             if (reason.Equals("Finished"))
             {
                 int place = players.Count;
+                string coloredPlaceStr = "";
                 string placeStr = "";
+                int money = 0;
                 switch (place)
                 {
                     case 1:
+                        coloredPlaceStr = $"{Color.Gold}1st{Color.White}";
                         placeStr = "1st";
-                        player.GiveMoney(1000);
+                        money = 1000;
                         player.PlaySound(5448);
                         break;
                     case 2:
+                        coloredPlaceStr = $"{Color.Silver}2nd{Color.White}";
                         placeStr = "2nd";
-                        player.GiveMoney(750);
+                        money = 750;
                         break;
                     case 3:
+                        coloredPlaceStr = $"{Color.OrangeRed}3rd{Color.White}";
                         placeStr = "3rd";
-                        player.GiveMoney(500);
+                        money = 500;
                         break;
                     default:
-                        placeStr = place + "th";
+                        coloredPlaceStr = place + "th";
+                        money = 0;
                         break;
                 }
+
+                player.GiveMoney(money);
+                Event.SendEventMessageToAll(player.pEvent, $"{Color.Orange}{player.Name}{Color.White} finished the derby at {coloredPlaceStr} place");
 
                 player.GameText(placeStr + " place !", 5000, 4);
                 Logger.WriteLineAndClose($"Derby.cs - OnPlayerFinished:I: {player.Name} finished the derby {this.Name} at {placeStr} place");
             }
-            else if (reason.Equals("Leave"))
+            else if (reason.Equals("Leave") || reason.Equals("Disconnected"))
             {
+                Event.SendEventMessageToPlayer(player, "You left the derby");
                 Logger.WriteLineAndClose($"Derby.cs - OnPlayerFinished:I: {player.Name} left the derby {this.Name}");
-                player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You left the derby");
+                Event.SendEventMessageToAll(player.pEvent, $"{Color.Orange}{player.Name}{Color.White} has left the derby");
                 player.GameText("GAME OVER", 5000, 4);
             }
             else
             {
+                Event.SendEventMessageToPlayer(player, "You lost (reason: " + reason + ")");
                 Logger.WriteLineAndClose($"Derby.cs - OnPlayerFinished:I: {player.Name} has been ejected from the derby {this.Name} (reason: {reason})");
-                player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You lost (reason: " + reason + ")");
+                Event.SendEventMessageToAll(player.pEvent, $"{Color.Orange}{player.Name}{Color.White} has lost the derby (reason: {reason})");
                 player.GameText("GAME OVER", 5000, 4);
             }
 
