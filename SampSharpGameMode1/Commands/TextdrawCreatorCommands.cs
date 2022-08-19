@@ -41,6 +41,7 @@ namespace SampSharpGameMode1.Commands
                 if (player.textdrawCreator != null)
                 {
                     player.textdrawCreator.Close();
+                    player.textdrawCreator = null;
                 }
             }
             [Command("load", UsageMessage = "Usage: /td load [name (without .json)]")]
@@ -91,7 +92,6 @@ namespace SampSharpGameMode1.Commands
                 if (player.textdrawCreator != null)
                 {
                     player.textdrawCreator.AddBackground(name);
-                    player.SendClientMessage("Textdraw created");
                 }
                 else
                     player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
@@ -102,7 +102,6 @@ namespace SampSharpGameMode1.Commands
                 if (player.textdrawCreator != null)
                 {
                     player.textdrawCreator.AddBox(name);
-                    player.SendClientMessage("Textdraw created");
                 }
                 else
                     player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
@@ -113,7 +112,6 @@ namespace SampSharpGameMode1.Commands
                 if (player.textdrawCreator != null)
                 {
                     player.textdrawCreator.AddText(name);
-                    player.SendClientMessage("Textdraw created");
                 }
                 else
                     player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");

@@ -272,7 +272,7 @@ namespace SampSharpGameMode1.Display
 
         private void ShowTextdrawDialog()
         {
-            ListDialog textdrawDialog = new ListDialog("Textdraw options", "Select", "Cancel");
+            ListDialog textdrawDialog = new ListDialog($"Textdraw options [{editingTDName}]", "Select", "Cancel");
             textdrawDialog.AddItem("Color [" + layers[layerIndex].GetTextdrawColor(editingTDName) + layers[layerIndex].GetTextdrawColor(editingTDName).ToString() + Color.White + "]");
             textdrawDialog.AddItem("Back color [" + layers[layerIndex].GetTextdrawBackColor(editingTDName) + layers[layerIndex].GetTextdrawBackColor(editingTDName).ToString() + Color.White + "]");
             textdrawDialog.AddItem("Text [" + layers[layerIndex].GetTextdrawText(editingTDName) + "]");
@@ -288,7 +288,7 @@ namespace SampSharpGameMode1.Display
                     switch (eventArgs.ListItem)
                     {
                         case 0: // Color
-                            InputDialog colorDialog = new InputDialog("Enter color", "Supported formats: 0xFF0000 ; rbg(255, 0, 0)", false, "Set", "Cancel");
+                            InputDialog colorDialog = new InputDialog("Enter color", "Supported formats: 0xFF0000 ; 0xFF0000FF ; rbg(255, 0, 0)", false, "Set", "Cancel");
                             colorDialog.Show(player);
                             colorDialog.Response += (sender, eventArgs) =>
                             {
@@ -299,46 +299,64 @@ namespace SampSharpGameMode1.Display
                                     {
                                         if(input.StartsWith("0x"))
                                         {
-                                            if (input.Length == 8)
+                                            if (input.Length == 8 || input.Length == 10)
                                             {
-                                                string r, g, b;
+                                                string r, g, b, a = "255";
                                                 r = input.Substring(2, 2);
                                                 g = input.Substring(4, 2);
                                                 b = input.Substring(6, 2);
-                                                Color newColor = new Color(
-                                                    int.Parse(r, System.Globalization.NumberStyles.HexNumber),
-                                                    int.Parse(g, System.Globalization.NumberStyles.HexNumber),
-                                                    int.Parse(b, System.Globalization.NumberStyles.HexNumber)
-                                                );
-                                                layers[layerIndex].SetTextdrawColor(editingTDName, newColor);
-                                                player.SendClientMessage("Color set to " + layers[layerIndex].GetTextdrawColor(editingTDName) + layers[layerIndex].GetTextdrawColor(editingTDName).ToString());
+
+                                                if(input.Length == 10)
+                                                    a = input.Substring(8, 2);
+
+                                                try
+                                                {
+                                                    Color newColor = new Color(
+                                                        int.Parse(r, System.Globalization.NumberStyles.HexNumber),
+                                                        int.Parse(g, System.Globalization.NumberStyles.HexNumber),
+                                                        int.Parse(b, System.Globalization.NumberStyles.HexNumber),
+                                                        int.Parse(a, System.Globalization.NumberStyles.HexNumber)
+                                                    );
+                                                    layers[layerIndex].SetTextdrawColor(editingTDName, newColor);
+                                                    player.SendClientMessage("Color set to " + newColor + input);
+                                                }
+                                                catch(System.FormatException)
+                                                {
+                                                    player.SendClientMessage(Color.Red, "Format error");
+                                                }
                                             }
                                             else player.SendClientMessage(Color.Red, "Format error");
                                             ShowTextdrawDialog();
                                         }
                                         else if(input.StartsWith("rgb("))
                                         {
-                                            Regex regex = new Regex(@"[r][g][b][(](\d{1,3})[,;]\s*(\d{1,3})[,;]\s*(\d{1,3})[)]", RegexOptions.IgnoreCase);
+                                            Regex regex = new Regex(@"[r][g][b][(](\d{1,3})[,;]\s*(\d{1,3})[,;]\s*(\d{1,3})(?>[,;]\s*(\d{1,3}))?[)]", RegexOptions.IgnoreCase);
                                             Match match = regex.Match(input);
                                             if(match.Success)
                                             {
-                                                int r, g, b;
-                                                r = int.Parse(match.Groups[0].Value);
-                                                g = int.Parse(match.Groups[1].Value);
-                                                b = int.Parse(match.Groups[2].Value);
-                                                Color newColor = new Color(r, g, b);
+                                                int r, g, b, a = 255;
+                                                r = int.Parse(match.Groups[1].Value);
+                                                g = int.Parse(match.Groups[2].Value);
+                                                b = int.Parse(match.Groups[3].Value);
+
+                                                if (match.Groups[4].Success)
+                                                    a = int.Parse(match.Groups[4].Value);
+
+                                                Color newColor = new Color(r, g, b, a);
                                                 layers[layerIndex].SetTextdrawColor(editingTDName, newColor);
-                                                player.SendClientMessage("Color set to " + layers[layerIndex].GetTextdrawColor(editingTDName) + layers[layerIndex].GetTextdrawColor(editingTDName).ToString());
+                                                player.SendClientMessage("Color set to " + newColor + input);
                                             }
                                             else player.SendClientMessage(Color.Red, "Format error");
                                             ShowTextdrawDialog();
                                         }
+                                        else player.SendClientMessage(Color.Red, "Format error");
                                     }
                                 }
                             };
                             break;
                         case 1: // Back color
-                                break;
+                            player.SendClientMessage(Color.Red, "Not supported yet");
+                            break;
                         case 2: // Text
                             InputDialog textDialog = new InputDialog("Enter text", "Max length: 1024 chars", false, "Set", "Cancel");
                             textDialog.Show(player);
@@ -595,15 +613,15 @@ namespace SampSharpGameMode1.Display
         {
             if (isEditing)
             {
-                if (layers.Count == 0)
+                CreateLayerIfNotExist();
+                if (layers[layerIndex].GetTextdrawList().ContainsKey(name))
                 {
-                    layerIndex = 0;
-                    layers.Add(new TextdrawLayer());
+                    player.SendClientMessage(Color.Red, "The following textdraw already exists: " + name);
+                    return;
                 }
                 layers[layerIndex].CreateBackground(player, name, new Vector2(320.0f, 240.0f), new Vector2(320.0f, 240.0f), Color.White);
-                editingTDName = name;
-                Select(editingTDName);
-                tdHUD.SetMode(layers[layerIndex].GetEditingMode(editingTDName).ToString());
+                Select(name);
+                player.SendClientMessage("Background Textdraw created: " + name);
             }
         }
 
@@ -611,30 +629,39 @@ namespace SampSharpGameMode1.Display
         {
             if (isEditing)
             {
-                if (layers.Count == 0)
+                CreateLayerIfNotExist();
+                if (layers[layerIndex].GetTextdrawList().ContainsKey(name))
                 {
-                    layerIndex = 0;
-                    layers.Add(new TextdrawLayer());
+                    player.SendClientMessage(Color.Red, "The following textdraw already exists: " + name);
+                    return;
                 }
                 layers[layerIndex].CreateTextdraw(player, name, TextdrawLayer.TextdrawType.Box);
-                editingTDName = name;
-                Select(editingTDName);
-                tdHUD.SetMode(layers[layerIndex].GetEditingMode(editingTDName).ToString());
+                Select(name);
+                player.SendClientMessage("Box Textdraw created: " + name);
             }
         }
         public void AddText(string name)
         {
             if (isEditing)
             {
-                if (layers.Count == 0)
+                CreateLayerIfNotExist();
+                if (layers[layerIndex].GetTextdrawList().ContainsKey(name))
                 {
-                    layerIndex = 0;
-                    layers.Add(new TextdrawLayer());
+                    player.SendClientMessage(Color.Red, "The following textdraw already exists: " + name);
+                    return;
                 }
                 layers[layerIndex].CreateTextdraw(player, name, TextdrawLayer.TextdrawType.Text);
-                editingTDName = name;
-                Select(editingTDName);
-                tdHUD.SetMode(layers[layerIndex].GetEditingMode(editingTDName).ToString());
+                Select(name);
+                player.SendClientMessage("Text Textdraw created: " + name);
+            }
+        }
+
+        private void CreateLayerIfNotExist()
+        {
+            if (layers.Count == 0)
+            {
+                layerIndex = 0;
+                layers.Add(new TextdrawLayer());
             }
         }
 

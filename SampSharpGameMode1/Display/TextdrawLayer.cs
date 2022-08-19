@@ -39,6 +39,7 @@ namespace SampSharpGameMode1.Display
 
         public Textdraw CreateBackground(BasePlayer owner, string name, Vector2 position, Vector2 size, Color color)
         {
+            Console.WriteLine($"Creating background '{name}' at pos {position} with size {size} and color {color}");
             textdrawList.Add(name, new Textdraw(owner, name));
 
             textdrawList[name].Position = new Vector2(position.X - (size.X/2), position.Y - (size.Y/2));
@@ -58,8 +59,13 @@ namespace SampSharpGameMode1.Display
             textdrawList[name].Show();
             return textdrawList[name];
         }
-        public Textdraw CreateTextdraw(BasePlayer owner, string name, TextdrawType type, string text = "")
+        public void CreateTextdraw(BasePlayer owner, string name, TextdrawType type, string text = "")
         {
+            if (textdrawList.ContainsKey(name))
+            {
+                Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.CreateTextdraw:E: The textdraw {name} already exists");
+                return;
+            }
             textdrawList.Add(name, new Textdraw(owner, name));
             textdrawList[name].Position = new Vector2(320.0f, 240.0f);
 
@@ -86,7 +92,7 @@ namespace SampSharpGameMode1.Display
             textdrawList[name].BackColor = editingColor;
             textdrawList[name].Shadow = 0;
             textdrawList[name].Show();
-            return textdrawList[name];
+            return;
         }
 
 		public void Show(string name)
@@ -358,15 +364,19 @@ namespace SampSharpGameMode1.Display
                 case EditingMode.Position:
                     {
                         textdrawList[name].BoxColor = editingColor;
-                        textdrawList[name].Text = "Position";
-                        textdrawList[name].Font = SampSharp.GameMode.Definitions.TextDrawFont.Normal;
+                        if (textdrawType[name] == TextdrawType.Background)
+                            break;
+                        //textdrawList[name].Text = "Position";
+                        //textdrawList[name].Font = SampSharp.GameMode.Definitions.TextDrawFont.Normal;
                         break;
                     }
                 case EditingMode.WidthHeight:
                     {
                         textdrawList[name].BoxColor = editingColor;
-                        textdrawList[name].Text = "Width/Height";
-                        textdrawList[name].Font = SampSharp.GameMode.Definitions.TextDrawFont.Normal;
+                        if (textdrawType[name] == TextdrawType.Background)
+                            break;
+                        //textdrawList[name].Text = "Width/Height";
+                        //textdrawList[name].Font = SampSharp.GameMode.Definitions.TextDrawFont.Normal;
                         break;
                     }
             }

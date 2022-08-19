@@ -22,7 +22,6 @@ namespace SampSharpGameMode1.Display
         {
             layer = new TextdrawLayer();
             string filename = Directory.GetCurrentDirectory() + "/scriptfiles/" + jsonFilename;
-            string jsonData = "";
             if (File.Exists(filename))
             {
                 try
@@ -40,14 +39,15 @@ namespace SampSharpGameMode1.Display
                                 output[idx + i] = tmp[i];
                             idx += readBytes;
                         }
-                        jsonData = new UTF8Encoding(true).GetString(output);
+                        string jsonData = new UTF8Encoding(true).GetString(output);
                         List<textdraw> textdraws = JsonConvert.DeserializeObject<List<textdraw>>(jsonData);
+                        string lastTDName = "";
                         foreach (textdraw textdraw in textdraws)
                         {
                             if (textdraw.Type.Equals("background"))
                             {
                                 layer.CreateBackground(player, textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY), new Vector2(textdraw.Width, textdraw.Height), textdraw.Color);
-                                //layer.SetTextdrawText(textdraw.Name, textdraw.Text);
+                                layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY)); // Fixes position
                             }
                             if (textdraw.Type.Equals("box"))
                             {
@@ -71,6 +71,7 @@ namespace SampSharpGameMode1.Display
                                 if (textdraw.Width > 0 && textdraw.Height > 0)
                                     layer.SetTextdrawLetterSize(textdraw.Name, textdraw.Width, textdraw.Height);
                             }
+                            lastTDName = textdraw.Name;
                         }
                         layer.UnselectAllTextdraw();
                         fs.Close();
