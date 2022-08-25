@@ -80,8 +80,6 @@ namespace SampSharpGameMode1.Events.Races
         const int moverObjectModelID = 19133;
         Vector3 moverObjectOffset = new Vector3(0.0f, 0.0f, 1.0f);
 
-        Map map = null;
-
         BaseVehicle[] spawnVehicles;
         public RaceCreator(Player _player)
         {
@@ -95,6 +93,7 @@ namespace SampSharpGameMode1.Events.Races
         public void Create()
         {
             editingRace = new Race();
+            editingRace.IsCreatorMode = true;
             editingRace.Name = "[Untitled]";
             editingRace.SpawnPoints = new List<Vector3R>();
             editingRace.MapId = -1;
@@ -111,6 +110,7 @@ namespace SampSharpGameMode1.Events.Races
             if (id > 0)
             {
                 Race loadingRace = new Race();
+                loadingRace.IsCreatorMode = true;
                 loadingRace.Loaded += LoadingRace_Loaded;
                 loadingRace.Load(id);
             }
@@ -127,18 +127,6 @@ namespace SampSharpGameMode1.Events.Races
                     checkpointIndex = 0;
                     editingRace = e.race;
                     spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
-
-                    if (map != null)
-                        map.Unload();
-                    else
-                        map = new Map();
-
-                    map.Loaded += (sender, eventArgs) =>
-                    {
-                        editingRace.MapId = eventArgs.map.Id;
-                        player.SendClientMessage(ColorPalette.Primary.Main + "The map " + Color.White + eventArgs.map.Name + ColorPalette.Primary.Main + " has been loaded");
-                    };
-                    map.Load(editingRace.MapId, (int)VirtualWord.EventCreators + player.Id);
 
                     player.SendClientMessage(Color.Green, "Race #" + e.race.Id + " loaded successfully in creation mode");
                     this.SetPlayerInEditor();
@@ -169,7 +157,7 @@ namespace SampSharpGameMode1.Events.Races
             if (!player.InAnyVehicle)
             {
                 BaseVehicle veh = BaseVehicle.Create(VehicleModelType.Infernus, pos, rot, 1, 1);
-                veh.VirtualWorld = player.VirtualWorld;
+                veh.VirtualWorld = (int)VirtualWord.EventCreators + player.Id;
                 player.DisableRemoteVehicleCollisions(true);
                 player.PutInVehicle(veh);
             }
@@ -197,6 +185,10 @@ namespace SampSharpGameMode1.Events.Races
 
         public void Unload()
         {
+            if (editingRace != null)
+            {
+                editingRace.Unload();
+            }
             editingRace = null;
             if(hud != null)
                 hud.Destroy();
@@ -232,9 +224,6 @@ namespace SampSharpGameMode1.Events.Races
                 if (veh.VirtualWorld == (int)VirtualWord.EventCreators + player.Id)
                     veh.Dispose();
             }
-
-            if (map != null)
-                map.Unload();
 
             if (spectatorGroups != null)
             {
@@ -704,17 +693,8 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     if (eventArgs.DialogButton == DialogButton.Left)
                     {
-                        if (map != null)
-                            map.Unload();
-                        else
-                            map = new Map();
-
-                        map.Loaded += (sender, eventArgs) =>
-                        {
-                            editingRace.MapId = eventArgs.map.Id;
-                            player.SendClientMessage(ColorPalette.Primary.Main + "The map " + Color.White + eventArgs.map.Name + ColorPalette.Primary.Main + " has been loaded");
-                        };
-                        map.Load(mapList[eventArgs.ListItem], player.VirtualWorld);
+                        editingRace.MapId = mapList[eventArgs.ListItem];
+                        editingRace.ReloadMap();
                     }
                     else
                     {

@@ -39,6 +39,7 @@ namespace SampSharpGameMode1.Events.Races
         public List<Vector3R> SpawnPoints { get; set; }
         public int MapId { get; set; }
         public bool IsLoaded { get; private set; }
+        public bool IsCreatorMode { get; set; }
         public string Creator { get; set; }
 
         // Common Events
@@ -298,7 +299,18 @@ namespace SampSharpGameMode1.Events.Races
                     args.success = !errorFlag;
                     args.race = this;
                     args.availableSlots = availableSlots;
-                    OnLoaded(args);
+
+                    if (this.MapId > -1)
+                    {
+                        this.map = new Map();
+                        this.map.Loaded += (sender, eventArgs) =>
+                        {
+                            OnLoaded(args);
+                        };
+                        this.map.Load(this.MapId, virtualWorld);
+                    }
+                    else
+                        OnLoaded(args);
                 });
                 t.Start();
             }
@@ -421,31 +433,13 @@ namespace SampSharpGameMode1.Events.Races
 
                 if (!isAborted)
                 {
-                    if(this.MapId > -1)
+                    SampSharp.GameMode.SAMP.Timer preparationTimer = new SampSharp.GameMode.SAMP.Timer(3000, false);
+                    preparationTimer.Tick += (object sender, EventArgs e) =>
                     {
-                        this.map = new Map();
-                        this.map.Loaded += (sender, eventArgs) =>
-                        {
-                            SampSharp.GameMode.SAMP.Timer preparationTimer = new SampSharp.GameMode.SAMP.Timer(3000, false);
-                            preparationTimer.Tick += (object sender, EventArgs e) =>
-                            {
-                                countdown = 3;
-                                countdownTimer = new SampSharp.GameMode.SAMP.Timer(1000, true);
-                                countdownTimer.Tick += CountdownTimer_Tick;
-                            };
-                        };
-                        this.map.Load(this.MapId, virtualWorld);
-                    }
-                    else
-                    {
-                        SampSharp.GameMode.SAMP.Timer preparationTimer = new SampSharp.GameMode.SAMP.Timer(3000, false);
-                        preparationTimer.Tick += (object sender, EventArgs e) =>
-                        {
-                            countdown = 3;
-                            countdownTimer = new SampSharp.GameMode.SAMP.Timer(1000, true);
-                            countdownTimer.Tick += CountdownTimer_Tick;
-                        };
-                    }
+                        countdown = 3;
+                        countdownTimer = new SampSharp.GameMode.SAMP.Timer(1000, true);
+                        countdownTimer.Tick += CountdownTimer_Tick;
+                    };
                 }
                 else
                 {
@@ -878,10 +872,13 @@ namespace SampSharpGameMode1.Events.Races
 
         public void Unload()
         {
-            foreach (Player p in BasePlayer.All)
+            if (!IsCreatorMode)
             {
-                if (p.VirtualWorld == this.virtualWorld)
-                    Eject(p);
+                foreach (Player p in BasePlayer.All)
+                {
+                    if (p.VirtualWorld == this.virtualWorld)
+                        Eject(p);
+                }
             }
             if (map != null)
                 map.Unload();
@@ -891,6 +888,21 @@ namespace SampSharpGameMode1.Events.Races
                     v.Dispose();
             }
             Logger.WriteLineAndClose($"Race.cs - Race.Unload:I: Race {this.Name} unloaded");
+        }
+        public void ReloadMap()
+        {
+            if (this.map != null)
+                this.map.Unload();
+
+            if (this.MapId > -1)
+            {
+                this.map = new Map();
+                this.map.Loaded += (sender, eventArgs) =>
+                {
+
+                };
+                this.map.Load(this.MapId, virtualWorld);
+            }
         }
 
         public bool IsPlayerSpectating(Player player)

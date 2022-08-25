@@ -66,8 +66,6 @@ namespace SampSharpGameMode1.Events.Derbys
         const int moverObjectModelID = 3082;
         Vector3 moverObjectOffset = new Vector3(0.0f, 0.0f, 1.0f);
 
-        Map map = null;
-
         #region PlayerEvents
         private void OnPlayerKeyStateChanged(object sender, KeyStateChangedEventArgs e)
         {
@@ -114,7 +112,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 Derby loadingDerby = new Derby();
                 loadingDerby.IsCreatorMode = true;
                 loadingDerby.Loaded += LoadingDerby_Loaded;
-                loadingDerby.Load(id);
+                loadingDerby.Load(id, (int)VirtualWord.EventCreators + player.Id);
             }
             else player.SendClientMessage(Color.Red, "Error loading Derby #" + id + " (invalid ID)");
         }
@@ -128,18 +126,6 @@ namespace SampSharpGameMode1.Events.Derbys
                 lastPickedUpPickup = null;
                 pickupLabels = new Dictionary<int, PlayerTextLabel>();
                 editingDerby = e.derby;
-
-                if (map != null)
-                    map.Unload();
-                else
-                    map = new Map();
-
-                map.Loaded += (sender, eventArgs) =>
-                {
-                    editingDerby.MapId = eventArgs.map.Id;
-                    player.SendClientMessage(ColorPalette.Primary.Main + "The map " + Color.White + eventArgs.map.Name + ColorPalette.Primary.Main + " has been loaded");
-                };
-                map.Load(editingDerby.MapId, (int)VirtualWord.EventCreators + player.Id);
 
                 foreach (DerbyPickup pickup in editingDerby.Pickups)
                 {
@@ -196,10 +182,7 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             if(editingDerby != null)
             {
-                foreach (DerbyPickup pickup in editingDerby.Pickups)
-                    pickup.pickup.Dispose();
-                editingDerby.Pickups.Clear();
-                editingDerby.Pickups = null;
+                editingDerby.Unload();
             }
             editingDerby = null;
             if(pickupLabels != null)
@@ -229,9 +212,6 @@ namespace SampSharpGameMode1.Events.Derbys
                 if (veh.VirtualWorld == (int)VirtualWord.EventCreators + player.Id)
                     veh.Dispose();
             }
-
-            if (map != null)
-                map.Unload();
 
             if (player != null)
             {
@@ -562,17 +542,8 @@ namespace SampSharpGameMode1.Events.Derbys
                 {
                     if (eventArgs.DialogButton == DialogButton.Left)
                     {
-                        if (map != null)
-                            map.Unload();
-                        else
-                            map = new Map();
-
-                        map.Loaded += (sender, eventArgs) =>
-                        {
-                            editingDerby.MapId = eventArgs.map.Id;
-                            player.SendClientMessage(ColorPalette.Primary.Main + "The map " + Color.White + eventArgs.map.Name + ColorPalette.Primary.Main + " has been loaded");
-                        };
-                        map.Load(mapList[eventArgs.ListItem], player.VirtualWorld);
+                        editingDerby.MapId = mapList[eventArgs.ListItem];
+                        editingDerby.ReloadMap();
                     }
                     else
                     {
