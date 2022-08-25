@@ -279,6 +279,9 @@ namespace SampSharpGameMode1.Display
             textdrawDialog.AddItem("Font [" + layers[layerIndex].GetTextdrawFont(editingTDName) + "]");
             textdrawDialog.AddItem("Alignment [" + layers[layerIndex].GetTextdrawAlignment(editingTDName) + "]");
             textdrawDialog.AddItem("Position [" + layers[layerIndex].GetTextdrawPosition(editingTDName).ToString() + "]");
+            textdrawDialog.AddItem("Size [" + layers[layerIndex].GetTextdrawSize(editingTDName).ToString() + "]");
+            textdrawDialog.AddItem("Letter Size [" + layers[layerIndex].GetTextdrawLetterSize(editingTDName).ToString() + "]");
+            textdrawDialog.AddItem("Preview Model [" + layers[layerIndex].GetTextdrawPreviewModel(editingTDName) + "]");
 
             textdrawDialog.Show(player);
             textdrawDialog.Response += (object sender, SampSharp.GameMode.Events.DialogResponseEventArgs eventArgs) =>
@@ -295,63 +298,18 @@ namespace SampSharpGameMode1.Display
                                 if (eventArgs.DialogButton == DialogButton.Left)
                                 {
                                     string input = eventArgs.InputText;
-                                    if (input.Length > 0)
+                                    Color? newColor = Utils.GetColorFromString(input);
+                                    if(newColor != null)
                                     {
-                                        if(input.StartsWith("0x"))
-                                        {
-                                            if (input.Length == 8 || input.Length == 10)
-                                            {
-                                                string r, g, b, a = "255";
-                                                r = input.Substring(2, 2);
-                                                g = input.Substring(4, 2);
-                                                b = input.Substring(6, 2);
-
-                                                if(input.Length == 10)
-                                                    a = input.Substring(8, 2);
-
-                                                try
-                                                {
-                                                    Color newColor = new Color(
-                                                        int.Parse(r, System.Globalization.NumberStyles.HexNumber),
-                                                        int.Parse(g, System.Globalization.NumberStyles.HexNumber),
-                                                        int.Parse(b, System.Globalization.NumberStyles.HexNumber),
-                                                        int.Parse(a, System.Globalization.NumberStyles.HexNumber)
-                                                    );
-                                                    layers[layerIndex].SetTextdrawColor(editingTDName, newColor);
-                                                    player.SendClientMessage("Color set to " + newColor + input);
-                                                }
-                                                catch(System.FormatException)
-                                                {
-                                                    player.SendClientMessage(Color.Red, "Format error");
-                                                }
-                                            }
-                                            else player.SendClientMessage(Color.Red, "Format error");
-                                            ShowTextdrawDialog();
-                                        }
-                                        else if(input.StartsWith("rgb("))
-                                        {
-                                            Regex regex = new Regex(@"[r][g][b][(](\d{1,3})[,;]\s*(\d{1,3})[,;]\s*(\d{1,3})(?>[,;]\s*(\d{1,3}))?[)]", RegexOptions.IgnoreCase);
-                                            Match match = regex.Match(input);
-                                            if(match.Success)
-                                            {
-                                                int r, g, b, a = 255;
-                                                r = int.Parse(match.Groups[1].Value);
-                                                g = int.Parse(match.Groups[2].Value);
-                                                b = int.Parse(match.Groups[3].Value);
-
-                                                if (match.Groups[4].Success)
-                                                    a = int.Parse(match.Groups[4].Value);
-
-                                                Color newColor = new Color(r, g, b, a);
-                                                layers[layerIndex].SetTextdrawColor(editingTDName, newColor);
-                                                player.SendClientMessage("Color set to " + newColor + input);
-                                            }
-                                            else player.SendClientMessage(Color.Red, "Format error");
-                                            ShowTextdrawDialog();
-                                        }
-                                        else player.SendClientMessage(Color.Red, "Format error");
+                                        layers[layerIndex].SetTextdrawColor(editingTDName, newColor ?? Color.AliceBlue);
+                                        player.SendClientMessage("Color set to " + newColor + input);
+                                    }
+                                    else
+                                    {
+                                        player.SendClientMessage(Color.Red, "Format error");
                                     }
                                 }
+                                ShowTextdrawDialog();
                             };
                             break;
                         case 1: // Back color
@@ -371,8 +329,8 @@ namespace SampSharpGameMode1.Display
                                         Update();
                                     }
                                     else player.SendClientMessage(Color.White, "Not modified");
-                                    ShowTextdrawDialog();
                                 }
+                                ShowTextdrawDialog();
                             };
                             break;
                         case 3: // Font
@@ -401,8 +359,8 @@ namespace SampSharpGameMode1.Display
                                         }
                                     }
                                     else player.SendClientMessage(Color.White, "Not modified");
-                                    ShowTextdrawDialog();
                                 }
+                                ShowTextdrawDialog();
                             };
                             break;
                         case 4: // Alignment
@@ -434,11 +392,11 @@ namespace SampSharpGameMode1.Display
                                         Update();
                                     }
                                     else player.SendClientMessage(Color.White, "Not modified");
-                                    ShowTextdrawDialog();
                                 }
+                                ShowTextdrawDialog();
                             };
                             break;
-                        case 5:
+                        case 5: // Position
                             InputDialog posDialog = new InputDialog("Enter position", "Format: x;y (example: 105.1;400)\n0 <= x <= 640 | 0 <= y <= 480", false, "Set", "Cancel");
                             posDialog.Show(player);
                             posDialog.Response += (sender, eventArgs) =>
@@ -449,7 +407,7 @@ namespace SampSharpGameMode1.Display
                                     if (input.Length > 0)
                                     {
                                         string[] posStr = input.Split(";");
-                                        if(double.TryParse(posStr[0], out double posX) && double.TryParse(posStr[1], out double posY))
+                                        if (double.TryParse(posStr[0], out double posX) && double.TryParse(posStr[1], out double posY))
                                         {
                                             layers[layerIndex].SetTextdrawPosition(editingTDName, new Vector2(posX, posY));
                                             UpdateRuler();
@@ -457,8 +415,75 @@ namespace SampSharpGameMode1.Display
                                         else player.SendClientMessage(Color.Red, "Format error");
                                     }
                                     else player.SendClientMessage(Color.White, "Not modified");
-                                    ShowTextdrawDialog();
                                 }
+                                ShowTextdrawDialog();
+                            };
+                            break;
+                        case 6: // Size
+                            InputDialog sizeDialog = new InputDialog("Enter size", $"Current value: {layers[layerIndex].GetTextdrawSize(editingTDName)}\n Format: x;y (example: 100;40)\n0 <= x <= 640 | 0 <= y <= 480", false, "Set", "Cancel");
+                            sizeDialog.Show(player);
+                            sizeDialog.Response += (sender, eventArgs) =>
+                            {
+                                if (eventArgs.DialogButton == DialogButton.Left)
+                                {
+                                    string input = eventArgs.InputText;
+                                    if (input.Length > 0)
+                                    {
+                                        string[] posStr = input.Split(";");
+                                        if (float.TryParse(posStr[0], out float posX) && float.TryParse(posStr[1], out float posY))
+                                        {
+                                            layers[layerIndex].SetTextdrawSize(editingTDName, posX, posY);
+                                            UpdateRuler();
+                                        }
+                                        else player.SendClientMessage(Color.Red, "Format error");
+                                    }
+                                    else player.SendClientMessage(Color.White, "Not modified");
+                                }
+                                ShowTextdrawDialog();
+                            };
+                            break;
+                        case 7: // Letter Size
+                            InputDialog sizeDialog2 = new InputDialog("Enter size", $"Current value: {layers[layerIndex].GetTextdrawLetterSize(editingTDName)}\n Format: x;y (example: 0.3;1.2)\n0 <= x <= 640 | 0 <= y <= 480", false, "Set", "Cancel");
+                            sizeDialog2.Show(player);
+                            sizeDialog2.Response += (sender, eventArgs) =>
+                            {
+                                if (eventArgs.DialogButton == DialogButton.Left)
+                                {
+                                    string input = eventArgs.InputText;
+                                    if (input.Length > 0)
+                                    {
+                                        string[] posStr = input.Split(";");
+                                        if (float.TryParse(posStr[0], out float posX) && float.TryParse(posStr[1], out float posY))
+                                        {
+                                            layers[layerIndex].SetTextdrawLetterSize(editingTDName, posX, posY);
+                                            UpdateRuler();
+                                        }
+                                        else player.SendClientMessage(Color.Red, "Format error");
+                                    }
+                                    else player.SendClientMessage(Color.White, "Not modified");
+                                }
+                                ShowTextdrawDialog();
+                            };
+                            break;
+                        case 8: // PreviewModel
+                            InputDialog modelDialog = new InputDialog("Enter model id", $"Current value: {layers[layerIndex].GetTextdrawLetterSize(editingTDName)}", false, "Set", "Cancel");
+                            modelDialog.Show(player);
+                            modelDialog.Response += (sender, eventArgs) =>
+                            {
+                                if (eventArgs.DialogButton == DialogButton.Left)
+                                {
+                                    string input = eventArgs.InputText;
+                                    if (input.Length > 0)
+                                    {
+                                        if (int.TryParse(input, out int modelid))
+                                        {
+                                            layers[layerIndex].SetTextdrawPreviewModel(editingTDName, modelid);
+                                        }
+                                        else player.SendClientMessage(Color.Red, "Format error");
+                                    }
+                                    else player.SendClientMessage(Color.White, "Not modified");
+                                }
+                                ShowTextdrawDialog();
                             };
                             break;
                     }
@@ -536,8 +561,18 @@ namespace SampSharpGameMode1.Display
                                 layers[layerIndex].SetTextdrawAlignment(textdraw.Name, textdraw.Alignment);
                                 layers[layerIndex].SetTextdrawColor(textdraw.Name, textdraw.Color);
                                 layers[layerIndex].SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
-                                if (textdraw.Width > 0 && textdraw.Height > 0)
-                                    layers[layerIndex].SetTextdrawLetterSize(textdraw.Name, textdraw.Width, textdraw.Height);
+                                if (textdraw.LetterWidth > 0 && textdraw.LetterHeight > 0)
+                                    layers[layerIndex].SetTextdrawLetterSize(textdraw.Name, textdraw.LetterWidth, textdraw.LetterHeight);
+                            }
+                            if (textdraw.Type.Equals("previewmodel"))
+                            {
+                                layers[layerIndex].CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.PreviewModel);
+                                layers[layerIndex].SetTextdrawText(textdraw.Name, textdraw.Text);
+                                layers[layerIndex].SetTextdrawFont(textdraw.Name, (int)TextDrawFont.PreviewModel);
+                                layers[layerIndex].SetTextdrawPreviewModel(textdraw.Name, textdraw.PreviewModel);
+                                layers[layerIndex].SetTextdrawAlignment(textdraw.Name, textdraw.Alignment);
+                                layers[layerIndex].SetTextdrawColor(textdraw.Name, textdraw.Color);
+                                layers[layerIndex].SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
                             }
                             if (!layers[layerIndex].SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY)))
                                 player.SendClientMessage(Color.Red, "Cannot set position for '" + textdraw.Name + "'");
@@ -573,8 +608,11 @@ namespace SampSharpGameMode1.Display
                 textdraw.PosY = kvp.Value.Position.Y;
                 textdraw.Width = kvp.Value.Width;
                 textdraw.Height = kvp.Value.Height;
+                textdraw.LetterWidth = kvp.Value.LetterSize.X;
+                textdraw.LetterHeight = kvp.Value.LetterSize.Y;
                 textdraw.Text = kvp.Value.text;
                 textdraw.Font = kvp.Value.font;
+                textdraw.PreviewModel = kvp.Value.PreviewModel;
                 textdraw.Alignment = kvp.Value.alignment;
                 textdraw.Color = kvp.Value.ForeColor;
                 textdraw.BackColor = kvp.Value.BackColor;
@@ -620,8 +658,8 @@ namespace SampSharpGameMode1.Display
                     return;
                 }
                 layers[layerIndex].CreateBackground(player, name, new Vector2(320.0f, 240.0f), new Vector2(320.0f, 240.0f), Color.White);
-                Select(name);
                 player.SendClientMessage("Background Textdraw created: " + name);
+                Select(name);
             }
         }
 
@@ -636,8 +674,8 @@ namespace SampSharpGameMode1.Display
                     return;
                 }
                 layers[layerIndex].CreateTextdraw(player, name, TextdrawLayer.TextdrawType.Box);
-                Select(name);
                 player.SendClientMessage("Box Textdraw created: " + name);
+                Select(name);
             }
         }
         public void AddText(string name)
@@ -651,8 +689,24 @@ namespace SampSharpGameMode1.Display
                     return;
                 }
                 layers[layerIndex].CreateTextdraw(player, name, TextdrawLayer.TextdrawType.Text);
-                Select(name);
                 player.SendClientMessage("Text Textdraw created: " + name);
+                Select(name);
+            }
+        }
+
+        public void AddPreviewModel(string name)
+        {
+            if (isEditing)
+            {
+                CreateLayerIfNotExist();
+                if (layers[layerIndex].GetTextdrawList().ContainsKey(name))
+                {
+                    player.SendClientMessage(Color.Red, "The following textdraw already exists: " + name);
+                    return;
+                }
+                layers[layerIndex].CreateTextdraw(player, name, TextdrawLayer.TextdrawType.PreviewModel);
+                player.SendClientMessage("PreviewModel Textdraw created: " + name);
+                Select(name);
             }
         }
 
@@ -703,10 +757,10 @@ namespace SampSharpGameMode1.Display
                 {
                     layers[layerIndex].SelectTextdraw(name);
                     tdHUD.SetSelectedTextdrawName(name);
-                    tdHUD.SetMode(layers[layerIndex].GetEditingMode(editingTDName).ToString());
+                    tdHUD.SetMode(layers[layerIndex].GetEditingMode(name).ToString());
                     editingTDName = name;
                 }
-                catch(TextdrawNameNotFoundException ex)
+                catch(TextdrawNameNotFoundException)
                 {
                     tdHUD.SetSelectedTextdrawName("None");
                     player.SendClientMessage(Color.Red, "The following textdraw does not exists: " + name);

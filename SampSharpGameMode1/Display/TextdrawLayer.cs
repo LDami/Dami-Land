@@ -22,7 +22,7 @@ namespace SampSharpGameMode1.Display
         List<string> textdrawOrder = new List<string>();
 
 
-        public enum TextdrawType { Background, Box, Text };
+        public enum TextdrawType { Background, Box, Text, PreviewModel };
         public enum EditingMode { Unselected, Position, WidthHeight };
 
 
@@ -76,19 +76,25 @@ namespace SampSharpGameMode1.Display
                 textdrawList[name].Height = 40;
                 textdrawList[name].text = "_";
                 textdrawList[name].type = "box";
-                textdrawType[name] = TextdrawType.Box;
             }
             else if (type == TextdrawType.Text)
             {
                 textdrawList[name].text = text;
                 textdrawList[name].type = "text";
-                textdrawType[name] = TextdrawType.Text;
             }
+            else if (type == TextdrawType.PreviewModel)
+            {
+                textdrawList[name].font = (int)SampSharp.GameMode.Definitions.TextDrawFont.PreviewModel;
+                textdrawList[name].PreviewModel = 1;
+                textdrawList[name].type = "previewmodel";
+                textdrawList[name].Width = 50;
+                textdrawList[name].Height = 50;
+            }
+            textdrawType[name] = type;
 
             textdrawEditMode[name] = EditingMode.Position;
             textdrawOrder.Add(name);
 
-            textdrawList[name].Text = "Position";
             textdrawList[name].BackColor = editingColor;
             textdrawList[name].Shadow = 0;
             textdrawList[name].Show();
@@ -138,6 +144,12 @@ namespace SampSharpGameMode1.Display
             textdrawList[name].Height = height;
             this.UpdateTextdraw(name);
             return true;
+        }
+        public Vector2 GetTextdrawLetterSize(string name)
+        {
+            if (!textdrawType.ContainsKey(name))
+                throw new TextdrawNameNotFoundException(name);
+            return textdrawList[name].LetterSize;
         }
         public Boolean SetTextdrawLetterSize(string name, float width, float height)
         {
@@ -189,6 +201,8 @@ namespace SampSharpGameMode1.Display
                 textdrawList[name].type = "box";
             if (type == TextdrawType.Text)
                 textdrawList[name].type = "text";
+            if (type == TextdrawType.PreviewModel)
+                textdrawList[name].type = "previewmodel";
             this.UpdateTextdraw(name);
             textdrawType[name] = type;
         }
@@ -231,6 +245,20 @@ namespace SampSharpGameMode1.Display
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return (int)textdrawList[name].font;
+        }
+
+        public void SetTextdrawPreviewModel(string name, int model)
+        {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFoundException(name);
+            textdrawList[name].PreviewModel = model;
+            this.UpdateTextdraw(name);
+        }
+        public int GetTextdrawPreviewModel(string name)
+        {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFoundException(name);
+            return textdrawList[name].PreviewModel;
         }
 
         public void SetTextdrawAlignment(string name, int alignment)

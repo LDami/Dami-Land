@@ -84,7 +84,7 @@ namespace SampSharpGameMode1.Commands
             [Command("add")]
             private static void AddBox(Player player)
             {
-                player.SendClientMessage("Usage: /td add [background/box/text] [name]");
+                player.SendClientMessage("Usage: /td add [background/box/text/previewmodel] [name]");
             }
             [Command("add background")]
             private static void AddBackground(Player player, string name)
@@ -112,6 +112,16 @@ namespace SampSharpGameMode1.Commands
                 if (player.textdrawCreator != null)
                 {
                     player.textdrawCreator.AddText(name);
+                }
+                else
+                    player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
+            }
+            [Command("add previewmodel")]
+            private static void AddPreviewModel(Player player, string name)
+            {
+                if (player.textdrawCreator != null)
+                {
+                    player.textdrawCreator.AddPreviewModel(name);
                 }
                 else
                     player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");

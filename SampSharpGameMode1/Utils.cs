@@ -1,7 +1,9 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
+using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using System;
+using System.Text.RegularExpressions;
 
 namespace SampSharpGameMode1
 {
@@ -106,6 +108,59 @@ namespace SampSharpGameMode1
             float maxZ = Math.Max(pos1.Z, pos2.Z);
             return check.X >= minX && check.X <= maxX && check.Y >= minY && check.Y <= maxY
                 && check.Z >= minZ && check.Z <= maxZ;
+        }
+
+        public static Color? GetColorFromString(string str)
+        {
+            Color? result = null;
+            if (str.Length > 0)
+            {
+                if (str.StartsWith("0x"))
+                {
+                    if (str.Length == 8 || str.Length == 10)
+                    {
+                        string r, g, b, a = "255";
+                        r = str.Substring(2, 2);
+                        g = str.Substring(4, 2);
+                        b = str.Substring(6, 2);
+
+                        if (str.Length == 10)
+                            a = str.Substring(8, 2);
+
+                        try
+                        {
+                            result = new Color(
+                                int.Parse(r, System.Globalization.NumberStyles.HexNumber),
+                                int.Parse(g, System.Globalization.NumberStyles.HexNumber),
+                                int.Parse(b, System.Globalization.NumberStyles.HexNumber),
+                                int.Parse(a, System.Globalization.NumberStyles.HexNumber)
+                            );
+                        }
+                        catch (FormatException)
+                        {
+                            result = null;
+                        }
+                    }
+                }
+                else if (str.StartsWith("rgb("))
+                {
+                    Regex regex = new Regex(@"[r][g][b][(](\d{1,3})[,;]\s*(\d{1,3})[,;]\s*(\d{1,3})(?>[,;]\s*(\d{1,3}))?[)]", RegexOptions.IgnoreCase);
+                    Match match = regex.Match(str);
+                    if (match.Success)
+                    {
+                        int r, g, b, a = 255;
+                        r = int.Parse(match.Groups[1].Value);
+                        g = int.Parse(match.Groups[2].Value);
+                        b = int.Parse(match.Groups[3].Value);
+
+                        if (match.Groups[4].Success)
+                            a = int.Parse(match.Groups[4].Value);
+
+                        result = new Color(r, g, b, a);
+                    }
+                }
+            }
+            return result;
         }
     }
 }

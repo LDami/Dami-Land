@@ -15,8 +15,11 @@ namespace SampSharpGameMode1.Display
         public float PosY;
         public float Width;
         public float Height;
+        public float LetterWidth;
+        public float LetterHeight;
         public string Text;
         public int Font;
+        public int PreviewModel;
         public int Alignment;
         public Color Color;
         public Color BackColor;
@@ -26,8 +29,6 @@ namespace SampSharpGameMode1.Display
     {
         public string name;
         public Vector2 position = Vector2.Zero;
-        public float width = 0.0f;
-        public float height = 0.0f;
         public string text = "";
         public int font = 1;
         public int alignment;
