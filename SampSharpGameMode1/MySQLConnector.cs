@@ -182,12 +182,21 @@ namespace SampSharpGameMode1
                 if (reader.Read())
                 {
                     readRows++;
+                    string value;
                     for (int i = 0; i < reader.FieldCount; i++)
                     {
-                        if(reader.IsDBNull(i))
-                            result.Add(reader.GetName(i), "[null]");
+                        if (reader.IsDBNull(i))
+                            value = "[null]";
                         else
-                            result.Add(reader.GetName(i), reader.GetString(i));
+                            value = reader.GetString(i);
+                        try
+                        {
+                            result.Add(reader.GetName(i), value);
+                        }
+                        catch(ArgumentException e)
+                        {
+                            Console.WriteLine($"Unable to add the key {reader.GetName(i)}, maybe you have this column twice in the result of the SQL query.");
+                        }
                     }
                 }
             }
