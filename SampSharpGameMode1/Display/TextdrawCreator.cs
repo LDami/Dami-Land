@@ -114,10 +114,12 @@ namespace SampSharpGameMode1.Display
                 }
             }
 
-            public void SetRuler(Vector2 pos)
+            public void SetRuler(Vector2 pos, Vector2 size)
             {
                 layer.SetTextdrawPosition("x-axis-ruler", new Vector2(pos.X, 0));
+                layer.SetTextdrawSize("x-axis-ruler", size.X, 20);
                 layer.SetTextdrawPosition("y-axis-ruler", new Vector2(0, pos.Y));
+                layer.SetTextdrawSize("y-axis-ruler", 5, size.Y);
             }
 
             public void SetSelectedTextdrawName(string name)
@@ -267,7 +269,10 @@ namespace SampSharpGameMode1.Display
 
         private void UpdateRuler()
 		{
-            tdHUD.SetRuler(new Vector2(layers[layerIndex].GetTextdrawPosition(editingTDName).X, layers[layerIndex].GetTextdrawPosition(editingTDName).Y));
+            tdHUD.SetRuler(
+                new Vector2(layers[layerIndex].GetTextdrawPosition(editingTDName).X, layers[layerIndex].GetTextdrawPosition(editingTDName).Y),
+                new Vector2(layers[layerIndex].GetTextdrawSize(editingTDName).X,  layers[layerIndex].GetTextdrawSize(editingTDName).Y)
+                );
         }
 
         private void ShowTextdrawDialog()

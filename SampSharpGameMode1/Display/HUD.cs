@@ -21,6 +21,7 @@ namespace SampSharpGameMode1.Display
         public HUD(Player player, string jsonFilename)
         {
             layer = new TextdrawLayer();
+            layer.AutoUpdate = false;
             string filename = Directory.GetCurrentDirectory() + "/scriptfiles/" + jsonFilename;
             if (File.Exists(filename))
             {
@@ -90,6 +91,7 @@ namespace SampSharpGameMode1.Display
                     HasError = true;
                 }
             }
+            layer.AutoUpdate = true;
         }
 
         /// <summary>

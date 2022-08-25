@@ -14,6 +14,8 @@ namespace SampSharpGameMode1.Display
             public string TextdrawName { get; set; }
         }
 
+        public bool AutoUpdate = true;
+
         private Color editingColor = new Color(180, 50, 50);
 
         Dictionary<string, Textdraw> textdrawList = new Dictionary<string, Textdraw>();
@@ -142,7 +144,7 @@ namespace SampSharpGameMode1.Display
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].Width = width;
             textdrawList[name].Height = height;
-            this.UpdateTextdraw(name);
+            if(AutoUpdate) this.UpdateTextdraw(name);
             return true;
         }
         public Vector2 GetTextdrawLetterSize(string name)
@@ -172,7 +174,7 @@ namespace SampSharpGameMode1.Display
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].Width += offset.X;
             textdrawList[name].Height += offset.Y;
-            this.UpdateTextdraw(name);
+            if(AutoUpdate) this.UpdateTextdraw(name);
         }
         public Vector2 GetTextdrawPosition(string name)
         {
@@ -203,7 +205,7 @@ namespace SampSharpGameMode1.Display
                 textdrawList[name].type = "text";
             if (type == TextdrawType.PreviewModel)
                 textdrawList[name].type = "previewmodel";
-            this.UpdateTextdraw(name);
+            if (AutoUpdate) this.UpdateTextdraw(name);
             textdrawType[name] = type;
         }
         public TextdrawType GetTextdrawType(string name)
@@ -221,7 +223,7 @@ namespace SampSharpGameMode1.Display
                 throw new ArgumentNullException();
             textdrawList[name].text = text;
             this.ChangeTextdrawMode(name, textdrawEditMode[name]);
-            this.UpdateTextdraw(name);
+            if (AutoUpdate) this.UpdateTextdraw(name);
         }
         public string GetTextdrawText(string name)
         {
@@ -237,7 +239,7 @@ namespace SampSharpGameMode1.Display
             if (Enum.IsDefined(typeof(SampSharp.GameMode.Definitions.TextDrawFont), font))
             {
                 textdrawList[name].font = font;
-                this.UpdateTextdraw(name);
+                if (AutoUpdate) this.UpdateTextdraw(name);
             }
         }
         public int GetTextdrawFont(string name)
@@ -252,7 +254,7 @@ namespace SampSharpGameMode1.Display
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].PreviewModel = model;
-            this.UpdateTextdraw(name);
+            if (AutoUpdate) this.UpdateTextdraw(name);
         }
         public int GetTextdrawPreviewModel(string name)
         {
@@ -268,7 +270,7 @@ namespace SampSharpGameMode1.Display
             if (Enum.IsDefined(typeof(SampSharp.GameMode.Definitions.TextDrawAlignment), alignment))
             {
                 textdrawList[name].Alignment = (SampSharp.GameMode.Definitions.TextDrawAlignment)alignment;
-                this.UpdateTextdraw(name);
+                if (AutoUpdate) this.UpdateTextdraw(name);
             }
         }
         public string GetTextdrawAlignment(string name)
@@ -283,7 +285,7 @@ namespace SampSharpGameMode1.Display
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].ForeColor = color;
-            this.UpdateTextdraw(name);
+            if (AutoUpdate) this.UpdateTextdraw(name);
         }
         public Color GetTextdrawColor(string name)
         {
@@ -298,7 +300,7 @@ namespace SampSharpGameMode1.Display
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].BackColor = color;
             textdrawList[name].backColor = color;
-            this.UpdateTextdraw(name);
+            if (AutoUpdate) this.UpdateTextdraw(name);
         }
         public Color GetTextdrawBackColor(string name)
         {
@@ -313,7 +315,7 @@ namespace SampSharpGameMode1.Display
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].BoxColor = color;
             textdrawList[name].backColor = color;
-            this.UpdateTextdraw(name);
+            if (AutoUpdate) this.UpdateTextdraw(name);
         }
         public Color GetTextdrawBoxColor(string name)
         {
