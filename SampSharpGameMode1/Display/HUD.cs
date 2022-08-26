@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using SampSharp.GameMode;
+using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.SAMP;
 using System;
 using System.Collections.Generic;
@@ -22,7 +23,7 @@ namespace SampSharpGameMode1.Display
         {
             layer = new TextdrawLayer();
             layer.AutoUpdate = false;
-            string filename = Directory.GetCurrentDirectory() + "/scriptfiles/" + jsonFilename;
+            string filename = $@"{Directory.GetCurrentDirectory()}\scriptfiles\{jsonFilename}";
             if (File.Exists(filename))
             {
                 try
@@ -53,7 +54,6 @@ namespace SampSharpGameMode1.Display
                             if (textdraw.Type.Equals("box"))
                             {
                                 layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Box);
-                                layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
                                 layer.SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height);
                                 layer.SetTextdrawColor(textdraw.Name, textdraw.Color);
                                 layer.SetTextdrawBoxColor(textdraw.Name, textdraw.BackColor);
@@ -62,16 +62,28 @@ namespace SampSharpGameMode1.Display
                             {
                                 layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Text);
                                 layer.SetTextdrawText(textdraw.Name, textdraw.Text);
-                                layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
                                 layer.SetTextdrawAlignment(textdraw.Name, textdraw.Alignment);
                                 layer.SetTextdrawColor(textdraw.Name, textdraw.Color);
                                 layer.SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
                                 layer.SetTextdrawFont(textdraw.Name, textdraw.Font);
                                 if(textdraw.Font == 4)
                                     layer.SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height);
-                                if (textdraw.Width > 0 && textdraw.Height > 0)
-                                    layer.SetTextdrawLetterSize(textdraw.Name, textdraw.Width, textdraw.Height);
+                                if (textdraw.LetterWidth > 0 && textdraw.LetterHeight > 0)
+                                    layer.SetTextdrawLetterSize(textdraw.Name, textdraw.LetterWidth, textdraw.LetterHeight);
                             }
+                            if (textdraw.Type.Equals("previewmodel"))
+                            {
+                                layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.PreviewModel);
+                                layer.SetTextdrawPreviewModel(textdraw.Name, textdraw.PreviewModel);
+                                layer.SetTextdrawAlignment(textdraw.Name, textdraw.Alignment);
+                                layer.SetTextdrawColor(textdraw.Name, textdraw.Color);
+                                layer.SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
+                            }
+                            layer.UpdateTextdraw(textdraw.Name);
+                            if (!layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY)))
+                                player.SendClientMessage(Color.Red, "Cannot set position for '" + textdraw.Name + "'");
+                            if (!layer.SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height))
+                                player.SendClientMessage(Color.Red, "Cannot set size for '" + textdraw.Name + "'");
                             lastTDName = textdraw.Name;
                         }
                         layer.UnselectAllTextdraw();
@@ -103,7 +115,17 @@ namespace SampSharpGameMode1.Display
             if (element == "")
                 layer.ShowAll();
             else
-                layer.Show(element);
+            {
+                if (layer.Exists(element))
+                    layer.Show(element);
+                else
+                {
+                    foreach (string td in Utils.GetStringsMatchingRegex(new List<string>(layer.GetTextdrawList().Keys), element))
+                    {
+                        layer.Show(td);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -115,7 +137,17 @@ namespace SampSharpGameMode1.Display
             if (element == "")
                 layer.HideAll();
             else
-                layer.Hide(element);
+            {
+                if(layer.Exists(element))
+                    layer.Hide(element);
+                else
+                {
+                    foreach(string td in Utils.GetStringsMatchingRegex(new List<string>(layer.GetTextdrawList().Keys), element))
+                    {
+                        layer.Hide(td);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -151,6 +183,27 @@ namespace SampSharpGameMode1.Display
             {
                 Logger.WriteLineAndClose("HUD.cs - HUD:SetColor:E: " + e.Message);
                 HasError = true;
+            }
+        }
+
+        /// <summary>
+        /// Set the model ID to a preview
+        /// </summary>
+        /// <param name="element">The textdraw name</param>
+        /// <param name="model">The model ID to preview</param>
+        public void SetPreviewModel(string element, int model)
+        {
+            if(layer.GetTextdrawType(element) == TextdrawLayer.TextdrawType.PreviewModel)
+            {
+                try
+                {
+                    layer.SetTextdrawPreviewModel(element, model);
+                }
+                catch (TextdrawNameNotFoundException e)
+                {
+                    Logger.WriteLineAndClose("HUD.cs - HUD:SetColor:E: " + e.Message);
+                    HasError = true;
+                }
             }
         }
     }

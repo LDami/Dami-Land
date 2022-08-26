@@ -3,6 +3,7 @@ using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace SampSharpGameMode1
@@ -159,6 +160,19 @@ namespace SampSharpGameMode1
                         result = new Color(r, g, b, a);
                     }
                 }
+            }
+            return result;
+        }
+
+        public static List<string> GetStringsMatchingRegex(List<string> inputs, string pattern)
+        {
+            List<string> result = new List<string>();
+            string inputsStr = string.Join(" ", inputs);
+            Regex rgx = new Regex(pattern, RegexOptions.IgnoreCase);
+            MatchCollection collection = rgx.Matches(inputsStr);
+            foreach (Match match in collection)
+            {
+                result.Add(match.Value);
             }
             return result;
         }

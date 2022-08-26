@@ -163,9 +163,175 @@ namespace SampSharpGameMode1.Display
             editingTDName = "";
             isEditing = true;
             moveSpeed = 5.0f;
-            player.SendClientMessage("/td to see all commands");
-            player.SendClientMessage("Fire key to change edition mode");
-            player.SendClientMessage("Y/N to increase/decrease move speed");
+            player.SendClientMessage(Color.Wheat, "Textdraw creator has been initialized");
+            player.SendClientMessage($"Type {ColorPalette.Primary.Main}/td {Color.White}to see all commands");
+            player.SendClientMessage($"Press {ColorPalette.Primary.Main}Fire key {Color.White}to change edition mode (position, width/height)");
+            player.SendClientMessage($"Press {ColorPalette.Primary.Main}Y/N {Color.White}to increase/decrease move speed");
+        }
+        public void Load(string name)
+        {
+            string filename = $@"{Directory.GetCurrentDirectory()}\scriptfiles\{name}.json";
+            if (File.Exists(filename))
+            {
+                try
+                {
+                    using (FileStream fs = File.Open(filename, FileMode.Open, FileAccess.Read))
+                    {
+                        byte[] output = new byte[fs.Length];
+                        int idx = 0;
+                        int blockLength = 1;
+                        byte[] tmp = new byte[blockLength];
+                        int readBytes;
+                        while ((readBytes = fs.Read(tmp, 0, blockLength)) > 0)
+                        {
+                            for (int i = 0; i < readBytes; i++)
+                                output[idx + i] = tmp[i];
+                            idx += readBytes;
+                        }
+                        string jsonData = new UTF8Encoding(true).GetString(output);
+                        List<textdraw> textdraws = JsonConvert.DeserializeObject<List<textdraw>>(jsonData);
+                        this.Init();
+                        layers.Add(new TextdrawLayer());
+                        layerIndex = layers.Count - 1;
+                        layers[layerIndex].AutoUpdate = false;
+                        foreach (textdraw textdraw in textdraws)
+                        {
+                            if (textdraw.Type.Equals("background"))
+                            {
+                                layers[layerIndex].CreateBackground(player, textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY), new Vector2(textdraw.Width, textdraw.Height), textdraw.Color);
+                            }
+                            if (textdraw.Type.Equals("box"))
+                            {
+                                layers[layerIndex].CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Box);
+                                layers[layerIndex].SetTextdrawColor(textdraw.Name, textdraw.Color);
+                                layers[layerIndex].SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
+                            }
+                            if (textdraw.Type.Equals("text"))
+                            {
+                                layers[layerIndex].CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Text);
+                                layers[layerIndex].SetTextdrawText(textdraw.Name, textdraw.Text);
+                                layers[layerIndex].SetTextdrawFont(textdraw.Name, textdraw.Font);
+                                layers[layerIndex].SetTextdrawAlignment(textdraw.Name, textdraw.Alignment);
+                                layers[layerIndex].SetTextdrawColor(textdraw.Name, textdraw.Color);
+                                layers[layerIndex].SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
+                                if (textdraw.LetterWidth > 0 && textdraw.LetterHeight > 0)
+                                    layers[layerIndex].SetTextdrawLetterSize(textdraw.Name, textdraw.LetterWidth, textdraw.LetterHeight);
+                            }
+                            if (textdraw.Type.Equals("previewmodel"))
+                            {
+                                layers[layerIndex].CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.PreviewModel);
+                                layers[layerIndex].SetTextdrawText(textdraw.Name, textdraw.Text);
+                                layers[layerIndex].SetTextdrawFont(textdraw.Name, (int)TextDrawFont.PreviewModel);
+                                layers[layerIndex].SetTextdrawPreviewModel(textdraw.Name, textdraw.PreviewModel);
+                                layers[layerIndex].SetTextdrawAlignment(textdraw.Name, textdraw.Alignment);
+                                layers[layerIndex].SetTextdrawColor(textdraw.Name, textdraw.Color);
+                                layers[layerIndex].SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
+                            }
+                            if (!layers[layerIndex].SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY)))
+                                player.SendClientMessage(Color.Red, "Cannot set position for '" + textdraw.Name + "'");
+                            if (!layers[layerIndex].SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height))
+                                player.SendClientMessage(Color.Red, "Cannot set size for '" + textdraw.Name + "'");
+                            editingTDName = textdraw.Name;
+                        }
+                        layers[layerIndex].AutoUpdate = true;
+                        this.Select(editingTDName);
+                        UpdateRuler();
+                        fs.Close();
+                    }
+                }
+                catch (IOException e)
+                {
+                    player.SendClientMessage(Color.Red, "The file exists, but cannot be read (file access error)");
+                    Logger.WriteLineAndClose("TextdrawCreator.cs - TextdrawCreator.Save:E: Cannot read Textdraw data in file:");
+                    Logger.WriteLineAndClose(e.Message);
+                    this.Close();
+                }
+                catch (JsonReaderException e)
+                {
+                    player.SendClientMessage(Color.Red, "The file exists, but cannot be read (format error)");
+                    Logger.WriteLineAndClose("TextdrawCreator.cs - TextdrawCreator.Save:E: Cannot read Textdraw data in file:");
+                    Logger.WriteLineAndClose(e.Message);
+                    this.Close();
+                }
+            }
+            else
+                player.SendClientMessage(Color.Red, $"The file {ColorPalette.Primary.Main}{filename}{Color.Red} does not exists");
+        }
+        public void Save(string name)
+        {
+            Textdraw td;
+            string output = "";
+            List<textdraw> listOfTextdraw = new List<textdraw>();
+            textdraw textdraw;
+            foreach(KeyValuePair<string, Textdraw> kvp in layers[layerIndex].GetTextdrawList())
+            {
+                textdraw.Name = kvp.Value.name;
+                textdraw.PosX = kvp.Value.Position.X;
+                textdraw.PosY = kvp.Value.Position.Y;
+                textdraw.Width = kvp.Value.Width;
+                textdraw.Height = kvp.Value.Height;
+                textdraw.LetterWidth = kvp.Value.LetterSize.X;
+                textdraw.LetterHeight = kvp.Value.LetterSize.Y;
+                textdraw.Text = kvp.Value.text;
+                textdraw.Font = kvp.Value.font;
+                textdraw.PreviewModel = kvp.Value.PreviewModel;
+                textdraw.Alignment = (new List<int>{ 1, 2, 3}.Contains(kvp.Value.alignment) ? kvp.Value.alignment : 1);
+                textdraw.Color = kvp.Value.ForeColor;
+                textdraw.BackColor = kvp.Value.BackColor;
+                textdraw.Type = kvp.Value.type;
+                listOfTextdraw.Add(textdraw);
+            }
+            output = JsonConvert.SerializeObject(listOfTextdraw, Formatting.Indented);
+            player.SendClientMessage(output);
+
+            string filename = Directory.GetCurrentDirectory() + "/scriptfiles/" + name + ".json";
+            
+            try
+            {
+                if (File.Exists(filename))
+                    File.Delete(filename);
+                using (FileStream fs = File.Open(filename, FileMode.CreateNew, FileAccess.Write))
+                {
+                    
+                    byte[] data = new UTF8Encoding(true).GetBytes(output);
+                    foreach (byte databyte in data)
+                        fs.WriteByte(databyte);
+                    fs.FlushAsync();
+                    fs.Close();
+                }
+                player.SendClientMessage("File saved in " + filename);
+                Logger.WriteLineAndClose($"{player.Name} updated {filename}");
+            }
+            catch (IOException e)
+            {
+                Logger.WriteLineAndClose("TextdrawCreator.cs - TextdrawCreator.Save:E: Cannot write Textdraw data in file:");
+                Logger.WriteLineAndClose(e.Message);
+            }
+        }
+
+        public void Close()
+        {
+            foreach (TextdrawLayer layer in layers)
+                layer.Destroy();
+            layers.Clear();
+            isEditing = false;
+            player.ToggleControllable(true);
+            player.KeyStateChanged -= Player_KeyStateChanged;
+            if (tdHUD != null)
+                tdHUD.Destroy();
+            tdHUD = null;
+            if (player.InAnyVehicle)
+                player.Speedometer.Show();
+        }
+
+        public void Update()
+        {
+            if (isEditing)
+            {
+                string tmpname = editingTDName;
+                Unselect();
+                Select(tmpname);
+            }
         }
 
         private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
@@ -184,6 +350,7 @@ namespace SampSharpGameMode1.Display
                         {
                             layers[layerIndex].SwitchTextdrawMode(editingTDName);
                             tdHUD.SetMode(layers[layerIndex].GetEditingMode(editingTDName).ToString());
+                            player.Notificate(layers[layerIndex].GetEditingMode(editingTDName).ToString());
                             break;
                         }
                     case Keys.No:
@@ -277,7 +444,7 @@ namespace SampSharpGameMode1.Display
 
         private void ShowTextdrawDialog()
         {
-            ListDialog textdrawDialog = new ListDialog($"Textdraw options [{editingTDName}]", "Select", "Cancel");
+            ListDialog textdrawDialog = new ListDialog($"Textdraw options [{layers[layerIndex].GetTextdrawType(editingTDName)}:{editingTDName}]", "Select", "Cancel");
             textdrawDialog.AddItem("Color [" + layers[layerIndex].GetTextdrawColor(editingTDName) + layers[layerIndex].GetTextdrawColor(editingTDName).ToString() + Color.White + "]");
             textdrawDialog.AddItem("Back color [" + layers[layerIndex].GetTextdrawBackColor(editingTDName) + layers[layerIndex].GetTextdrawBackColor(editingTDName).ToString() + Color.White + "]");
             textdrawDialog.AddItem("Text [" + layers[layerIndex].GetTextdrawText(editingTDName) + "]");
@@ -318,7 +485,26 @@ namespace SampSharpGameMode1.Display
                             };
                             break;
                         case 1: // Back color
-                            player.SendClientMessage(Color.Red, "Not supported yet");
+                            InputDialog bcolorDialog = new InputDialog("Enter color", "Supported formats: 0xFF0000 ; 0xFF0000FF ; rbg(255, 0, 0)", false, "Set", "Cancel");
+                            bcolorDialog.Show(player);
+                            bcolorDialog.Response += (sender, eventArgs) =>
+                            {
+                                if (eventArgs.DialogButton == DialogButton.Left)
+                                {
+                                    string input = eventArgs.InputText;
+                                    Color? newColor = Utils.GetColorFromString(input);
+                                    if (newColor != null)
+                                    {
+                                        layers[layerIndex].SetTextdrawBackColor(editingTDName, newColor ?? Color.AliceBlue);
+                                        player.SendClientMessage("Back color set to " + newColor + input);
+                                    }
+                                    else
+                                    {
+                                        player.SendClientMessage(Color.Red, "Format error");
+                                    }
+                                }
+                                ShowTextdrawDialog();
+                            };
                             break;
                         case 2: // Text
                             InputDialog textDialog = new InputDialog("Enter text", "Max length: 1024 chars", false, "Set", "Cancel");
@@ -402,7 +588,7 @@ namespace SampSharpGameMode1.Display
                             };
                             break;
                         case 5: // Position
-                            InputDialog posDialog = new InputDialog("Enter position", "Format: x;y (example: 105.1;400)\n0 <= x <= 640 | 0 <= y <= 480", false, "Set", "Cancel");
+                            InputDialog posDialog = new InputDialog("Enter position", "Format: x;y (example: 105,1;400,5)\n0 <= x <= 640 | 0 <= y <= 480", false, "Set", "Cancel");
                             posDialog.Show(player);
                             posDialog.Response += (sender, eventArgs) =>
                             {
@@ -425,7 +611,7 @@ namespace SampSharpGameMode1.Display
                             };
                             break;
                         case 6: // Size
-                            InputDialog sizeDialog = new InputDialog("Enter size", $"Current value: {layers[layerIndex].GetTextdrawSize(editingTDName)}\n Format: x;y (example: 100;40)\n0 <= x <= 640 | 0 <= y <= 480", false, "Set", "Cancel");
+                            InputDialog sizeDialog = new InputDialog("Enter size", $"Current value: {layers[layerIndex].GetTextdrawSize(editingTDName)}\n Format: x;y (example: 100,4;40)\n0 <= x <= 640 | 0 <= y <= 480", false, "Set", "Cancel");
                             sizeDialog.Show(player);
                             sizeDialog.Response += (sender, eventArgs) =>
                             {
@@ -448,7 +634,7 @@ namespace SampSharpGameMode1.Display
                             };
                             break;
                         case 7: // Letter Size
-                            InputDialog sizeDialog2 = new InputDialog("Enter size", $"Current value: {layers[layerIndex].GetTextdrawLetterSize(editingTDName)}\n Format: x;y (example: 0.3;1.2)\n0 <= x <= 640 | 0 <= y <= 480", false, "Set", "Cancel");
+                            InputDialog sizeDialog2 = new InputDialog("Enter size", $"Current value: {layers[layerIndex].GetTextdrawLetterSize(editingTDName)}\n Format: x;y (example: 0,3;1,2)\nRespect ratio 1:4", false, "Set", "Cancel");
                             sizeDialog2.Show(player);
                             sizeDialog2.Response += (sender, eventArgs) =>
                             {
@@ -494,162 +680,6 @@ namespace SampSharpGameMode1.Display
                     }
                 }
             };
-        }
-
-        public void Close()
-        {
-            foreach (TextdrawLayer layer in layers)
-                layer.Destroy();
-            layers.Clear();
-            isEditing = false;
-            player.ToggleControllable(true);
-            player.KeyStateChanged -= Player_KeyStateChanged;
-            tdHUD.Destroy();
-            tdHUD = null;
-            if(player.InAnyVehicle)
-                player.Speedometer.Show();
-        }
-
-        public void Update()
-        {
-            if (isEditing)
-            {
-                string tmpname = editingTDName;
-                Unselect();
-                Select(tmpname);
-            }
-        }
-        public void Load(string name)
-        {
-            string filename = Directory.GetCurrentDirectory() + "/scriptfiles/" + name + ".json";
-            string jsonData = "";
-            if (File.Exists(filename))
-            {
-                player.SendClientMessage("File " + filename + " exists");
-                try
-                {
-                    using (FileStream fs = File.Open(filename, FileMode.Open, FileAccess.Read))
-                    {
-                        byte[] output = new byte[fs.Length];
-                        int idx = 0;
-                        int blockLength = 1;
-                        byte[] tmp = new byte[blockLength];
-                        int readBytes;
-                        while ((readBytes = fs.Read(tmp, 0, blockLength)) > 0)
-                        {
-                            for (int i = 0; i < readBytes; i++)
-                                output[idx + i] = tmp[i];
-                            idx += readBytes;
-                        }
-                        jsonData = new UTF8Encoding(true).GetString(output);
-                        List<textdraw> textdraws = JsonConvert.DeserializeObject<List<textdraw>>(jsonData);
-                        this.Init();
-                        layers.Add(new TextdrawLayer());
-                        layerIndex = layers.Count - 1;
-                        foreach (textdraw textdraw in textdraws)
-                        {
-                            if (textdraw.Type.Equals("background"))
-                            {
-                                layers[layerIndex].CreateBackground(player, textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY), new Vector2(textdraw.Width, textdraw.Height), textdraw.Color);
-                            }
-                            if (textdraw.Type.Equals("box"))
-                            {
-                                layers[layerIndex].CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Box);
-                                layers[layerIndex].SetTextdrawColor(textdraw.Name, textdraw.Color);
-                                layers[layerIndex].SetTextdrawBoxColor(textdraw.Name, textdraw.BackColor);
-                            }
-                            if (textdraw.Type.Equals("text"))
-                            {
-                                layers[layerIndex].CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Text);
-                                layers[layerIndex].SetTextdrawText(textdraw.Name, textdraw.Text);
-                                layers[layerIndex].SetTextdrawFont(textdraw.Name, textdraw.Font);
-                                layers[layerIndex].SetTextdrawAlignment(textdraw.Name, textdraw.Alignment);
-                                layers[layerIndex].SetTextdrawColor(textdraw.Name, textdraw.Color);
-                                layers[layerIndex].SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
-                                if (textdraw.LetterWidth > 0 && textdraw.LetterHeight > 0)
-                                    layers[layerIndex].SetTextdrawLetterSize(textdraw.Name, textdraw.LetterWidth, textdraw.LetterHeight);
-                            }
-                            if (textdraw.Type.Equals("previewmodel"))
-                            {
-                                layers[layerIndex].CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.PreviewModel);
-                                layers[layerIndex].SetTextdrawText(textdraw.Name, textdraw.Text);
-                                layers[layerIndex].SetTextdrawFont(textdraw.Name, (int)TextDrawFont.PreviewModel);
-                                layers[layerIndex].SetTextdrawPreviewModel(textdraw.Name, textdraw.PreviewModel);
-                                layers[layerIndex].SetTextdrawAlignment(textdraw.Name, textdraw.Alignment);
-                                layers[layerIndex].SetTextdrawColor(textdraw.Name, textdraw.Color);
-                                layers[layerIndex].SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
-                            }
-                            if (!layers[layerIndex].SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY)))
-                                player.SendClientMessage(Color.Red, "Cannot set position for '" + textdraw.Name + "'");
-                            if (!layers[layerIndex].SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height))
-                                player.SendClientMessage(Color.Red, "Cannot set size for '" + textdraw.Name + "'");
-                            editingTDName = textdraw.Name;
-                        }
-                        this.Select(editingTDName);
-                        UpdateRuler();
-                        fs.Close();
-                    }
-                    player.SendClientMessage("File read successfully");
-                }
-                catch (IOException e)
-                {
-                    Logger.WriteLineAndClose("TextdrawCreator.cs - TextdrawCreator.Save:E: Cannot read Textdraw data in file:");
-                    Logger.WriteLineAndClose(e.Message);
-                }
-            }
-            else
-                player.SendClientMessage("File " + filename + " does not exists");
-        }
-        public void Save(string name)
-        {
-            Textdraw td;
-            string output = "";
-            List<textdraw> listOfTextdraw = new List<textdraw>();
-            textdraw textdraw;
-            foreach(KeyValuePair<string, Textdraw> kvp in layers[layerIndex].GetTextdrawList())
-            {
-                textdraw.Name = kvp.Value.name;
-                textdraw.PosX = kvp.Value.Position.X;
-                textdraw.PosY = kvp.Value.Position.Y;
-                textdraw.Width = kvp.Value.Width;
-                textdraw.Height = kvp.Value.Height;
-                textdraw.LetterWidth = kvp.Value.LetterSize.X;
-                textdraw.LetterHeight = kvp.Value.LetterSize.Y;
-                textdraw.Text = kvp.Value.text;
-                textdraw.Font = kvp.Value.font;
-                textdraw.PreviewModel = kvp.Value.PreviewModel;
-                textdraw.Alignment = kvp.Value.alignment;
-                textdraw.Color = kvp.Value.ForeColor;
-                textdraw.BackColor = kvp.Value.BackColor;
-                textdraw.Type = kvp.Value.type;
-                listOfTextdraw.Add(textdraw);
-            }
-            output = JsonConvert.SerializeObject(listOfTextdraw, Formatting.Indented);
-            player.SendClientMessage(output);
-
-            string filename = Directory.GetCurrentDirectory() + "/scriptfiles/" + name + ".json";
-            
-            try
-            {
-                if (File.Exists(filename))
-                    File.Delete(filename);
-                using (FileStream fs = File.Open(filename, FileMode.CreateNew, FileAccess.Write))
-                {
-                    
-                    byte[] data = new UTF8Encoding(true).GetBytes(output);
-                    foreach (byte databyte in data)
-                        fs.WriteByte(databyte);
-                    fs.FlushAsync();
-                    fs.Close();
-                }
-                player.SendClientMessage("File saved in " + filename);
-                Logger.WriteLineAndClose($"{player.Name} updated {filename}");
-            }
-            catch (IOException e)
-            {
-                Logger.WriteLineAndClose("TextdrawCreator.cs - TextdrawCreator.Save:E: Cannot write Textdraw data in file:");
-                Logger.WriteLineAndClose(e.Message);
-            }
         }
 
         public void AddBackground(string name)

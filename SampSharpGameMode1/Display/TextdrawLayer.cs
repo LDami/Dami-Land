@@ -34,6 +34,11 @@ namespace SampSharpGameMode1.Display
             TextdrawClicked?.Invoke(this, e);
         }
 
+        public bool Exists(string name)
+        {
+            return textdrawList.ContainsKey(name);
+        }
+
         public Dictionary<string, Textdraw> GetTextdrawList()
         {
             return textdrawList;
