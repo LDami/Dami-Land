@@ -46,7 +46,7 @@ namespace SampSharpGameMode1.Display
 
         public Textdraw CreateBackground(BasePlayer owner, string name, Vector2 position, Vector2 size, Color color)
         {
-            Console.WriteLine($"Creating background '{name}' at pos {position} with size {size} and color {color}");
+            //Console.WriteLine($"Creating background '{name}' at pos {position} with size {size} and color {color}");
             textdrawList.Add(name, new Textdraw(owner, name));
 
             textdrawList[name].Position = new Vector2(position.X - (size.X/2), position.Y - (size.Y/2));

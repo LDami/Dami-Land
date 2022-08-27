@@ -445,8 +445,10 @@ namespace SampSharpGameMode1.Display
         private void ShowTextdrawDialog()
         {
             ListDialog textdrawDialog = new ListDialog($"Textdraw options [{layers[layerIndex].GetTextdrawType(editingTDName)}:{editingTDName}]", "Select", "Cancel");
-            textdrawDialog.AddItem("Color [" + layers[layerIndex].GetTextdrawColor(editingTDName) + layers[layerIndex].GetTextdrawColor(editingTDName).ToString() + Color.White + "]");
-            textdrawDialog.AddItem("Back color [" + layers[layerIndex].GetTextdrawBackColor(editingTDName) + layers[layerIndex].GetTextdrawBackColor(editingTDName).ToString() + Color.White + "]");
+            string colorStr = "0x" + layers[layerIndex].GetTextdrawColor(editingTDName).ToString(ColorFormat.RGBA).Substring(1, 8);
+            textdrawDialog.AddItem("Color [" + layers[layerIndex].GetTextdrawColor(editingTDName) + colorStr + Color.White + "]");
+            colorStr = "0x" + layers[layerIndex].GetTextdrawBackColor(editingTDName).ToString(ColorFormat.RGBA).Substring(1, 8);
+            textdrawDialog.AddItem("Back color [" + layers[layerIndex].GetTextdrawBackColor(editingTDName) + colorStr + Color.White + "]");
             textdrawDialog.AddItem("Text [" + layers[layerIndex].GetTextdrawText(editingTDName) + "]");
             textdrawDialog.AddItem("Font [" + layers[layerIndex].GetTextdrawFont(editingTDName) + "]");
             textdrawDialog.AddItem("Alignment [" + layers[layerIndex].GetTextdrawAlignment(editingTDName) + "]");
@@ -463,7 +465,7 @@ namespace SampSharpGameMode1.Display
                     switch (eventArgs.ListItem)
                     {
                         case 0: // Color
-                            InputDialog colorDialog = new InputDialog("Enter color", "Supported formats: 0xFF0000 ; 0xFF0000FF ; rbg(255, 0, 0)", false, "Set", "Cancel");
+                            InputDialog colorDialog = new InputDialog("Enter color", "Supported formats: 0xFF0000 ; 0xFF0000FF ; rbg(255, 0, 0) ; rbg(255, 0, 0, 255)", false, "Set", "Cancel");
                             colorDialog.Show(player);
                             colorDialog.Response += (sender, eventArgs) =>
                             {
