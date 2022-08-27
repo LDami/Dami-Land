@@ -249,8 +249,6 @@ namespace SampSharpGameMode1.Events.Derbys
                     playerData.spectatePlayerIndex = -1;
                     playerData.status = DerbyPlayerStatus.Running;
 
-                    playersData.Add(slot.Player, playerData);
-
                     playersLiveInfoHUD[slot.Player] = new HUD(slot.Player, "derbyhud.json");
                     playersLiveInfoHUD[slot.Player].Hide("iconrockets");
                     playersLiveInfoHUD[slot.Player].Hide("remainingrockets");
@@ -266,16 +264,9 @@ namespace SampSharpGameMode1.Events.Derbys
                     pos = remainingPos[rdm.Next(0, remainingPos.Count)];
 
                     remainingPos.Remove(pos);
-                    while (generatedPos.Contains(pos) && tries++ < this.SpawnPoints.Count)
-                        pos = rdm.Next(1, players.Count);
 
-                    if (tries >= this.SpawnPoints.Count)
-                    {
-                        Player.SendClientMessageToAll("Error during position randomization for the race. Race aborted");
-                        isAborted = true;
-                        break;
-                    }
-                    tries = 0;
+                    playerData.startPosition = new Vector3R(this.SpawnPoints[pos].Position, this.SpawnPoints[pos].Rotation);
+                    playersData.Add(slot.Player, playerData);
 
                     BaseVehicle veh = BaseVehicle.Create(StartingVehicle.GetValueOrDefault(VehicleModelType.Bike), this.SpawnPoints[pos].Position, this.SpawnPoints[pos].Rotation, 1, 1);
                     veh.VirtualWorld = virtualWorld;
@@ -322,8 +313,11 @@ namespace SampSharpGameMode1.Events.Derbys
             {
                 foreach(Player p in players)
                 {
-                    if(p.InAnyVehicle)
-                        p.Vehicle.Position = p.Vehicle.Position + Vector3.UnitZ;
+                    if (p.InAnyVehicle)
+                    {
+                        p.Vehicle.Position = playersData[p].startPosition.Position + Vector3.UnitZ;
+                        p.Vehicle.Angle = playersData[p].startPosition.Rotation;
+                    }
                 }
             }
             countdown--;

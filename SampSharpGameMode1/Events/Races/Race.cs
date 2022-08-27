@@ -382,9 +382,8 @@ namespace SampSharpGameMode1.Events.Races
 
                     GameMode.mySQLConnector.CloseReader();
 
-                    playersData.Add(slot.Player, playerData);
-
                     playersLiveInfoHUD[slot.Player] = new HUD(slot.Player, "racelive.json");
+                    playersLiveInfoHUD[slot.Player].SetText("racename", this.Name);
                     playersLiveInfoHUD[slot.Player].SetText("stopwatch", "00:00:00.000");
                     playersLiveInfoHUD[slot.Player].Hide("checkpointtime");
                     playersLiveInfoHUD[slot.Player].Hide("checkpointdelta");
@@ -414,15 +413,18 @@ namespace SampSharpGameMode1.Events.Races
                     slot.Player.ExitVehicle += OnPlayerExitVehicle;
 
                     pos = remainingPos[rdm.Next(0, remainingPos.Count)];
-
                     remainingPos.Remove(pos);
-                    Logger.WriteLineAndClose($"Position for {slot.Player.Name}: {pos}");
+
+                    playerData.startPosition = new Vector3R(this.SpawnPoints[pos].Position, this.SpawnPoints[pos].Rotation);
+                    playersData.Add(slot.Player, playerData);
 
                     BaseVehicle veh = BaseVehicle.Create(StartingVehicle.GetValueOrDefault(VehicleModelType.Bike), this.SpawnPoints[pos].Position, this.SpawnPoints[pos].Rotation, 1, 1);
                     veh.VirtualWorld = virtualWorld;
                     veh.Engine = false;
                     veh.Died += OnPlayerVehicleDied;
                     slot.Player.PutInVehicle(veh);
+
+                    slot.Player.GameText("Press ~k~~CONVERSATION_YES~ ~n~or type /rr~n~ to respawn", 2000, 6);
 
                     UpdatePlayerCheckpoint(slot.Player);
                     players.Add(slot.Player);
@@ -489,7 +491,10 @@ namespace SampSharpGameMode1.Events.Races
                 foreach (Player p in players)
                 {
                     if (p.InAnyVehicle)
-                        p.Vehicle.Position = p.Vehicle.Position + Vector3.UnitZ;
+                    {
+                        p.Vehicle.Position = playersData[p].startPosition.Position + Vector3.UnitZ;
+                        p.Vehicle.Angle = playersData[p].startPosition.Rotation;
+                    }
                 }
             }
             countdown--;

@@ -15,5 +15,6 @@ namespace SampSharpGameMode1.Events.Races
         public int spectatePlayerIndex;
         public Checkpoint nextCheckpoint;
         public TimeSpan record;
+        public Vector3R startPosition;
     }
 }

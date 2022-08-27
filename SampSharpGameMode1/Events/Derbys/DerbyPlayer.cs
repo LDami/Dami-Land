@@ -13,5 +13,6 @@ namespace SampSharpGameMode1.Events.Derbys
     {
         public DerbyPlayerStatus status;
         public int spectatePlayerIndex;
+        public Vector3R startPosition;
     }
 }
