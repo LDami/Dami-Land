@@ -708,12 +708,14 @@ namespace SampSharpGameMode1.Events.Races
 
         private void Player_EnterCheckpoint(object sender, EventArgs e)
         {
-            ShowCheckpointDialog();
+            if(editingMode == EditingMode.Checkpoints)
+                ShowCheckpointDialog();
         }
 
         private void Player_EnterRaceCheckpoint(object sender, EventArgs e)
         {
-            ShowCheckpointDialog();
+            if (editingMode == EditingMode.Checkpoints)
+                ShowCheckpointDialog();
         }
 
         private void ShowCheckpointDialog()
