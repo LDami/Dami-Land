@@ -2,6 +2,7 @@
 using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.SAMP;
+using SampSharp.GameMode.World;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,17 +14,25 @@ namespace SampSharpGameMode1.Display
     {
         public bool HasError { get; private set; }
 
+        protected BasePlayer player;
         protected TextdrawLayer layer;
+        protected string filename;
         /// <summary>
         /// Create a HUD for a player from a JSON file
         /// </summary>
         /// <param name="player">The target Player</param>
         /// <param name="jsonFilename">The JSON file name, with ".json" extension</param>
-        public HUD(Player player, string jsonFilename)
+        public HUD(BasePlayer _player, string jsonFilename)
         {
+            player = _player;
             layer = new TextdrawLayer();
             layer.AutoUpdate = false;
-            string filename = $@"{Directory.GetCurrentDirectory()}\scriptfiles\{jsonFilename}";
+            filename = $@"{Directory.GetCurrentDirectory()}\scriptfiles\{jsonFilename}";
+            this.Load();
+        }
+
+        public void Load()
+        {
             if (File.Exists(filename))
             {
                 try
@@ -66,7 +75,7 @@ namespace SampSharpGameMode1.Display
                                 layer.SetTextdrawColor(textdraw.Name, textdraw.Color);
                                 layer.SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
                                 layer.SetTextdrawFont(textdraw.Name, textdraw.Font);
-                                if(textdraw.Font == 4)
+                                if (textdraw.Font == 4)
                                     layer.SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height);
                                 if (textdraw.LetterWidth > 0 && textdraw.LetterHeight > 0)
                                     layer.SetTextdrawLetterSize(textdraw.Name, textdraw.LetterWidth, textdraw.LetterHeight);
@@ -92,18 +101,23 @@ namespace SampSharpGameMode1.Display
                 }
                 catch (IOException e)
                 {
-                    Logger.WriteLineAndClose("HUD.cs - HUD:_:E: Cannot load HUD: " + jsonFilename);
+                    Logger.WriteLineAndClose("HUD.cs - HUD:_:E: Cannot load HUD: " + filename);
                     Logger.WriteLineAndClose(e.Message);
                     HasError = true;
                 }
-                catch(JsonReaderException e)
+                catch (JsonReaderException e)
                 {
-                    Logger.WriteLineAndClose("HUD.cs - HUD:_:E: Cannot load HUD: " + jsonFilename);
+                    Logger.WriteLineAndClose("HUD.cs - HUD:_:E: Cannot load HUD: " + filename);
                     Logger.WriteLineAndClose(e.Message);
                     HasError = true;
                 }
             }
             layer.AutoUpdate = true;
+        }
+
+        public void Unload()
+        {
+            layer.Dispose();
         }
 
         /// <summary>
@@ -142,8 +156,9 @@ namespace SampSharpGameMode1.Display
                     layer.Hide(element);
                 else
                 {
-                    foreach(string td in Utils.GetStringsMatchingRegex(new List<string>(layer.GetTextdrawList().Keys), element))
+                    foreach (string td in Utils.GetStringsMatchingRegex(new List<string>(layer.GetTextdrawList().Keys), element))
                     {
+                        Console.WriteLine("Hiding td " + td);
                         layer.Hide(td);
                     }
                 }
@@ -205,6 +220,11 @@ namespace SampSharpGameMode1.Display
                     HasError = true;
                 }
             }
+        }
+
+        public void DynamicDuplicateLayer()
+        {
+
         }
     }
 }

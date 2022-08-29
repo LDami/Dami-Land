@@ -44,6 +44,15 @@ namespace SampSharpGameMode1.Display
             return textdrawList;
         }
 
+        public void Dispose()
+        {
+            foreach(Textdraw td in textdrawList.Values)
+            {
+                if (!td.IsDisposed)
+                    td.Dispose();
+            }
+        }
+
         public Textdraw CreateBackground(BasePlayer owner, string name, Vector2 position, Vector2 size, Color color)
         {
             //Console.WriteLine($"Creating background '{name}' at pos {position} with size {size} and color {color}");
@@ -79,15 +88,17 @@ namespace SampSharpGameMode1.Display
             if (type == TextdrawType.Box)
             {
                 textdrawList[name].UseBox = true;
-                textdrawList[name].Width = 50;
-                textdrawList[name].Height = 40;
                 textdrawList[name].text = "_";
                 textdrawList[name].type = "box";
+                textdrawList[name].Width = 50;
+                textdrawList[name].Height = 40;
             }
             else if (type == TextdrawType.Text)
             {
                 textdrawList[name].text = text;
                 textdrawList[name].type = "text";
+                textdrawList[name].Width = 500;
+                textdrawList[name].Height = 20;
             }
             else if (type == TextdrawType.PreviewModel)
             {
@@ -106,6 +117,24 @@ namespace SampSharpGameMode1.Display
             textdrawList[name].Shadow = 0;
             textdrawList[name].Show();
             return;
+        }
+
+        public void Duplicate(BasePlayer owner, string name, string targetName)
+        {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFoundException(name);
+            textdrawList.Add(targetName, new Textdraw(owner, targetName));
+            textdrawList[targetName].Position = textdrawList[name].Position;
+            textdrawList[targetName].LetterSize = textdrawList[name].LetterSize;
+            textdrawList[targetName].Width = textdrawList[name].Width;
+            textdrawList[targetName].Height = textdrawList[name].Height;
+            textdrawList[targetName].Text = textdrawList[name].Text;
+            textdrawList[targetName].ForeColor = textdrawList[name].ForeColor;
+            textdrawList[targetName].BackColor = textdrawList[name].BackColor;
+            textdrawList[targetName].Alignment = textdrawList[name].Alignment;
+            textdrawList[targetName].UseBox = textdrawList[name].UseBox;
+            textdrawList[targetName].type = textdrawList[name].type;
+            textdrawEditMode.Add(targetName, EditingMode.Unselected);
         }
 
 		public void Show(string name)

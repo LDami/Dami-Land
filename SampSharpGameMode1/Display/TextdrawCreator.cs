@@ -13,90 +13,22 @@ namespace SampSharpGameMode1.Display
 {
     public class TextdrawCreator
     {
-
-        class TextdrawHUD
+        class TextdrawHUD : HUD
         {
-            TextdrawLayer layer;
             bool isSwitched;
             Dictionary<string, Vector2> textdrawDefaultPos = new Dictionary<string, Vector2>();
             Dictionary<string, Vector2> textdrawDefaultSize = new Dictionary<string, Vector2>();
 
-            public TextdrawHUD(Player player)
+            public TextdrawHUD(Player player) : base(player, "tdcreator.json")
             {
-                isSwitched = false;
-                layer = new TextdrawLayer();
-                string filename = Directory.GetCurrentDirectory() + "/scriptfiles/tdcreator.json";
-                string jsonData = "";
-                if (File.Exists(filename))
-                {
-                    try
-                    {
-                        using (FileStream fs = File.Open(filename, FileMode.Open, FileAccess.Read))
-                        {
-                            byte[] output = new byte[fs.Length];
-                            int idx = 0;
-                            int blockLength = 1;
-                            byte[] tmp = new byte[blockLength];
-                            int readBytes;
-                            while ((readBytes = fs.Read(tmp, 0, blockLength)) > 0)
-                            {
-                                for (int i = 0; i < readBytes; i++)
-                                    output[idx + i] = tmp[i];
-                                idx += readBytes;
-                            }
-                            jsonData = new UTF8Encoding(true).GetString(output);
-                            List<textdraw> textdraws = JsonConvert.DeserializeObject<List<textdraw>>(jsonData);
-                            foreach (textdraw textdraw in textdraws)
-                            {
-                                if (textdraw.Type.Equals("box"))
-                                {
-                                    layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Box);
-                                    layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
-                                    layer.SetTextdrawSize(textdraw.Name, textdraw.Width, textdraw.Height);
-                                    layer.SetTextdrawColor(textdraw.Name, textdraw.Color);
-                                    layer.SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
-                                }
-                                if (textdraw.Type.Equals("text"))
-                                {
-                                    layer.CreateTextdraw(player, textdraw.Name, TextdrawLayer.TextdrawType.Text);
-                                    layer.SetTextdrawPosition(textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY));
-                                    layer.SetTextdrawColor(textdraw.Name, textdraw.Color);
-                                    layer.SetTextdrawBackColor(textdraw.Name, textdraw.BackColor);
-                                }
-                                textdrawDefaultPos[textdraw.Name] = new Vector2(textdraw.PosX, textdraw.PosY);
-                                textdrawDefaultSize[textdraw.Name] = new Vector2(textdraw.Width, textdraw.Height);
-                            }
-                            layer.SetTextdrawText("layer", "Layer: None");
-                            layer.SetTextdrawText("tdselected", "TD: None");
-                            layer.SetTextdrawText("tdmode", "Mode: None");
-                            layer.UnselectAllTextdraw();
-                            fs.Close();
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        Logger.WriteLineAndClose("TextdrawCreator.cs - TextdrawHUD._:E: Cannot load Textdraw HUD:");
-                        Logger.WriteLineAndClose(e.Message);
-                    }
-                }
-            }
 
-            public void Hide()
-            {
-                layer.HideAll();
-            }
-
-            public void Destroy()
-            {
-                layer.HideAll();
-                layer = null;
             }
 
             public void Switch()
             {
-                if(isSwitched)
+                if (isSwitched)
                 {
-                    foreach(KeyValuePair<string, Textdraw> textdraw in layer.GetTextdrawList())
+                    foreach (KeyValuePair<string, Textdraw> textdraw in layer.GetTextdrawList())
                     {
                         layer.SetTextdrawPosition(textdraw.Key, textdrawDefaultPos[textdraw.Key]);
                         layer.SetTextdrawSize(textdraw.Key, textdrawDefaultSize[textdraw.Key].X, textdrawDefaultSize[textdraw.Key].Y);
@@ -122,6 +54,11 @@ namespace SampSharpGameMode1.Display
                 layer.SetTextdrawSize("y-axis-ruler", 5, size.Y);
             }
 
+            public void SetSelectedFileName(string name)
+            {
+                layer.SetTextdrawText("filename", "Name: " + name);
+            }
+
             public void SetSelectedTextdrawName(string name)
             {
                 layer.SetTextdrawText("tdselected", "TD: " + name);
@@ -132,9 +69,66 @@ namespace SampSharpGameMode1.Display
                 layer.SetTextdrawText("tdmode", "Mode: " + mode);
             }
         }
+        class TextdrawMenuHUD : HUD
+        {
+            private bool isMenuOpened = false;
+            public TextdrawMenuHUD(Player player, List<TextdrawLayer> layers) : base(player, "tdcreator-layers.json")
+            {
+                const int gapBetweenLayers = 20;
+                const int gapBetweenItems = 20;
+                for(int i = 0; i < layers.Count; i++)
+                {
+                    layer.Duplicate(player, "layer#bg", $"layer{i}bg");
+                    layer.SetTextdrawPosition($"layer{i}bg", layer.GetTextdrawPosition("layer#bg") + new Vector2(0, i * gapBetweenItems));
+
+                    layer.Duplicate(player, "layer#name", $"layer{i}name");
+                    layer.SetTextdrawText($"layer{i}name", "Layer # " + i);
+                    layer.SetClickable($"layer{i}name");
+                    Console.WriteLine($"Created layer{i}name");
+
+                    List<Textdraw> tdList = new List<Textdraw>(layers[i].GetTextdrawList().Values);
+                    for (int j = 0; j < tdList.Count && j <= 10; j ++)
+                    {
+                        layer.Duplicate(player, "item#bg", $"item{j}bg");
+                        layer.SetTextdrawPosition($"item{j}bg", layer.GetTextdrawPosition("item#bg") + new Vector2(0, j * gapBetweenItems));
+
+                        layer.Duplicate(player, "item#name", $"item{j}name");
+                        layer.SetTextdrawText($"item{j}name", tdList[j].name);
+                        layer.SetClickable($"item{j}name");
+                        Console.WriteLine($"Created item{j}name");
+                    }
+                }
+                layer.UnselectAllTextdraw();
+                this.Hide(@"^layer#.*$");
+                //this.Hide(@"^item#.*$");
+                this.Hide(@"^menu.*$");
+                layer.TextdrawClicked += OnTextdrawClicked;
+            }
+            private void OnTextdrawClicked(object sender, TextdrawLayer.TextdrawEventArgs e)
+            {
+                if(e.TextdrawName.StartsWith("item"))
+                {
+                    if (isMenuOpened)
+                        CloseMenu();
+                    else
+                        OpenMenu();
+                }
+            }
+
+            public void OpenMenu()
+            {
+                layer.Show("menu*");
+            }
+
+            public void CloseMenu()
+            {
+                layer.Show("menu*");
+            }
+        }
 
         const int MAX_LAYERS = 10;
         TextdrawHUD tdHUD;
+        TextdrawMenuHUD tdMenuHUD;
         List<TextdrawLayer> layers;
         int layerIndex;
         string editingTDName;
@@ -191,6 +185,7 @@ namespace SampSharpGameMode1.Display
                         string jsonData = new UTF8Encoding(true).GetString(output);
                         List<textdraw> textdraws = JsonConvert.DeserializeObject<List<textdraw>>(jsonData);
                         this.Init();
+                        tdHUD.SetSelectedFileName(name);
                         layers.Add(new TextdrawLayer());
                         layerIndex = layers.Count - 1;
                         layers[layerIndex].AutoUpdate = false;
@@ -318,7 +313,7 @@ namespace SampSharpGameMode1.Display
             player.ToggleControllable(true);
             player.KeyStateChanged -= Player_KeyStateChanged;
             if (tdHUD != null)
-                tdHUD.Destroy();
+                tdHUD.Unload();
             tdHUD = null;
             if (player.InAnyVehicle)
                 player.Speedometer.Show();
@@ -336,6 +331,23 @@ namespace SampSharpGameMode1.Display
 
         private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
         {
+            switch (e.NewKeys)
+            {
+                case Keys.Crouch:
+                    {
+                        tdMenuHUD = new TextdrawMenuHUD(player, layers);
+                        player.SelectTextDraw(ColorPalette.Primary.Main.GetColor());
+                        player.CancelClickTextDraw += (sender, e) =>
+                        {
+                            if (tdMenuHUD != null)
+                            {
+                                tdMenuHUD.Hide();
+                                tdMenuHUD = null;
+                            }
+                        };
+                        break;
+                    }
+            }
             if (editingTDName != "")
             {
                 //if(!e.NewKeys.Equals("0")) Console.WriteLine("TextdrawCreator.cs - Player_KeyStateChanged:I: key: " + e.NewKeys.ToString());
