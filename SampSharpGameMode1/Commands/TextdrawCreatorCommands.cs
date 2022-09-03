@@ -24,16 +24,13 @@ namespace SampSharpGameMode1.Commands
             {
                 if (player.pEvent != null)
                     return;
-                if (player.IsAdmin)
-                {
-                    if (player.textdrawCreator == null)
-                        player.textdrawCreator = new TextdrawCreator(player);
+#if DEBUG
+                if (player.textdrawCreator == null)
+                    player.textdrawCreator = new TextdrawCreator(player);
 
-                    player.textdrawCreator.Init();
-                    player.SendClientMessage("Textdraw Creator initialized");
-                }
-                else
-                    player.SendClientMessage(Color.Red + "You are not Administrator");
+                player.textdrawCreator.Init();
+                player.SendClientMessage("Textdraw Creator initialized");
+#endif
             }
             [Command("exit")]
             private static void Exit(Player player)
@@ -49,18 +46,15 @@ namespace SampSharpGameMode1.Commands
             {
                 if (player.pEvent != null)
                     return;
-                if (player.IsAdmin)
-                {
-                    if (player.textdrawCreator == null)
+#if DEBUG
+                if (player.textdrawCreator == null)
                         player.textdrawCreator = new TextdrawCreator(player);
 
-                    if (!player.textdrawCreator.IsEditing)
-                        player.textdrawCreator.Load(name);
-                    else
-                        player.SendClientMessage("You must close the opened editor before loading a new one");
-                }
+                if (!player.textdrawCreator.IsEditing)
+                    player.textdrawCreator.Load(name);
                 else
-                    player.SendClientMessage(Color.Red + "You are not Administrator");
+                    player.SendClientMessage("You must close the opened editor before loading a new one");
+#endif
             }
             [Command("save", UsageMessage = "Usage: /td save [name (without .json)]")]
             private static void Save(Player player, string name)
