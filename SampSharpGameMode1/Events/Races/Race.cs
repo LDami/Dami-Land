@@ -511,6 +511,7 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     if(p.Vehicle != null)
                         p.Vehicle.Engine = true;
+                    p.PlayedRaces++;
                 }
             }
         }

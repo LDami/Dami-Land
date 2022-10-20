@@ -30,6 +30,13 @@ namespace SampSharpGameMode1
         private int adminlevel;
 		public int Adminlevel { get => adminlevel; set => adminlevel = value; }
 
+        //Statistics
+        public DateTime LastLoginDate { get; set; }
+        public TimeSpan PlayedTime { get; set; }
+        public int PlayedRaces { get; set; }
+        public int PlayedDerbies { get; set; }
+
+
         private Vector3R lastSavedPosition = Vector3R.Zero;
         public Vector3R LastSavedPosition { get => lastSavedPosition; set => lastSavedPosition = value; }
 
@@ -41,6 +48,7 @@ namespace SampSharpGameMode1
         //Login
 		Boolean isAuthenticated;
         int passwordEntryTries = 3;
+        DateTime loginDateTime;
 
         //Vehicle
         public Speedometer Speedometer;
@@ -137,6 +145,7 @@ namespace SampSharpGameMode1
 
             if (!this.IsNPC)
             {
+                SaveAccount();
                 isAuthenticated = false;
                 Adminlevel = 0;
 
@@ -324,21 +333,36 @@ namespace SampSharpGameMode1
                     Dictionary<string, object> param = new Dictionary<string, object>();
                     param.Add("@name", this.Name);
                     param.Add("@password", hashPassword);
-                    mySQLConnector.Execute("INSERT INTO users (name, password, adminlvl) VALUES (@name, @password, 0)", param);
-                    if (mySQLConnector.RowsAffected > 0)
+                    this.DbId = Convert.ToInt32(mySQLConnector.Execute("INSERT INTO users (name, password, adminlvl) VALUES (@name, @password, 0)", param));
+                    if (mySQLConnector.RowsAffected == 0)
+                    {
+                        this.SendClientMessage(Color.Red, "An error occured, please try again later");
+                        this.Kick("Unable to create account");
+                        Logger.WriteLineAndClose("Player.cs - Player.PwdSignupDialog_Response:E: Unable to create player (state: " + mySQLConnector.GetState() + ")");
+                        return;
+                    }
+                    param.Clear();
+                    param.Add("@id", this.DbId);
+                    param.Add("@lastlogin", DateTime.Now);
+                    mySQLConnector.Execute("INSERT INTO user_stats (user_id, stat_lastlogin) VALUES (@id, @lastlogin)", param);
+                    if (mySQLConnector.RowsAffected == 0)
+                    {
+                        this.SendClientMessage(Color.Red, "An error occured, please try again later");
+                        this.Kick("Unable to create account");
+                        Logger.WriteLineAndClose("Player.cs - Player.PwdSignupDialog_Response:E: Unable to create player (state: " + mySQLConnector.GetState() + ")");
+                        return;
+                    }
+                    else
                     {
                         this.Notificate("Registered");
                         isAuthenticated = true;
                         Adminlevel = 0;
-                        param = new Dictionary<string, object>();
-                        param.Add("@name", this.Name);
-                        mySQLConnector.OpenReader("SELECT id FROM users WHERE name=@name", param);
-                        Dictionary<string, string> results = mySQLConnector.GetNextRow();
-                        this.DbId = Convert.ToInt32(results["id"]);
-                        mySQLConnector.CloseReader();
+                        LastLoginDate = DateTime.Now;
+                        PlayedTime = TimeSpan.Zero;
+                        PlayedRaces = 0;
+                        PlayedDerbies = 0;
+                        loginDateTime = DateTime.Now;
                     }
-                    else
-                        Logger.WriteLineAndClose("Player.cs - Player.PwdSignupDialog_Response:E: Unable to create player (state: " + mySQLConnector.GetState() + ")");
                 }
             }
             else
@@ -376,9 +400,36 @@ namespace SampSharpGameMode1
                     {
                         if (Password.Verify(e.InputText, results["password"]))
                         {
+                            this.Notificate("Logged in" + ((Adminlevel > 0) ? " as admin" : ""));
                             isAuthenticated = true;
                             Adminlevel = Convert.ToInt32(results["adminlvl"]);
-                            this.Notificate("Logged in" + ((Adminlevel > 0) ? " as admin" : ""));
+                            loginDateTime = DateTime.Now;
+
+                            // Check if user exists in user_stats (compatiblity for version < 1.0)
+                            param.Clear();
+                            param.Add("@id", this.DbId);
+                            mySQLConnector.OpenReader("SELECT user_id, stat_playtime, stat_playedraces, stat_playedderbies FROM user_stats WHERE user_id=@id", param);
+                            results = mySQLConnector.GetNextRow();
+                            mySQLConnector.CloseReader();
+
+                            param.Clear();
+                            param.Add("@id", this.DbId);
+                            LastLoginDate = DateTime.Now;
+                            param.Add("@lastlogin", LastLoginDate);
+                            if (results.Count == 0)
+                            {
+                                mySQLConnector.Execute("INSERT INTO user_stats (user_id, stat_lastlogin) VALUES (@id, @lastlogin)", param);
+                                PlayedTime = TimeSpan.Zero;
+                                PlayedRaces = 0;
+                                PlayedDerbies = 0;
+                            }
+                            else
+                            {
+                                PlayedTime = TimeSpan.Parse(results["stat_playtime"]);
+                                PlayedRaces = Convert.ToInt32(results["stat_playedraces"]);
+                                PlayedDerbies = Convert.ToInt32(results["stat_playedderbies"]);
+                                mySQLConnector.Execute("UPDATE user_stats SET stat_lastlogin=@lastlogin WHERE user_id=@id", param);
+                            }
                         }
                         else
                         {
@@ -402,7 +453,8 @@ namespace SampSharpGameMode1
         {
             try
             {
-                bool nameAlreadyExists = false; // Used to check if the new name of the Player is not already used by someone else
+                /* Check if the player username (if rename for example) is already used by another user */
+                bool nameAlreadyExists = false;
                 Dictionary<string, object> param = new Dictionary<string, object>();
                 param.Add("@id", this.DbId);
                 param.Add("@name", this.DbName);
@@ -428,6 +480,16 @@ namespace SampSharpGameMode1
                 param.Add("@name", this.Name);
                 param.Add("@adminlvl", this.Adminlevel);
                 mySQLConnector.Execute(query, param);
+
+                query = "UPDATE user_stats SET stat_playtime=@playtime, stat_playedraces=@playedraces, stat_playedderbies=@playedderbies WHERE user_id=@id";
+                param.Clear();
+                param.Add("@id", this.DbId);
+                param.Add("@playtime", this.PlayedTime + DateTime.Now.Subtract(loginDateTime));
+                param.Add("@playedraces", this.PlayedRaces);
+                param.Add("@playedderbies", this.PlayedDerbies);
+                mySQLConnector.Execute(query, param);
+                if(mySQLConnector.RowsAffected > 0)
+                    loginDateTime = DateTime.Now;
             }
             catch(Exception e)
             {

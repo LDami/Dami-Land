@@ -89,6 +89,71 @@ namespace SampSharpGameMode1.Commands
             }
         }
 
+        // /stats
+        [Command("stats")]
+        private static void StatsCommand(Player player)
+        {
+            ShowPlayerStats(player, player);
+        }
+        // /stats <id/name> of connected player
+        [Command("stats")]
+        private static void StatsCommand(Player player, Player target)
+        {
+            player.SendClientMessage(target.Name + " is not connected");
+            if (target.IsConnected)
+                ShowPlayerStats(player, target);
+            else
+            {
+                player.SendClientMessage(target.Name + " is not connected");
+            }
+        }
+        // /stats <name> of player, connected or not
+        [Command("stats")]
+        private static void StatsCommand(Player player, string targetName)
+        {
+            MySQLConnector mySQLConnector = MySQLConnector.Instance();
+            Dictionary<string, object> param = new Dictionary<string, object>();
+            param.Add("@name", targetName);
+            mySQLConnector.OpenReader("SELECT id FROM users WHERE name=@name", param);
+            Dictionary<string, string> results = mySQLConnector.GetNextRow();
+            mySQLConnector.CloseReader();
+
+            if(results.Count > 0)
+            {
+                Player p = new Player();
+                p.DbId = Convert.ToInt32(results["id"]);
+
+                param.Clear();
+                param.Add("@id", p.DbId);
+                mySQLConnector.OpenReader("SELECT stat_playtime, stat_playedraces, stat_derbies FROM users WHERE user_id=@id", param);
+                results = mySQLConnector.GetNextRow();
+                mySQLConnector.CloseReader();
+
+                if(results.Count > 0)
+                {
+                    p.PlayedTime = TimeSpan.Parse(results["stat_playtime"]);
+                    p.PlayedRaces = Convert.ToInt32(results["stat_playedraces"]);
+                    p.PlayedDerbies = Convert.ToInt32(results["stat_derbies"]);
+                }
+                ShowPlayerStats(player, p);
+            }
+            else
+            {
+                player.SendClientMessage(targetName + " is not a valid user");
+            }
+        }
+
+        private static void ShowPlayerStats(Player player, Player target)
+        {
+            ListDialog dialog = new ListDialog($"{target.Name} stats", "Close");
+            dialog.AddItem($"{ColorPalette.Primary.Main}Database ID: {new Color(255, 255, 255)}{ target.DbId}");
+            dialog.AddItem($"{ColorPalette.Primary.Main}Last Login: {new Color(255, 255, 255)}{target.LastLoginDate}");
+            dialog.AddItem($"{ColorPalette.Primary.Main}Played time: {new Color(255, 255, 255)}{target.PlayedTime}");
+            dialog.AddItem($"{ColorPalette.Primary.Main}Finished Races: {new Color(255, 255, 255)}{target.PlayedRaces}");
+            dialog.AddItem($"{ColorPalette.Primary.Main}Finished Derbies: {new Color(255, 255, 255)} {target.PlayedDerbies}");
+            dialog.Show(player);
+        }
+
         [Command("jet")]
         private static void JetpackCommand(Player player)
         {

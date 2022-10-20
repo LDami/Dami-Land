@@ -334,6 +334,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 {
                     if (p.Vehicle != null)
                         p.Vehicle.Engine = true;
+                    p.PlayedDerbies++;
                 }
             }
         }
