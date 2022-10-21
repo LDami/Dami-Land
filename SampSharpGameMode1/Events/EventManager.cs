@@ -274,7 +274,7 @@ namespace SampSharpGameMode1.Events
                         {
                             if (eventArgs.ErrorMessage == null)
                             {
-                                if (player.IsConnected) player.SendClientMessage(ColorPalette.Primary.Main + $"Race {eventArgs.EventLoaded.Id} {Color.Green}loaded ! (Race)");
+                                if (player.IsConnected) player.SendClientMessage(ColorPalette.Primary.Main + $"Race {eventArgs.EventLoaded.Id} {Color.Green}loaded !");
                                 eventList.Add(eventArgs.EventLoaded);
                                 if (openedEvent == null)
                                 {
@@ -299,7 +299,7 @@ namespace SampSharpGameMode1.Events
                         {
                             if (eventArgs.ErrorMessage == null)
                             {
-                                if (player.IsConnected) player.SendClientMessage(ColorPalette.Primary.Main + $"Race {eventArgs.EventLoaded.Id} {Color.Green}loaded ! (Derby)");
+                                if (player.IsConnected) player.SendClientMessage(ColorPalette.Primary.Main + $"Derby {eventArgs.EventLoaded.Id} {Color.Green}loaded !");
                                 eventList.Add(eventArgs.EventLoaded);
                                 if (openedEvent == null)
                                 {
