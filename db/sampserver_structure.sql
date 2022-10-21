@@ -53,7 +53,7 @@ CREATE TABLE `derby_spawn` (
   PRIMARY KEY (`spawn_id`),
   KEY `derby_spawnpos_FK` (`derby_id`),
   CONSTRAINT `derby_spawnpos_FK` FOREIGN KEY (`derby_id`) REFERENCES `derbys` (`derby_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -73,7 +73,7 @@ CREATE TABLE `derbys` (
   PRIMARY KEY (`derby_id`),
   KEY `derbys_FK` (`derby_map`),
   CONSTRAINT `derbys_FK` FOREIGN KEY (`derby_map`) REFERENCES `maps` (`map_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -93,10 +93,28 @@ CREATE TABLE `mapobjects` (
   `obj_rot_x` float NOT NULL,
   `obj_rot_y` float NOT NULL,
   `obj_rot_z` float NOT NULL,
+  `group_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`obj_id`),
   KEY `mapobjects_FK` (`map_id`),
-  CONSTRAINT `mapobjects_FK` FOREIGN KEY (`map_id`) REFERENCES `maps` (`map_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=115 DEFAULT CHARSET=utf8mb4;
+  KEY `mapobjects_FK_1` (`group_id`),
+  CONSTRAINT `mapobjects_FK` FOREIGN KEY (`map_id`) REFERENCES `maps` (`map_id`),
+  CONSTRAINT `mapobjects_FK_1` FOREIGN KEY (`group_id`) REFERENCES `mapobjects_groups` (`group_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=124 DEFAULT CHARSET=utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `mapobjects_groups`
+--
+
+DROP TABLE IF EXISTS `mapobjects_groups`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `mapobjects_groups` (
+  `group_id` int(11) NOT NULL AUTO_INCREMENT,
+  `group_color` varchar(8) DEFAULT NULL,
+  `group_name` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`group_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -113,7 +131,7 @@ CREATE TABLE `maps` (
   `map_creationdate` datetime DEFAULT NULL,
   `map_lasteditdate` datetime DEFAULT NULL,
   PRIMARY KEY (`map_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -157,7 +175,7 @@ CREATE TABLE `race_checkpoints` (
   PRIMARY KEY (`checkpoint_id`),
   KEY `race_checkpoints_FK` (`race_id`),
   CONSTRAINT `race_checkpoints_FK` FOREIGN KEY (`race_id`) REFERENCES `races` (`race_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1005 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1063 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -177,7 +195,7 @@ CREATE TABLE `race_records` (
   KEY `race_records_FK_1` (`player_id`),
   CONSTRAINT `race_records_FK` FOREIGN KEY (`race_id`) REFERENCES `races` (`race_id`),
   CONSTRAINT `race_records_FK_1` FOREIGN KEY (`player_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=93 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=109 DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -198,7 +216,7 @@ CREATE TABLE `race_spawn` (
   PRIMARY KEY (`spawn_id`),
   KEY `race_spawnpos_FK` (`race_id`),
   CONSTRAINT `race_spawnpos_FK` FOREIGN KEY (`race_id`) REFERENCES `races` (`race_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=628 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=650 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -219,7 +237,7 @@ CREATE TABLE `races` (
   PRIMARY KEY (`race_id`),
   KEY `races_FK` (`race_map`),
   CONSTRAINT `races_FK` FOREIGN KEY (`race_map`) REFERENCES `maps` (`map_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -272,7 +290,7 @@ CREATE TABLE `users` (
   `password` varchar(200) COLLATE latin1_general_ci NOT NULL,
   `adminlvl` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

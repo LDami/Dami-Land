@@ -1,4 +1,5 @@
 ﻿using SampSharp.GameMode;
+using SampSharp.GameMode.SAMP;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -64,13 +65,23 @@ namespace SampSharpGameMode1
                         errorFlag = true;
                     GameMode.mySQLConnector.CloseReader();
 
-                    if(!errorFlag)
+                    if (!errorFlag)
 					{
-                        GameMode.mySQLConnector.OpenReader("SELECT * FROM mapobjects WHERE map_id=@id", param);
+                        GameMode.mySQLConnector.OpenReader("SELECT mapobjects.*, groups.group_Color, groups.group_Name FROM mapobjects LEFT JOIN mapobjects_groups AS groups ON (mapobjects.group_id = groups.group_id) WHERE map_id=@id", param);
+                        //GameMode.mySQLConnector.OpenReader("SELECT * FROM mapobjects WHERE map_id=@id", param);
                         row = GameMode.mySQLConnector.GetNextRow();
                         this.Objects.Clear();
+                        MapGroup? objGroup = null;
                         while (row.Count > 0)
                         {
+                            if (row["mapobjects.group_id"] != null)
+                            {
+                                objGroup = MapGroup.GetOrCreate(Convert.ToInt32(row["mapobjects.group_id"]));
+                                objGroup.ForeColor ??= Utils.GetColorFromString("0x" + row["group_color"]) ?? Color.AliceBlue;
+                            }
+                            else
+                                objGroup = null;
+
                             this.Objects.Add(new MapObject(
                                 Convert.ToInt32(row["obj_id"]),
                                 Convert.ToInt32(row["obj_model"]),
@@ -84,6 +95,7 @@ namespace SampSharpGameMode1
                                     (float)Convert.ToDouble(row["obj_rot_y"]),
                                     (float)Convert.ToDouble(row["obj_rot_z"])
                                 ),
+                                objGroup,
                                 virtualworld));
                             row = GameMode.mySQLConnector.GetNextRow();
                         }

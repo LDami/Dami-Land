@@ -85,7 +85,7 @@ namespace SampSharpGameMode1.Commands
                 commandList.Add("/mapping save", "Save the map");
                 commandList.Add("/mapping exit", "Close the editor (save your map first !)");
                 commandList.Add("/mapping info [id]", "Display the info of a map");
-                commandList.Add("/mapping addo [modelid]", "Add an object with specified modelid");
+                commandList.Add("/mapping addo [modelid] ([groupid])", "Create an object with specified modelid into the group groupid");
                 commandList.Add("/mapping delo [objectid]", "Delete the object");
                 commandList.Add("/mapping replace [objectid] [modelid]", "Replace the object by the s modelid");
                 commandList.Add("/mapping dupl [objectid]", "Duplicate the object");
@@ -223,6 +223,14 @@ namespace SampSharpGameMode1.Commands
             {
                 if (!(player.mapCreator is null))
                     player.mapCreator.AddObject(modelid);
+                else
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+            }
+            [Command("addo")] 
+            private static void AddObjectCommand(Player player, int modelid, int groupid)
+            {
+                if (!(player.mapCreator is null))
+                    player.mapCreator.AddObject(modelid, groupid);
                 else
                     player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
             }

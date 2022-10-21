@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using SampSharp.GameMode;
+﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Display;
 using SampSharp.GameMode.Events;
 using SampSharp.GameMode.SAMP;
@@ -8,8 +7,7 @@ using SampSharp.Streamer.World;
 using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
+using System.Diagnostics;
 
 namespace SampSharpGameMode1
 {
@@ -92,7 +90,7 @@ namespace SampSharpGameMode1
 					textLabels.Clear();
 					foreach(MapObject obj in e.map.Objects)
                     {
-						textLabels.Add(obj.Id, new DynamicTextLabel($"Object #{obj.Id}", Color.White, obj.Position, 100.0f, null, null, false, player.VirtualWorld));
+						textLabels.Add(obj.Id, new DynamicTextLabel($"Object #{obj.Id}", obj.Group?.ForeColor ?? Color.White, obj.Position, 100.0f, null, null, false, player.VirtualWorld));
                     }
 				}
 				else
@@ -110,13 +108,23 @@ namespace SampSharpGameMode1
 			if(editingMap.Spawn != Vector3.Zero)
 				player.Position = editingMap.Spawn;
 
+			Stopwatch sw = new Stopwatch();
+			sw.Start();
 			hud = new HUD(player, "mapcreator.json");
+			sw.Stop();
+			Console.WriteLine("Time for load HUD: " + sw.ElapsedMilliseconds + "ms");
+			sw.Restart();
 			hud.SetText("mapname", editingMap.Name);
 			hud.SetText("totalobj", "Total: " + editingMap.Objects.Count.ToString() + " objects");
+			
+			hud.Hide(@"^group.*$");
+			
+			sw.Stop();
+			Console.WriteLine("Time for edit HUD: " + sw.ElapsedMilliseconds + "ms");
 			Magnet = true;
 			deletedObjects = new List<int>();
 			player.SendClientMessage("Here are the controls:");
-			player.SendClientMessage("    Y/N:                    Unfreeze/Freeze (usefull in Jetpack !)");
+			player.SendClientMessage("    Y/N:                    Unfreeze/Freeze (useful in Jetpack !)");
 			player.SendClientMessage("    Z/LShift:              Move camera during object edition");
 		}
 
@@ -152,8 +160,12 @@ namespace SampSharpGameMode1
 		{
 			Dictionary<string, object> param = new Dictionary<string, object>();
 
-			string queryUpdate = "UPDATE mapobjects SET obj_model=@model, obj_pos_x=@posx, obj_pos_y=@posy, obj_pos_z=@posz, obj_rot_x=@rotx, obj_rot_y=@roty, obj_rot_z=@rotz WHERE obj_id=@id;";
-			string queryInsert = "INSERT INTO mapobjects (map_id, obj_model, obj_pos_x, obj_pos_y, obj_pos_z, obj_rot_x, obj_rot_y, obj_rot_z) VALUES (@mapid, @model, @posx, @posy, @posz, @rotx, @roty, @rotz);";
+			string queryUpdate = "UPDATE mapobjects_groups SET group_color=@color, group_name=@name WHERE group_id=@id;";
+			string queryInsert = "INSERT INTO mapobjects_groups (group_id, group_color, group_name) VALUES (@id, @color, @name);";
+
+
+			queryUpdate = "UPDATE mapobjects SET obj_model=@model, obj_pos_x=@posx, obj_pos_y=@posy, obj_pos_z=@posz, obj_rot_x=@rotx, obj_rot_y=@roty, obj_rot_z=@rotz, group_id=@grp_id WHERE obj_id=@id;";
+			queryInsert = "INSERT INTO mapobjects (map_id, obj_model, obj_pos_x, obj_pos_y, obj_pos_z, obj_rot_x, obj_rot_y, obj_rot_z, group_id) VALUES (@mapid, @model, @posx, @posy, @posz, @rotx, @roty, @rotz, @grp_id);";
 			foreach (MapObject obj in editingMap.Objects)
 			{
 				if(!obj.IsDisposed)
@@ -166,6 +178,7 @@ namespace SampSharpGameMode1
 					param.Add("rotx", obj.Rotation.X);
 					param.Add("roty", obj.Rotation.Y);
 					param.Add("rotz", obj.Rotation.Z);
+					param.Add("grp_id", obj.Group.Id);
 					if (obj.DbId == -1) // Does not exists in database
 					{
 						param.Add("@mapid", editingMap.Id);
@@ -262,6 +275,7 @@ namespace SampSharpGameMode1
 				modelid,
 				position ?? new Vector3(player.Position.X + 5.0, player.Position.Y, player.Position.Z), 
 				rotation ?? Vector3.Zero,
+				null,
 				player.VirtualWorld
 			);
 			mapObject.Edit(player);
@@ -323,9 +337,9 @@ namespace SampSharpGameMode1
 				mapObject.Rotation = newRotation;
 				textLabels[mapObject.Id].Position = e.Position;
 				if (e.Response == SampSharp.GameMode.Definitions.EditObjectResponse.Final || e.Response == SampSharp.GameMode.Definitions.EditObjectResponse.Cancel)
-					textLabels[mapObject.Id].Text = $"Object #{mapObject.Id}";
+					textLabels[mapObject.Id].Text = $"Object #{mapObject.Id}\nGroup {mapObject.Group.Name}";
 				else if(e.Response == SampSharp.GameMode.Definitions.EditObjectResponse.Update)
-					textLabels[mapObject.Id].Text = $"Object #{mapObject.Id}\nPos: {mapObject.Position.ToString()}\nRot: {mapObject.Rotation.ToString()}";
+					textLabels[mapObject.Id].Text = $"Object #{mapObject.Id}\nPos: {mapObject.Position}\nRot: {mapObject.Rotation}";
 
 				lastObjectPos = newPosition;
 				lastObjectRot = newRotation;
@@ -335,6 +349,15 @@ namespace SampSharpGameMode1
 			player.SendClientMessage($"Object #{mapObject.Id} created with model {modelid}");
 			hud.SetText("totalobj", "Total: " + editingMap.Objects.Count.ToString() + " objects");
 			return mapObject.Id;
+		}
+
+		public void AddObject(int modelid, int groupid)
+        {
+			int objId = AddObject(modelid);
+			MapGroup group = MapGroup.GetOrCreate(groupid);
+			editingMap.Objects.Find(obj => obj.Id == objId).Group = group;
+			textLabels[objId].Text = $"Object {objId}\nGroup {group.Name}";
+			textLabels[objId].Color = group.ForeColor.GetValueOrDefault(Color.White);
 		}
 
 		/// <summary>
