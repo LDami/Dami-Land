@@ -800,12 +800,18 @@ namespace SampSharpGameMode1.Events.Races
                     GameMode.mySQLConnector.Execute("INSERT INTO race_records (race_id, player_id, record_duration) VALUES (@race_id, @player_id, @record_duration)", param);
                 }
             }
-            else if (reason.Equals("Leave"))
+            else if(reason.Equals("Leave"))
             {
                 Event.SendEventMessageToPlayer(player, "You left the race");
                 Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} left the race {this.Name}");
                 Event.SendEventMessageToAll(player.pEvent, $"{Color.Orange}{player.Name}{Color.White} has left the race");
                 player.GameText("GAME OVER", 5000, 4);
+            }
+            else if(reason.Equals("Disconnected"))
+            {
+                Logger.WriteLineAndClose($"Race.cs - OnPlayerFinished:I: {player.Name} left the race {this.Name}");
+                Event.SendEventMessageToAll(player.pEvent, $"{Color.Orange}{player.Name}{Color.White} has left the race");
+                Eject(player);
             }
             else
             {
@@ -829,20 +835,23 @@ namespace SampSharpGameMode1.Events.Races
             }
             else
             {
-                if (player.InAnyVehicle)
+                if(!reason.Equals("Disconnected"))
                 {
-                    BaseVehicle vehicle = player.Vehicle;
-                    player.RemoveFromVehicle();
-                    if (!(vehicle is null) && !vehicle.IsDisposed) vehicle.Dispose();
+                    if (player.InAnyVehicle)
+                    {
+                        BaseVehicle vehicle = player.Vehicle;
+                        player.RemoveFromVehicle();
+                        if (!(vehicle is null) && !vehicle.IsDisposed) vehicle.Dispose();
+                    }
+                    player.ToggleSpectating(true);
+                    if (players[0].InAnyVehicle)
+                        player.SpectateVehicle(players[0].Vehicle);
+                    else
+                        player.SpectatePlayer(players[0]);
+                    spectatingPlayers.Add(player);
+                    playersData[player].status = RacePlayerStatus.Spectating;
+                    playersData[player].spectatePlayerIndex = 0;
                 }
-                player.ToggleSpectating(true);
-                if(players[0].InAnyVehicle)
-                    player.SpectateVehicle(players[0].Vehicle);
-                else
-                    player.SpectatePlayer(players[0]);
-                spectatingPlayers.Add(player);
-                playersData[player].status = RacePlayerStatus.Spectating;
-                playersData[player].spectatePlayerIndex = 0;
             }
         }
 
