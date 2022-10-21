@@ -204,6 +204,7 @@ namespace SampSharpGameMode1
         public override void OnStateChanged(StateEventArgs e)
         {
             base.OnStateChanged(e);
+            
             if (e.NewState == PlayerState.Driving)
             {
                 Speedometer.Show();
@@ -212,6 +213,7 @@ namespace SampSharpGameMode1
             {
                 Speedometer.Hide();
             }
+            
         }
 
         public override void OnEnterCheckpoint(EventArgs e)

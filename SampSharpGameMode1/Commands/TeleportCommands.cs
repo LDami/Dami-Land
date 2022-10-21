@@ -15,10 +15,8 @@ namespace SampSharpGameMode1.Commands
     {
         protected MySQLConnector mySQLConnector = MySQLConnector.Instance();
         private Dictionary<int, Vector3R> teleportations = new Dictionary<int, Vector3R>();
-        Player player;
         public MapHUD(Player player) : base(player, "mapteleport.json")
         {
-            this.player = player as Player;
             if (mySQLConnector != null)
             {
                 float scaleX = 6000 / layer.GetTextdrawSize("mapbox").X;
@@ -81,7 +79,7 @@ namespace SampSharpGameMode1.Commands
         {
             if(Int32.TryParse(e.TextdrawName.Substring(5), out int tlpID))
             {
-                player.Teleport(teleportations[tlpID].Position);
+                (player as Player).Teleport(teleportations[tlpID].Position);
                 player.Angle = teleportations[tlpID].Rotation;
                 player.CancelSelectTextDraw();
             }
