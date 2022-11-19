@@ -186,7 +186,7 @@ namespace SampSharpGameMode1
         public override void OnUpdate(PlayerUpdateEventArgs e)
         {
             base.OnUpdate(e);
-            if(this.InAnyVehicle && Speedometer != null)
+            if(this.InAnyVehicle && Speedometer != null && !this.IsNPC)
             {
                 Speedometer.Update();
             }
@@ -205,15 +205,17 @@ namespace SampSharpGameMode1
         {
             base.OnStateChanged(e);
             
-            if (e.NewState == PlayerState.Driving)
+            if(!this.IsNPC)
             {
-                Speedometer.Show();
+                if (e.NewState == PlayerState.Driving)
+                {
+                    Speedometer.Show();
+                }
+                else
+                {
+                    Speedometer.Hide();
+                }
             }
-            else
-            {
-                Speedometer.Hide();
-            }
-            
         }
 
         public override void OnEnterCheckpoint(EventArgs e)
@@ -229,6 +231,12 @@ namespace SampSharpGameMode1
         public override void OnSpawned(SpawnEventArgs e)
         {
             base.OnSpawned(e);
+            if(this.IsNPC)
+            {
+                Console.WriteLine("NPC Spawned");
+                this.PutInVehicle(VehicleAI.vehicle);
+                VehicleAI.Process();
+            }
         }
 
         public override void OnClickMap(PositionEventArgs e)
@@ -245,6 +253,8 @@ namespace SampSharpGameMode1
 
 		public override void OnKeyStateChanged(KeyStateChangedEventArgs e)
 		{
+            if (this.IsNPC)
+                Logger.WriteLineAndClose("NPC new key pressed: " + e.NewKeys.ToString());
 			base.OnKeyStateChanged(e);
             if (e.NewKeys.HasFlag(Keys.Fire) || e.NewKeys.HasFlag(Keys.Action))
             {
@@ -742,11 +752,118 @@ namespace SampSharpGameMode1
             }
         }
 
-        [Command("create-ai")]
-        private void CreateAICommand()
+        [Command("create-script")]
+        private void CreateScriptCommand()
         {
-            //vehicleAI = new VehicleAI(VehicleModelType.Infernus, this.Position + new Vector3(5.0, 0.0, 0.0), 0.0f);
+            Record record = RecordConverter.Parse(@"C:\stayinvehicle.rec");
+            this.SendClientMessage("Record read");
+
+            int recordCount = 20;
+            uint deltaTime = 0;
+            double speed = 0.5;
+            Vector3 lastPos = record.VehicleBlocks[0].position;
+            for (int i = 0; i < record.VehicleBlocks.Count; i++)
+            {
+                if (i > 0)
+                {
+                    deltaTime = record.VehicleBlocks[i].time - record.VehicleBlocks[i - 1].time;
+                    lastPos = record.VehicleBlocks[i - 1].position;
+                }
+                RecordInfo.VehicleBlock block = record.VehicleBlocks[i];
+                block.velocity = new Vector3(0.0, speed, 0.0);
+                block.position = new Vector3(block.position.X, lastPos.Y + (22.55 * (deltaTime/1000)), block.position.Z);
+                block.position = new Vector3(block.position.X, lastPos.Y + (0.001 * deltaTime * 0.5 * 45.1), block.position.Z);
+                block.additionnalKeyCode = 8;
+                block.vehicleHealth = 1000;
+                record.VehicleBlocks[i] = block;
+            }
+            record.VehicleBlocks = record.VehicleBlocks.GetRange(0, recordCount);
+
+            this.SendClientMessage("Record random velocity value: " + record.VehicleBlocks[3].velocity);
+            RecordCreator.Save(record, @"recreated.rec");
+            this.SendClientMessage("Record wrote");
         }
+
+        [Command("read-script")]
+        private void ReadScriptCommand(string filename)
+        {
+            Record record = RecordConverter.Parse(@$"C:\Serveur OpenMP\npcmodes\recordings\{filename}.rec", filename+ ".json");
+            this.SendClientMessage("Record read");
+        }
+
+        [Command("simulate-script")]
+        private void SimulateScriptCommand()
+        {
+            Record record = RecordConverter.Parse(@"C:\Serveur OpenMP\npcmodes\recordings\recreated.rec");
+            Thread t = new Thread(new ThreadStart(() =>
+            {
+                for(int i=1; i < record.VehicleBlocks.Count; i++)
+                {
+                    RecordInfo.VehicleBlock block = record.VehicleBlocks[i];
+                    if(this.InAnyVehicle)
+                    {
+                        if(i > 0)
+                        {
+                            double dist;
+                            if ((dist = record.VehicleBlocks[i-1].position.DistanceTo(this.Vehicle.Position)) < 1.0)
+                                this.SendClientMessage($"{i}: OK Distance: {dist}");
+                            else
+                                this.SendClientMessage($"{i}: NOK Distance: {dist}");
+                        }
+                        this.Vehicle.Position = block.position;
+                        this.Vehicle.Velocity = block.velocity;
+
+                        Thread.Sleep((int)(record.VehicleBlocks[i].time - record.VehicleBlocks[i - 1].time));
+                    }
+                }
+            }));
+            t.Start();
+        }
+
+        [Command("ai-cmds")]
+        private void AICmdsCommand()
+        {
+            ListDialog dialog = new ListDialog("AI Actions", "Execute", "Cancel");
+            dialog.AddItems(new string[] {
+                "create",
+                "reboot",
+                "kick",
+                "set in vehicle",
+                "restart AI"
+            });
+            dialog.Response += (sender, e) =>
+            {
+                if(e.DialogButton == DialogButton.Left)
+                {
+                    switch (e.ListItem)
+                    {
+                        case 0: // create
+                            VehicleAI.Init(VehicleModelType.Infernus, this.Position + new Vector3(-15.0, 0.0, 0.0), 0.0f);
+                            this.SendClientMessage("AI created");
+                            break;
+                        case 1: // reboot
+                            VehicleAI.Restart();
+                            this.SendClientMessage("AI reset in his vehicle");
+                            break;
+                        case 2: // kick
+                            VehicleAI.Kick();
+                            this.SendClientMessage("AI kicked");
+                            break;
+                        case 3: // set in vehicle
+                            VehicleAI.SetInVehicle();
+                            this.SendClientMessage("AI set in vehicle");
+                            break;
+                        case 4: // restart AI
+                            VehicleAI.StartVehicle();
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            };
+            dialog.Show(this);
+        }
+
         [Command("followme")]
         private void FollowMeCommand()
         {
@@ -758,18 +875,12 @@ namespace SampSharpGameMode1
         [Command("start")]
         private void StartAICommand()
         {
-            if (vehicleAI != null)
-                vehicleAI.StartVehicle();
-            else
-                Console.WriteLine("vehicleAI is null !");
+            VehicleAI.StartVehicle();
         }
         [Command("stop")]
         private void StopAICommand()
         {
-            if (vehicleAI != null)
-                vehicleAI.StopVehicle();
-            else
-                Console.WriteLine("vehicleAI is null !");
+            VehicleAI.StopVehicle();
         }
         [Command("sethp")]
         private void KillAICommand(int health)

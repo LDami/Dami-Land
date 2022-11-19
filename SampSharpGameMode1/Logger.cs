@@ -92,6 +92,9 @@ namespace SampSharpGameMode1
         public static void WriteLineAndClose(string text, bool writeToConsole = true)
         {
             Logger.WriteAndClose(text + "\r\n", writeToConsole);
+#if DEBUG
+            SampSharp.GameMode.World.BasePlayer.SendClientMessageToAll(SampSharp.GameMode.SAMP.Color.LightGray + "[DEBUG] " + text);
+#endif
         }
     }
 }

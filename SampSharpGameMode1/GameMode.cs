@@ -63,9 +63,6 @@ namespace SampSharpGameMode1
                 }
             }
             eventManager = EventManager.Instance();
-            //NPC npc = new NPC();
-            //npc.Create();
-            //Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: NPC Created !");
 
             
             Stopwatch sw = new Stopwatch();
@@ -109,6 +106,27 @@ namespace SampSharpGameMode1
             logger.Write("GameMode.cs - GameMode.OnInitialized:I: Initializing ColAndreas ... ");
             Physics.ColAndreas.Init();
             logger.WriteLine("Done !");
+
+            logger.Write($"GameMode.cs - GameMode.OnInitialized:I: Loading Record file ...");
+            sw.Restart();
+            Record record = RecordConverter.Parse(@"C:\stayinvehicle.rec");
+            sw.Stop();
+            logger.WriteLine($"Done in {sw.ElapsedMilliseconds} ms");
+
+            for (int i = 0; i < record.VehicleBlocks.Count; i++)
+            {
+                RecordInfo.VehicleBlock block = record.VehicleBlocks[i];
+                block.velocity = Vector3.Forward;
+                block.position = new Vector3(block.position.X, block.position.Y - (10 * i), block.position.Z);
+                record.VehicleBlocks[i] = block;
+            }
+
+            logger.Write($"GameMode.cs - GameMode.OnInitialized:I: Recreating Record file ...");
+            sw.Restart();
+            RecordCreator.Save(record, @"recreated.rec");
+            sw.Stop();
+            logger.WriteLine($"Done in {sw.ElapsedMilliseconds} ms");
+            RecordConverter.Parse(@"C:\Serveur OpenMP\npcmodes\recordings\recreated.rec");
 
             /* Loading parked vehicles */
             logger.Write("GameMode.cs - GameMode.OnInitialized:I: Loading parked vehicles ... ");
