@@ -20,7 +20,8 @@ namespace SampSharpGameMode1.Events
     {
         Unknown,
         Race,
-        Derby
+        Derby,
+        Mission
     }
     public enum EventFinishedReason
     {

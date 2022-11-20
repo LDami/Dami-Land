@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using SampSharpGameMode1.Display;
+using SampSharpGameMode1.Events.Missions;
 
 namespace SampSharpGameMode1.Events
 {
@@ -212,7 +213,7 @@ namespace SampSharpGameMode1.Events
                         key_name = "race_name";
                         key_creator = "race_creator";
                         break;
-					}
+                    }
                 case EventType.Derby:
                     {
                         query = "SELECT derby_id, derby_name, derby_creator FROM derbys WHERE derby_name LIKE @name OR derby_creator LIKE @name";
@@ -220,8 +221,16 @@ namespace SampSharpGameMode1.Events
                         key_name = "derby_name";
                         key_creator = "derby_creator";
                         break;
-					}
-			}
+                    }
+                case EventType.Mission:
+                    {
+                        query = "SELECT derby_id, derby_name, derby_creator FROM derbys WHERE derby_name LIKE @name OR derby_creator LIKE @name";
+                        key_id = "derby_id";
+                        key_name = "derby_name";
+                        key_creator = "derby_creator";
+                        break;
+                    }
+            }
             Dictionary<string, string> row;
             Dictionary<string, object> param = new Dictionary<string, object>
                 {
@@ -242,7 +251,7 @@ namespace SampSharpGameMode1.Events
                 while (row.Count > 0)
                 {
                     foundEvents.Add(Convert.ToInt32(row[key_id]));
-                    eventSearchDialog.AddItem(row[key_id] + "_" + Display.ColorPalette.Primary.Main + row[key_name] + Display.ColorPalette.Primary.Lighten + " by " + Display.ColorPalette.Primary.Main + row[key_creator]);
+                    eventSearchDialog.AddItem(row[key_id] + "_" + ColorPalette.Primary.Main + row[key_name] + ColorPalette.Primary.Lighten + " by " + ColorPalette.Primary.Main + row[key_creator]);
                     row = GameMode.mySQLConnector.GetNextRow();
                 }
                 GameMode.mySQLConnector.CloseReader();
@@ -251,7 +260,10 @@ namespace SampSharpGameMode1.Events
                 {
                     if (eventArgs.DialogButton == DialogButton.Left)
                     {
-                        CreateEvent(player, eventType, foundEvents[eventArgs.ListItem]);
+                        if (eventType == EventType.Mission)
+                            CreateEvent(player, eventType, 1);
+                        else
+                            CreateEvent(player, eventType, foundEvents[eventArgs.ListItem]);
                     }
                     else
                     {
@@ -313,6 +325,31 @@ namespace SampSharpGameMode1.Events
                                 if (player.IsConnected) player.SendClientMessage(Color.Red, "Cannot load the derby: " + eventArgs.ErrorMessage);
                         };
                         player.SendClientMessage(ColorPalette.Primary.Main + $"Loading Derby #{eventId}");
+                        newEvent.Load(id);
+                        usedIds.Add(eventId);
+                        break;
+                    }
+                case EventType.Mission:
+                    {
+                        Event newEvent = new MissionEvent(eventId);
+                        newEvent.Loaded += (sender, eventArgs) =>
+                        {
+                            if (eventArgs.ErrorMessage == null)
+                            {
+                                if (player.IsConnected) player.SendClientMessage(ColorPalette.Primary.Main + $"Mission {eventArgs.EventLoaded.Id} {Color.Green}loaded !");
+                                eventList.Add(eventArgs.EventLoaded);
+                                if (openedEvent == null)
+                                {
+                                    openedEvent = eventArgs.EventLoaded;
+                                    eventArgs.EventLoaded.Open();
+                                    eventArgs.EventLoaded.Started += (sender, eventArgs) => { openedEvent = null; };
+                                    eventArgs.EventLoaded.Ended += (sender, eventArgs) => { eventList.Remove((Event)sender); };
+                                }
+                            }
+                            else
+                                if (player.IsConnected) player.SendClientMessage(Color.Red, "Cannot load the mission: " + eventArgs.ErrorMessage);
+                        };
+                        player.SendClientMessage(ColorPalette.Primary.Main + $"Loading mission #{eventId}");
                         newEvent.Load(id);
                         usedIds.Add(eventId);
                         break;
