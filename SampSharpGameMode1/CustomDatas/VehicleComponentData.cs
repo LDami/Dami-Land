@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace SampSharpGameMode1.CutomDatas
+namespace SampSharpGameMode1.CustomDatas
 {
     class VehicleComponentData
     {

@@ -79,6 +79,9 @@ namespace SampSharpGameMode1
         private TextLabel[] pathLabels = new TextLabel[1000];
         private TextLabel[] naviLabels = new TextLabel[1000];
 
+        //Interior Preview
+        private InteriorPreview interiorPreview;
+
         private int viewAreaID = -1;
 
 		#region Overrides of BasePlayer

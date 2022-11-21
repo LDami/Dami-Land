@@ -77,6 +77,22 @@ namespace SampSharpGameMode1.Commands
             player.SendClientMessage("Found model: " + Utils.GetVehicleModelType(model).ToString());
         }
 
+
+        [Command("interior-preview")]
+        private static void InteriorPreviewCommand(Player player)
+        {
+            if (player.InteriorPreview == null)
+                player.InteriorPreview = new InteriorPreview(player);
+            player.InteriorPreview.Display();
+        }
+        [Command("interior-log")]
+        private static void InteriorLogCommand(Player player)
+        {
+            if (player.InteriorPreview == null)
+                player.InteriorPreview = new InteriorPreview(player);
+            Logger.WriteLineAndClose(player.InteriorPreview.GetInterior().ToString());
+        }
+
 #if DEBUG
         [Command("admin")]
         private static void AdminTmp(Player player)
