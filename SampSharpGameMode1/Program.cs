@@ -9,7 +9,7 @@ namespace SampSharpGameMode1
         {
             new GameModeBuilder()
                 .Use<GameMode>()
-                .UseStartBehaviour(GameModeStartBehaviour.FakeGmx)
+                .UseLogLevel(CoreLogLevel.Verbose)
                 .Run();
         }
     }

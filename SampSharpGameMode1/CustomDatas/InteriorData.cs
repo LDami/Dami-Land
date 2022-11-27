@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace SampSharpGameMode1.CustomDatas
 {
-    class InteriorData
+    public class InteriorData
     {
         public int Id { get; }
         public string Name { get; }

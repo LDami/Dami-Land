@@ -80,7 +80,7 @@ namespace SampSharpGameMode1
         private TextLabel[] naviLabels = new TextLabel[1000];
 
         //Interior Preview
-        private InteriorPreview interiorPreview;
+        public InteriorPreview InteriorPreview { get; private set; }
 
         private int viewAreaID = -1;
 
@@ -118,6 +118,8 @@ namespace SampSharpGameMode1
 
                 pathObjectsTimer = new SampSharp.GameMode.SAMP.Timer(10000, true);
                 //pathObjectsTimer.Tick += PathObjectsTimer_Tick;
+                
+                InteriorPreview = new InteriorPreview(this);
 
                 SampSharp.Streamer.Streamer s = new SampSharp.Streamer.Streamer();
                 s.ToggleIdleUpdate(this, true);
@@ -184,6 +186,11 @@ namespace SampSharpGameMode1
                 this.Angle = 325.24f;
                 this.CameraPosition = new Vector3(476.7202, -1766.9512, 15.2254);
                 this.SetCameraLookAt(new Vector3(471.8715, -1772.8622, 14.1192));
+            }
+            else
+            {
+                Console.WriteLine("NPC Request class");
+                e.PreventSpawning = false;
             }
         }
         public override void OnUpdate(PlayerUpdateEventArgs e)

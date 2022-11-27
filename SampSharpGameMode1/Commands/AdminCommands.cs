@@ -86,8 +86,6 @@ namespace SampSharpGameMode1.Commands
         [Command("interior-log")]
         private static void InteriorLogCommand(Player player)
         {
-            if (player.InteriorPreview == null)
-                player.InteriorPreview = new InteriorPreview(player);
             Logger.WriteLineAndClose(player.InteriorPreview.GetInterior().ToString());
         }
 

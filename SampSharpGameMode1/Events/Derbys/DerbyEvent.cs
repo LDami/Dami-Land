@@ -20,12 +20,12 @@ namespace SampSharpGameMode1.Events.Derbys
 
         public override void Load(int _id)
         {
-            Derby loadingRace = new Derby();
-            loadingRace.Loaded += LoadingRace_Loaded;
-            loadingRace.Load(_id, this.VirtualWorld);
+            Derby loadingDerby = new Derby();
+            loadingDerby.Loaded += LoadingDerby_Loaded;
+            loadingDerby.Load(_id, this.VirtualWorld);
         }
 
-        private void LoadingRace_Loaded(object sender, DerbyLoadedEventArgs e)
+        private void LoadingDerby_Loaded(object sender, DerbyLoadedEventArgs e)
         {
             if (e.derby.IsPlayable())
             {

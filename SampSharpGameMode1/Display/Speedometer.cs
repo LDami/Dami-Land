@@ -20,6 +20,7 @@ namespace SampSharpGameMode1.Display
             hud = new HUD(player, "speedometer.json");
             hud.Hide();
             this.player = player;
+            IsDisplayed = false;
         }
 
         public void Show()

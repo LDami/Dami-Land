@@ -1,5 +1,5 @@
 ﻿using SampSharp.GameMode.World;
-using SampSharpGameMode1.CutomDatas;
+using SampSharpGameMode1.CustomDatas;
 
 namespace SampSharpGameMode1
 {

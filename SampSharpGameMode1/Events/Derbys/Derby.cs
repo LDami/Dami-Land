@@ -436,6 +436,7 @@ namespace SampSharpGameMode1.Events.Derbys
             playersLiveInfoHUD[player].Hide();
             players.RemoveAll(x => x.Equals(player));
             spectatingPlayers.RemoveAll(x => x.Equals(player));
+            playersData.Remove(player);
 
             if (!player.IsDisposed)
             {
