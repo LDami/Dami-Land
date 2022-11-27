@@ -1,4 +1,5 @@
-﻿using SampSharp.Streamer.World;
+﻿using SampSharp.GameMode.World;
+using SampSharp.Streamer.World;
 using SampSharpGameMode1.Events.Missions.MissionPickups;
 using System;
 using System.Collections.Generic;
@@ -16,9 +17,10 @@ namespace SampSharpGameMode1.Events.Missions
         internal int Id { get; set; }
         internal string Name { get; set; }
         internal int VirtualWorld { get; set; }
-        internal List<DynamicActor> Actors { get; set; }
-        internal List<MissionPickupBase> Pickups { get; set; }
-
+        internal Vector3R SpawnPoint { get; set; }
+        internal List<DynamicActor> Actors { get; set; } = new List<DynamicActor>();
+        internal List<MissionPickupBase> Pickups { get; set; } = new List<MissionPickupBase>();
+        internal List<BaseVehicle> Vehicles { get; set; } = new List<BaseVehicle>();
 
         public event EventHandler<MissionStepEventArgs> Complete;
         protected virtual void OnComplete(MissionStepEventArgs e)

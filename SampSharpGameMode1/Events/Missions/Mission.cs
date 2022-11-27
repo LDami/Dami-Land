@@ -30,7 +30,7 @@ namespace SampSharpGameMode1.Events.Missions
         public int Id { get; set; }
         public string Name { get; set; }
         public int MapId { get; set; }
-        private List<MissionStep> Steps { get; set; }
+        internal List<MissionStep> Steps { get; set; }
         public bool IsLoaded { get; private set; }
         public bool IsCreatorMode { get; set; }
         public string Creator { get; set; }
@@ -49,7 +49,7 @@ namespace SampSharpGameMode1.Events.Missions
         private int countdown;
         public DateTime startedTime;
         private Map map;
-        private int currentMissionIndex;
+        private int currentMissionStepIndex;
 
         #region MissionEvents
         public event EventHandler<MissionLoadedEventArgs> Loaded;
@@ -322,8 +322,8 @@ namespace SampSharpGameMode1.Events.Missions
         {
             if (isPreparing && countdown == 0)
             {
-                currentMissionIndex = 0;
-                Steps[currentMissionIndex].Execute(players);
+                currentMissionStepIndex = 0;
+                Steps[currentMissionStepIndex].Execute(players);
                 startedTime = DateTime.Now;
                 this.isPreparing = false;
                 this.isStarted = true;
@@ -340,7 +340,7 @@ namespace SampSharpGameMode1.Events.Missions
         {
             if(e.Success)
             {
-                if(currentMissionIndex >= (Steps.Count - 1))
+                if(currentMissionStepIndex >= (Steps.Count - 1))
                 {
                     OnPlayerFinished(e.Player, "Finished");
                 }

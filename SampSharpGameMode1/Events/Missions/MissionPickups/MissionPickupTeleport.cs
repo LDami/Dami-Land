@@ -21,6 +21,7 @@ namespace SampSharpGameMode1.Events.Missions.MissionPickups
             {
                 Console.WriteLine($"{args.Player.Name} has pick up the correct Pickup, teleporting ...");
                 (args.Player as Player).Teleport(TargetPosition.Position);
+                (args.Player as Player).Interior = TargetInterior;
             }
         }
     }

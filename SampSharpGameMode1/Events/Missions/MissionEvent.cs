@@ -42,7 +42,7 @@ namespace SampSharpGameMode1.Events.Missions
 
         public override bool Start(List<EventSlot> slots)
         {
-            if (loadedMission != null && slots.Count > 10)
+            if (loadedMission != null && slots.Count >= 1)
             {
                 loadedMission.Prepare(slots);
                 Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " is starting, you cannot longer join it !");

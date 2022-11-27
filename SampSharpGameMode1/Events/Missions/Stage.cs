@@ -9,12 +9,18 @@ namespace SampSharpGameMode1.Events.Missions
 {
     internal class Stage : MissionStep
     {
-        internal Vector3R SpawnPoint { get; set; }
         internal VehicleModelType? StartingVehicle { get; set; }
         public Goal Goal { get; set; }
 
         internal override void Load(int id, int virtualWorld = -1)
         {
+            /*
+             * Id: 9, Name: Safe House group 3, Pos: (2319.1272, -1023.9562, 1050.2109), Rot: 167.3959
+Id: 3, Name: Burglary House X1, Pos: (234.6087, 1187.8195, 1080.2578), Rot: 349.4844
+Id: 10, Name: Burglary House X14, Pos: (24.3769, 1341.1829, 1084.375), Rot: 8.3305
+Id: 12, Name: Unused Safe House, Pos: (2323.7063, -1147.6509, 1050.7101), Rot: 206.5352
+            */
+
             this.SpawnPoint = new Vector3R(new Vector3(-1527.83, 814.52, 6.75), -10);
             this.VirtualWorld = virtualWorld;
             this.Pickups = new List<MissionPickups.MissionPickupBase>();
@@ -22,7 +28,8 @@ namespace SampSharpGameMode1.Events.Missions
             {
                 //Pickup = new SampSharp.Streamer.World.DynamicPickup(19197, 5, new Vector3(-2706.73, 866.0, 71.7), worldid: virtualWorld),
                 Pickup = new SampSharp.Streamer.World.DynamicPickup(19197, 5, new Vector3(-1518, 874, 7.1), worldid: virtualWorld),
-                TargetPosition = new Vector3R(new Vector3(-2739.66, 855.76, 63), 180)
+                TargetPosition = new Vector3R(new Vector3(2319.1272, -1023.9562, 1050.2109), 167.3959f),
+                TargetInterior = 9
             }); ;
         }
 
