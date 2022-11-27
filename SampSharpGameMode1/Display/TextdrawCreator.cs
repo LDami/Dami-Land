@@ -3,6 +3,7 @@ using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
 using SampSharp.GameMode.SAMP;
+using SampSharp.GameMode.World;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -31,7 +32,7 @@ namespace SampSharpGameMode1.Display
                     foreach (KeyValuePair<string, Textdraw> textdraw in layer.GetTextdrawList())
                     {
                         layer.SetTextdrawPosition(textdraw.Key, textdrawDefaultPos[textdraw.Key]);
-                        layer.SetTextdrawSize(textdraw.Key, textdrawDefaultSize[textdraw.Key].X, textdrawDefaultSize[textdraw.Key].Y);
+                        //layer.SetTextdrawSize(textdraw.Key, textdrawDefaultSize[textdraw.Key].X, textdrawDefaultSize[textdraw.Key].Y);
                     }
                     isSwitched = false;
                 }
@@ -40,7 +41,7 @@ namespace SampSharpGameMode1.Display
                     foreach (KeyValuePair<string, Textdraw> textdraw in layer.GetTextdrawList())
                     {
                         layer.SetTextdrawPosition(textdraw.Key, new Vector2(0, -1));
-                        layer.SetTextdrawSize(textdraw.Key, 150.0f, textdrawDefaultSize[textdraw.Key].Y);
+                        //layer.SetTextdrawSize(textdraw.Key, 150.0f, textdrawDefaultSize[textdraw.Key].Y);
                     }
                     isSwitched = true;
                 }
@@ -71,36 +72,51 @@ namespace SampSharpGameMode1.Display
         }
         class TextdrawMenuHUD : HUD
         {
-            private bool isMenuOpened = false;
-            public TextdrawMenuHUD(Player player, List<TextdrawLayer> layers) : base(player, "tdcreator-layers.json")
+            const int gapBetweenLayers = 20;
+            const int gapBetweenItems = 20;
+
+            private BasePlayer player;
+            private string lastItemNameClicked = "";
+            public TextdrawMenuHUD(BasePlayer player, List<TextdrawLayer> layers) : base(player, "tdcreator-layers.json")
             {
-                const int gapBetweenLayers = 20;
-                const int gapBetweenItems = 20;
+                this.player = player;
                 for(int i = 0; i < layers.Count; i++)
                 {
                     layer.Duplicate(player, "layer#bg", $"layer{i}bg");
-                    layer.SetTextdrawPosition($"layer{i}bg", layer.GetTextdrawPosition("layer#bg") + new Vector2(0, i * gapBetweenItems));
+                    layer.SetTextdrawPosition($"layer{i}bg", layer.GetTextdrawPosition("layer#bg") + new Vector2(0, i * gapBetweenLayers));
+                    layer.SetClickable($"layer{i}bg");
 
                     layer.Duplicate(player, "layer#name", $"layer{i}name");
+                    layer.SetTextdrawPosition($"layer{i}name", layer.GetTextdrawPosition("layer#name") + new Vector2(0, i * gapBetweenLayers));
                     layer.SetTextdrawText($"layer{i}name", "Layer # " + i);
-                    layer.SetClickable($"layer{i}name");
-                    Console.WriteLine($"Created layer{i}name");
 
                     List<Textdraw> tdList = new List<Textdraw>(layers[i].GetTextdrawList().Values);
                     for (int j = 0; j < tdList.Count && j <= 10; j ++)
                     {
                         layer.Duplicate(player, "item#bg", $"item{j}bg");
                         layer.SetTextdrawPosition($"item{j}bg", layer.GetTextdrawPosition("item#bg") + new Vector2(0, j * gapBetweenItems));
+                        layer.SetClickable($"item{j}bg");
+                        if(j==0)
+                            layer.SetTextdrawColor($"item{j}bg", new Color(25, 255, 25, 94));
+                        else
+                            layer.SetTextdrawColor($"item{j}bg", new Color(255, 25, 25, 94));
 
                         layer.Duplicate(player, "item#name", $"item{j}name");
+                        layer.SetTextdrawPosition($"item{j}name", layer.GetTextdrawPosition("item#name") + new Vector2(0, j * gapBetweenItems));
                         layer.SetTextdrawText($"item{j}name", tdList[j].name);
-                        layer.SetClickable($"item{j}name");
-                        Console.WriteLine($"Created item{j}name");
+                        //layer.SetTextdrawText($"item{j}name", $"item{j}name");
                     }
                 }
-                layer.UnselectAllTextdraw();
+                layer.SetClickable("menu-select");
+                layer.SetClickable("menu-duplicate");
+                layer.SetClickable("menu-delete");
+                
+                layer.PutInFront(player, "menu-select");
+                layer.PutInFront(player, "menu-duplicate");
+                layer.PutInFront(player, "menu-delete");
+                
                 this.Hide(@"^layer#.*$");
-                //this.Hide(@"^item#.*$");
+                this.Hide(@"^item#.*$");
                 this.Hide(@"^menu.*$");
                 layer.TextdrawClicked += OnTextdrawClicked;
             }
@@ -108,21 +124,34 @@ namespace SampSharpGameMode1.Display
             {
                 if(e.TextdrawName.StartsWith("item"))
                 {
-                    if (isMenuOpened)
+                    if (lastItemNameClicked == e.TextdrawName)
                         CloseMenu();
                     else
-                        OpenMenu();
+                        OpenMenu(layer.GetTextdrawPosition(e.TextdrawName));
+                    lastItemNameClicked = e.TextdrawName;
+                }
+                else if(e.TextdrawName.StartsWith("menu"))
+                {
+                    CloseMenu();
                 }
             }
 
-            public void OpenMenu()
+            public void OpenMenu(Vector2 position)
             {
-                layer.Show("menu*");
+                layer.SetTextdrawPosition("menubg", position + new Vector2(0, 20));
+                layer.SetTextdrawPosition("menu-select", position + new Vector2(10, 27));
+                layer.SetTextdrawPosition("menu-duplicate", position + new Vector2(10, 44));
+                layer.SetTextdrawPosition("menu-delete", position + new Vector2(10, 62));
+                this.Show(@"^menu.*$");
+                /*
+                player.CancelSelectTextDraw();
+                player.SelectTextDraw(ColorPalette.Primary.Main.GetColor());
+                */
             }
 
             public void CloseMenu()
             {
-                layer.Show("menu*");
+                this.Hide(@"^menu.*$");
             }
         }
 
@@ -160,7 +189,8 @@ namespace SampSharpGameMode1.Display
             player.SendClientMessage(Color.Wheat, "Textdraw creator has been initialized");
             player.SendClientMessage($"Type {ColorPalette.Primary.Main}/td {Color.White}to see all commands");
             player.SendClientMessage($"Press {ColorPalette.Primary.Main}Fire key {Color.White}to change edition mode (position, width/height)");
-            player.SendClientMessage($"Press {ColorPalette.Primary.Main}Y/N {Color.White}to increase/decrease move speed");
+            player.SendClientMessage($"Press {DisplayUtils.GetKeyString(Keys.Yes)} / {DisplayUtils.GetKeyString(Keys.No)} to increase / decrease move speed");
+            player.SendClientMessage($"Press {DisplayUtils.GetKeyString(Keys.Crouch)} to open layer's menu");
         }
         public void Load(string name)
         {
@@ -337,8 +367,10 @@ namespace SampSharpGameMode1.Display
                     {
                         tdMenuHUD = new TextdrawMenuHUD(player, layers);
                         player.SelectTextDraw(ColorPalette.Primary.Main.GetColor());
+                        tdMenuHUD.Refresh(@"^item\d.*$");
                         player.CancelClickTextDraw += (sender, e) =>
                         {
+                            Console.WriteLine("CancelClickTextDraw called");
                             if (tdMenuHUD != null)
                             {
                                 tdMenuHUD.Hide();
@@ -434,10 +466,12 @@ namespace SampSharpGameMode1.Display
                             else if (layers[layerIndex].GetEditingMode(editingTDName) == TextdrawLayer.EditingMode.WidthHeight)
                             {
                                 layers[layerIndex].Resize(editingTDName, new Vector2(0.0, 1.0 * moveSpeed));
+                                /*
                                 if (layers[layerIndex].GetTextdrawType(editingTDName) == TextdrawLayer.TextdrawType.Box)
                                 {
                                     layers[layerIndex].SetTextdrawText(editingTDName, layers[layerIndex].GetTextdrawText(editingTDName) + "\n");
                                 }
+                                */
                             }
                             UpdateRuler();
                             break;
@@ -611,11 +645,15 @@ namespace SampSharpGameMode1.Display
                                     string input = eventArgs.InputText;
                                     if (input.Length > 0)
                                     {
-                                        string[] posStr = input.Split(";");
-                                        if (double.TryParse(posStr[0], out double posX) && double.TryParse(posStr[1], out double posY))
+                                        if(Regex.IsMatch(input, "[0-9]+;[0-9]+"))
                                         {
-                                            layers[layerIndex].SetTextdrawPosition(editingTDName, new Vector2(posX, posY));
-                                            UpdateRuler();
+                                            string[] posStr = input.Split(";");
+                                            if (double.TryParse(posStr[0], out double posX) && double.TryParse(posStr[1], out double posY))
+                                            {
+                                                layers[layerIndex].SetTextdrawPosition(editingTDName, new Vector2(posX, posY));
+                                                UpdateRuler();
+                                            }
+                                            else player.SendClientMessage(Color.Red, "Format error");
                                         }
                                         else player.SendClientMessage(Color.Red, "Format error");
                                     }
@@ -634,11 +672,15 @@ namespace SampSharpGameMode1.Display
                                     string input = eventArgs.InputText;
                                     if (input.Length > 0)
                                     {
-                                        string[] posStr = input.Split(";");
-                                        if (float.TryParse(posStr[0], out float posX) && float.TryParse(posStr[1], out float posY))
+                                        if (Regex.IsMatch(input, "[0-9]+;[0-9]+"))
                                         {
-                                            layers[layerIndex].SetTextdrawSize(editingTDName, posX, posY);
-                                            UpdateRuler();
+                                            string[] posStr = input.Split(";");
+                                            if (float.TryParse(posStr[0], out float posX) && float.TryParse(posStr[1], out float posY))
+                                            {
+                                                layers[layerIndex].SetTextdrawSize(editingTDName, posX, posY);
+                                                UpdateRuler();
+                                            }
+                                            else player.SendClientMessage(Color.Red, "Format error");
                                         }
                                         else player.SendClientMessage(Color.Red, "Format error");
                                     }
@@ -657,11 +699,15 @@ namespace SampSharpGameMode1.Display
                                     string input = eventArgs.InputText;
                                     if (input.Length > 0)
                                     {
-                                        string[] posStr = input.Split(";");
-                                        if (float.TryParse(posStr[0], out float posX) && float.TryParse(posStr[1], out float posY))
+                                        if (Regex.IsMatch(input, @"([0-9](.[0-9]){1})+;([0-9](.[0-9]){1})+"))
                                         {
-                                            layers[layerIndex].SetTextdrawLetterSize(editingTDName, posX, posY);
-                                            UpdateRuler();
+                                            string[] posStr = input.Split(";");
+                                            if (float.TryParse(posStr[0], out float posX) && float.TryParse(posStr[1], out float posY))
+                                            {
+                                                layers[layerIndex].SetTextdrawLetterSize(editingTDName, posX, posY);
+                                                UpdateRuler();
+                                            }
+                                            else player.SendClientMessage(Color.Red, "Format error");
                                         }
                                         else player.SendClientMessage(Color.Red, "Format error");
                                     }

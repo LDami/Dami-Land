@@ -166,6 +166,37 @@ namespace SampSharpGameMode1.Display
         }
 
         /// <summary>
+        /// Hide and Show again all textdraw of this HUD layer or only the <paramref name="element"/> textdraw
+        /// <param name="element">The textdraw name. All textdraws if empty</param>
+        /// </summary>
+        public void Refresh(string element = "")
+        {
+            if (element == "")
+            {
+                layer.HideAll();
+                layer.ShowAll();
+            }
+            else
+            {
+                if (layer.Exists(element))
+                {
+                    layer.Hide(element);
+                    layer.Show(element);
+                }
+                else
+                {
+                    foreach (string td in Utils.GetStringsMatchingRegex(new List<string>(layer.GetTextdrawList().Keys), element))
+                    {
+                        if(td.EndsWith("bg"))
+                            Logger.WriteLineAndClose("HUD.cs - HUD.Refresh:I: " + td + " color: " + layer.GetTextdrawColor(td).ToString() + " " + layer.GetTextdrawColor(td).A);
+                        layer.Hide(td);
+                        layer.Show(td);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Set text to a Textdraw element
         /// </summary>
         /// <param name="element">The textdraw name</param>

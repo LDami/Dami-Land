@@ -119,6 +119,47 @@ namespace SampSharpGameMode1.Display
             return;
         }
 
+        /// <summary>
+        /// Recreates the Textdraw in front of the other
+        /// </summary>
+        /// <param name="owner">BasePlayer to which will be displayed the Textdraw</param>
+        /// <param name="name">Name of the textdraw</param>
+        /// <exception cref="TextdrawNameNotFoundException"></exception>
+        public void PutInFront(BasePlayer owner, string name)
+        {
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFoundException(name);
+
+            Textdraw tmp = new Textdraw(owner, "tmp")
+            {
+                Position = textdrawList[name].Position,
+                LetterSize = textdrawList[name].LetterSize,
+                Width = textdrawList[name].Width,
+                Height = textdrawList[name].Height,
+                Text = textdrawList[name].Text,
+                Font = textdrawList[name].Font,
+                ForeColor = textdrawList[name].ForeColor,
+                BackColor = textdrawList[name].BackColor,
+                Alignment = textdrawList[name].Alignment,
+                UseBox = textdrawList[name].UseBox,
+                Shadow = textdrawList[name].Shadow,
+                type = textdrawList[name].type,
+                Selectable = textdrawList[name].Selectable
+            };
+            if(tmp.Selectable)
+            {
+                tmp.Click += (object sender, SampSharp.GameMode.Events.ClickPlayerTextDrawEventArgs e) =>
+                {
+                    OnTextdrawClicked(new TextdrawEventArgs { TextdrawName = name });
+                };
+            }
+
+            textdrawList[name].Dispose();
+            textdrawList.Remove(name);
+            textdrawList.Add(name, tmp);
+            textdrawList[name].Show();
+        }
+
         public void Duplicate(BasePlayer owner, string name, string targetName)
         {
             if (!textdrawList.ContainsKey(name))
@@ -129,11 +170,14 @@ namespace SampSharpGameMode1.Display
             textdrawList[targetName].Width = textdrawList[name].Width;
             textdrawList[targetName].Height = textdrawList[name].Height;
             textdrawList[targetName].Text = textdrawList[name].Text;
+            textdrawList[targetName].Font = textdrawList[name].Font;
             textdrawList[targetName].ForeColor = textdrawList[name].ForeColor;
             textdrawList[targetName].BackColor = textdrawList[name].BackColor;
             textdrawList[targetName].Alignment = textdrawList[name].Alignment;
             textdrawList[targetName].UseBox = textdrawList[name].UseBox;
+            textdrawList[targetName].Shadow = textdrawList[name].Shadow;
             textdrawList[targetName].type = textdrawList[name].type;
+            textdrawList[targetName].Show();
             textdrawEditMode.Add(targetName, EditingMode.Unselected);
         }
 
@@ -168,7 +212,7 @@ namespace SampSharpGameMode1.Display
         }
         public Vector2 GetTextdrawSize(string name)
         {
-            if (!textdrawType.ContainsKey(name))
+            if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return new Vector2(textdrawList[name].Width, textdrawList[name].Height);
         }
@@ -183,7 +227,7 @@ namespace SampSharpGameMode1.Display
         }
         public Vector2 GetTextdrawLetterSize(string name)
         {
-            if (!textdrawType.ContainsKey(name))
+            if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return textdrawList[name].LetterSize;
         }
@@ -212,7 +256,7 @@ namespace SampSharpGameMode1.Display
         }
         public Vector2 GetTextdrawPosition(string name)
         {
-            if (!textdrawType.ContainsKey(name))
+            if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return textdrawList[name].Position;
         }
@@ -244,7 +288,7 @@ namespace SampSharpGameMode1.Display
         }
         public TextdrawType GetTextdrawType(string name)
         {
-            if (!textdrawType.ContainsKey(name))
+            if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return textdrawType[name];
         }
