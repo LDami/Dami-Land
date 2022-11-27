@@ -79,11 +79,9 @@ namespace SampSharpGameMode1.Commands
 
 
         [Command("interior-preview")]
-        private static void InteriorPreviewCommand(Player player)
+        private static void InteriorPreviewCommand(Player player, int id = 0)
         {
-            if (player.InteriorPreview == null)
-                player.InteriorPreview = new InteriorPreview(player);
-            player.InteriorPreview.Display();
+            player.InteriorPreview.Display(id);
         }
         [Command("interior-log")]
         private static void InteriorLogCommand(Player player)

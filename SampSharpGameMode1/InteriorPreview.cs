@@ -6,7 +6,7 @@ using System.Text;
 
 namespace SampSharpGameMode1
 {
-    class InteriorPreview
+    public class InteriorPreview
     {
         class HUD : Display.HUD
         {
@@ -45,19 +45,30 @@ namespace SampSharpGameMode1
         {
             this.player = player;
             hud = new HUD(player);
+            hud.Hide();
             hud.Clicked += Hud_Clicked;
             player.CancelClickTextDraw += Player_CancelClickTextDraw;
         }
 
-        public void Display()
+        public void Display(int id = 0)
         {
+            if(id > 0 && id < CustomDatas.InteriorData.Interiors.Count - 1)
+            {
+                selectedIdx = id;
+                CustomDatas.InteriorData interior = CustomDatas.InteriorData.Interiors[selectedIdx];
+                hud.SetInterior(interior.Id, interior.Name);
+                player.Interior = interior.Id;
+                player.Teleport(interior.Position);
+                player.Angle = interior.Rotation;
+                player.PutCameraBehindPlayer();
+            }
             hud.Show();
             player.SelectTextDraw(ColorPalette.Primary.Main.GetColor());
         }
 
         public void Hide()
         {
-            hud.Destroy();
+            hud.Hide();
         }
 
         public CustomDatas.InteriorData GetInterior()
@@ -70,7 +81,7 @@ namespace SampSharpGameMode1
             Hide();
         }
 
-        private void Hud_Clicked(object sender, Display.TextdrawLayer.TextdrawEventArgs e)
+        private void Hud_Clicked(object sender, TextdrawLayer.TextdrawEventArgs e)
         {
             if (e.TextdrawName == "leftbutton")
             {
