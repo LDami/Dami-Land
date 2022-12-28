@@ -359,7 +359,7 @@ namespace SampSharpGameMode1
                     Dictionary<string, object> param = new Dictionary<string, object>();
                     param.Add("@name", this.Name);
                     param.Add("@password", hashPassword);
-                    this.DbId = Convert.ToInt32(mySQLConnector.Execute("INSERT INTO users (name, password, adminlvl) VALUES (@name, @password, 0)", param));
+                    this.DbId = Convert.ToInt32(mySQLConnector.Execute("INSERT INTO users (name, password, adminlvl, money) VALUES (@name, @password, 0, 0)", param));
                     if (mySQLConnector.RowsAffected == 0)
                     {
                         this.SendClientMessage(Color.Red, "An error occured, please try again later");
@@ -419,7 +419,7 @@ namespace SampSharpGameMode1
                 {
                     Dictionary<string, object> param = new Dictionary<string, object>();
                     param.Add("@name", this.Name);
-                    mySQLConnector.OpenReader("SELECT password, adminlvl FROM users WHERE name=@name", param);
+                    mySQLConnector.OpenReader("SELECT password, adminlvl, money FROM users WHERE name=@name", param);
                     Dictionary<string, string> results = mySQLConnector.GetNextRow();
                     mySQLConnector.CloseReader();
                     if (results.Count > 0)
@@ -429,6 +429,7 @@ namespace SampSharpGameMode1
                             this.Notificate("Logged in" + ((Adminlevel > 0) ? " as admin" : ""));
                             isAuthenticated = true;
                             Adminlevel = Convert.ToInt32(results["adminlvl"]);
+                            this.Money = Convert.ToInt32(results["money"] == "[null]" ? "0" : results["money"]);
                             loginDateTime = DateTime.Now;
 
                             // Check if user exists in user_stats (compatiblity for version < 1.0)
@@ -497,14 +498,15 @@ namespace SampSharpGameMode1
                 if (newPassword != null)
                 {
                     string hashPassword = Password.Crypt(newPassword);
-                    query = "UPDATE users SET name=@name, password=@password, adminlvl=@adminlvl WHERE id=@id";
+                    query = "UPDATE users SET name=@name, password=@password, adminlvl=@adminlvl, money=@money WHERE id=@id";
                     param.Add("@password", hashPassword);
                 }
                 else
-                    query = "UPDATE users SET name=@name, adminlvl=@adminlvl WHERE id=@id";
+                    query = "UPDATE users SET name=@name, adminlvl=@adminlvl, money=@money WHERE id=@id";
                 param.Add("@id", this.DbId);
                 param.Add("@name", this.Name);
                 param.Add("@adminlvl", this.Adminlevel);
+                param.Add("@money", this.Money);
                 mySQLConnector.Execute(query, param);
 
                 query = "UPDATE user_stats SET stat_playtime=@playtime, stat_playedraces=@playedraces, stat_playedderbies=@playedderbies WHERE user_id=@id";
