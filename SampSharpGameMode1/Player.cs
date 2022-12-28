@@ -71,6 +71,10 @@ namespace SampSharpGameMode1
         public Event pEvent;
         public bool IsInEvent { get => !(pEvent is null); }
 
+        //Work
+        public Works.WorkBase pWork;
+        public bool IsInWork { get => !(pWork is null); }
+
         //NPC npc;
         VehicleAI vehicleAI;
         private SampSharp.GameMode.SAMP.Timer pathObjectsTimer;
