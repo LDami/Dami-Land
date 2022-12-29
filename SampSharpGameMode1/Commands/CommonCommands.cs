@@ -159,5 +159,11 @@ namespace SampSharpGameMode1.Commands
         {
             player.SpecialAction = SpecialAction.Usejetpack;
         }
+
+        [Command("getzone")]
+        private static void GetZoneCommand(Player player)
+        {
+            player.SendClientMessage("Your current zone is: " + Zone.GetDetailedZoneName(player.Position));
+        }
     }
 }

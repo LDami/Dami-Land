@@ -221,7 +221,7 @@ namespace SampSharpGameMode1
             results.Add("Number of objects", nbrOfObjects.ToString());
             mySQLConnector.CloseReader();
 
-            string zoneStr = Zone.GetZoneName(firstObjectPos);
+            string zoneStr = Zone.GetMainZoneName(firstObjectPos);
             results.Add("Zone", zoneStr);
 
             List<string> usedBy = new List<string>();

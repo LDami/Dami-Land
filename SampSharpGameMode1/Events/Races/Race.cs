@@ -1007,7 +1007,7 @@ namespace SampSharpGameMode1.Events.Races
             results.Add("Number of checkpoints", nbrOfCheckpoints.ToString());
             mySQLConnector.CloseReader();
 
-            string zoneStr = Zone.GetZoneName(firstCheckpointPos);
+            string zoneStr = Zone.GetMainZoneName(firstCheckpointPos);
             results.Add("Zone", zoneStr);
 
             mySQLConnector.OpenReader("SELECT COUNT(spawn_index) as nbr " +

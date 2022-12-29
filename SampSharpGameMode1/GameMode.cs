@@ -153,6 +153,8 @@ namespace SampSharpGameMode1
                 logger.WriteLine("GameMode.cs - GameMode.OnInitialized:E: Error trying to load vehicles: " + ex.Message);
             }
 
+            Zone.InitZones();
+
             logger.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Initializing works ...");
             Works.TruckWork.Init();
             logger.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Works initialized.");

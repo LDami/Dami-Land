@@ -71,6 +71,13 @@ namespace SampSharpGameMode1.Commands
             }
             player.SendClientMessage("Done.");
         }
+        [Command("reload-zones", PermissionChecker = typeof(AdminPermissionChecker))]
+        private static void ReloadZones(Player player)
+        {
+            player.SendClientMessage("Reloading all zones ...");
+            Zone.InitZones();
+            player.SendClientMessage("Done.");
+        }
         [Command("getmodel")]
         private static void GetModel(Player player, string model)
         {
@@ -392,12 +399,12 @@ namespace SampSharpGameMode1.Commands
         [Command("whereami")]
         private static void WhereAmICommand(Player player)
         {
-            player.SendClientMessage($"Position: {player.Position} ; VirtualWorld: {player.VirtualWorld}");
+            player.SendClientMessage($"Position: {player.Position} ; VirtualWorld: {player.VirtualWorld} ; Zone: {Zone.GetDetailedZoneName(player.Position)}");
         }
         [Command("whereis")]
         private static void WhereIsCommand(Player player, Player targetPlayer)
         {
-            player.SendClientMessage($"Position of {targetPlayer.Name}: {targetPlayer.Position} ; VirtualWorld: {targetPlayer.VirtualWorld}");
+            player.SendClientMessage($"Position of {targetPlayer.Name}: {targetPlayer.Position} ; VirtualWorld: {targetPlayer.VirtualWorld} ; Zone: {Zone.GetDetailedZoneName(targetPlayer.Position)}");
         }
         [Command("pickup", PermissionChecker = typeof(AdminPermissionChecker))]
         private static void PickupCommand(Player player)

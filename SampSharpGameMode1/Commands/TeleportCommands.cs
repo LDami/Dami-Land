@@ -127,7 +127,7 @@ namespace SampSharpGameMode1.Commands
                         param.Add("@pos_y", e.Player.Position.Y);
                         param.Add("@pos_z", e.Player.Position.Z);
                         param.Add("@angle", e.Player.Angle);
-                        param.Add("@zone", Zone.GetZoneName(e.Player.Position));
+                        param.Add("@zone", Zone.GetDetailedZoneName(e.Player.Position));
                         mySQLConnector.Execute("INSERT INTO teleportations (teleport_name, teleport_pos_x, teleport_pos_y, teleport_pos_z, teleport_angle, teleport_zone) VALUES" +
                             "(@name, @pos_x, @pos_y, @pos_z, @angle, @zone)", param);
                         if (mySQLConnector.RowsAffected > 0)
