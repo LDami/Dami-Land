@@ -53,6 +53,11 @@ namespace SampSharpGameMode1.Works
                 new DepositPoint { Position = new Vector3(2783.2, 2575.85, 11.4), Name = "Las Venturas commercial center" },
                 new DepositPoint { Position = new Vector3(2228.28, 72.93, 27), Name = "Palomino Creek" },
                 new DepositPoint { Position = new Vector3(1345.45, 280.97, 20.14), Name = "Montgomery Sprunk factory" },
+                new DepositPoint { Position = new Vector3(2662.76, 1727.62, 10.54), Name = "Pilgrim commercial center" },
+                new DepositPoint { Position = new Vector3(2184.47, 2014.2075, 10.53), Name = "Old Venturas Strip 24 Seven" },
+                new DepositPoint { Position = new Vector3(1432.82, 990.97, 10.54), Name = "Las Venturas Freight Depot" },
+                new DepositPoint { Position = new Vector3(-158.47, 1168.99, 19.46), Name = "Fort Carson Home Furnishings" },
+                new DepositPoint { Position = new Vector3(2356.05, 2772.37, 10.54), Name = "Spinybed Freight Depot" },
             };
         }
 
