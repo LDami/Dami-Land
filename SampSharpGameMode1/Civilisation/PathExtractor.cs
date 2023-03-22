@@ -40,6 +40,16 @@ namespace SampSharpGameMode1.Civilisation
             public bool emergencyOnly;
             public bool isHighway;
             public int spawnProbability;
+            public override string ToString()
+            {
+                return "linkCount: " + linkCount + "\r\n" +
+                    "trafficLevel: " + trafficLevel + "\r\n" +
+                    "roadBlocks: " + roadBlocks + "\r\n" +
+                    "isWater: " + isWater + "\r\n" +
+                    "emergencyOnly: " + emergencyOnly + "\r\n" +
+                    "isHighway: " + isHighway + "\r\n" +
+                    "spawnProbability: " + spawnProbability + "\r\n";
+            }
         }
 
         public struct PathNode
@@ -222,12 +232,12 @@ namespace SampSharpGameMode1.Civilisation
                             tmpPathNode.links = new List<LinkInfo>();
 
                             tmpPathNode.flags.linkCount = tmpFlag & 0xF;
-                            tmpPathNode.flags.trafficLevel = tmpFlag & 0x30;
+                            tmpPathNode.flags.trafficLevel = (tmpFlag & 0x30) >> 4;
                             tmpPathNode.flags.roadBlocks = Convert.ToBoolean(tmpFlag & 0x40);
                             tmpPathNode.flags.isWater = Convert.ToBoolean(tmpFlag & 0x80);
                             tmpPathNode.flags.emergencyOnly = Convert.ToBoolean(tmpFlag & 0x100);
                             tmpPathNode.flags.isHighway = !Convert.ToBoolean(tmpFlag & 0x1000);
-                            tmpPathNode.flags.spawnProbability = tmpFlag & 0xF0000;
+                            tmpPathNode.flags.spawnProbability = (tmpFlag & 0xF0000) >> 16;
 
                             //if (index > 40) Logger.WriteLine("Area ID: " + tmpPathNode.areaID + "\tNode ID: " + tmpPathNode.nodeID);
                             if ((NodeType)tmpPathNode.nodeType == NodeType.Cars)
@@ -490,6 +500,68 @@ namespace SampSharpGameMode1.Civilisation
             return null;
         }
 
+        protected static MySQLConnector mySQLConnector = MySQLConnector.Instance();
+        public static void ExportPathNodesToSQL()
+        {
+            Dictionary<string, object> param;
+            for (int i = 0; i < 64; i++)
+            {
+                foreach (PathNode pathNode in pathNodes[i])
+                {
+                    int flagInt = 0;
+                    flagInt |= (pathNode.flags.linkCount & 0xF);
+                    flagInt |= ((pathNode.flags.trafficLevel & 0x3) << 4);
+                    if (pathNode.flags.roadBlocks)
+                        flagInt |= (1 << 6);
+                    if (pathNode.flags.isWater)
+                        flagInt |= (1 << 7);
+                    if (pathNode.flags.emergencyOnly)
+                        flagInt |= (1 << 8);
+                    if (pathNode.flags.isHighway)
+                        flagInt |= (1 << 12);
+                    flagInt |= ((pathNode.flags.spawnProbability & 0xF) << 16);
+
+                    Logger.WriteLineAndClose("flagInt = " + flagInt);
+                    Logger.WriteLineAndClose("flag = " + pathNode.flags.ToString());
+
+                    param = new Dictionary<string, object>
+                    {
+                        { "@pos_x", pathNode.position.X },
+                        { "@pos_y", pathNode.position.Y },
+                        { "@pos_z", pathNode.position.Z },
+                        { "@link_id", pathNode.linkID },
+                        { "@area_id", pathNode.areaID },
+                        { "@index", pathNode.nodeID },
+                        { "@path_width", pathNode.pathWidth },
+                        { "@type", pathNode.nodeType },
+                        { "@flags", pathNode.flags },
+                    };
+                    mySQLConnector.Execute("INSERT INTO map_pathnodes " +
+                        "(node_pos_x, node_pos_y, node_pos_z, node_link_id, node_area_id, node_index, node_path_width, node_type, node_flags) VALUES " +
+                        "(@pos_x, @pos_y, @pos_z, @link_id, @area_id, @index, @path_width, @type, @flags)", param);
+                }
+                Logger.WriteLineAndClose("SQL Export done for nodes in NODES" + i + ".dat");
+            }
+            for (int i = 0; i < 64; i++)
+            {
+                foreach (PathNode pathNode in pathNodes[i])
+                {
+                    foreach (LinkInfo link in pathNode.links)
+                    {
+                        param = new Dictionary<string, object>
+                        {
+                            { "@pathnode_id", pathNode.id },
+                            { "@target_id", link.targetNode.id },
+                            { "@navinode_id", link.naviNodeLink.id },
+                        };
+                        mySQLConnector.Execute("INSERT INTO map_pathnodes_links " +
+                            "(pathnode_id, target_id, navinode_id) VALUES " +
+                            "(@pathnode_id, @target_id, @navinode_id)", param);
+                    }
+                }
+                Logger.WriteLineAndClose("SQL Export done for links in NODES" + i + ".dat");
+            }
+        }
         public static List<PathNode> GetPathNodes()
         {
             List<PathNode> result = new List<PathNode>();
