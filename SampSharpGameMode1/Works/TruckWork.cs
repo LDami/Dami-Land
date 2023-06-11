@@ -13,15 +13,32 @@ namespace SampSharpGameMode1.Works
         public Vector3 Position;
         public string Name;
     }
+
+    class Trailer
+    {
+        BaseVehicle vehicle;
+        public BaseVehicle Vehicle { get { return vehicle; } }
+        int packages = 0;
+        public int Packages { get { return packages; } set { packages = value; } }
+        public Trailer(BaseVehicle vehicle, int packages = 0)
+        {
+            this.vehicle = vehicle;
+            this.packages = packages;
+        }
+        
+    }
     public class TruckWork : WorkBase
     {
         private const int MAX_TRAILER_PACKAGES = 100;
+        public static readonly Color DEPOT_COLOR = Color.AliceBlue;
         public static Vector3 StartPosition { get; private set; }
         private static List<BaseVehicle> vehicles;
-        private static List<BaseVehicle> trailers;
+        private static List<Trailer> trailers;
+        private static Dictionary<int, int> trailersPackages = new Dictionary<int, int>();
         private static List<DepositPoint> depositPoints;
         private static DepositPoint truckDepot = new DepositPoint { Name = "Truck Depot", Position = new Vector3(2824.53, 915.35, 11.33) };
         private static DynamicCheckpoint startWorkCheckpoint;
+        private static DynamicMapIcon trailerMapIcon;
         public static void Init()
         {
             StartPosition = new Vector3(2814.61, 969.70, 10.75);
@@ -33,15 +50,23 @@ namespace SampSharpGameMode1.Works
                 work.StartWork(e.Player as Player);
             };
 
-            vehicles = new List<BaseVehicle>();
-            vehicles.Add(BaseVehicle.Create(SampSharp.GameMode.Definitions.VehicleModelType.Tanker, new Vector3(2838.61, 980.88, 11.34), 180, 0, 0));
-            vehicles.Add(BaseVehicle.Create(SampSharp.GameMode.Definitions.VehicleModelType.Tanker, new Vector3(2859.47, 937.65, 11.34), 270, 0, 0));
-            vehicles.Add(BaseVehicle.Create(SampSharp.GameMode.Definitions.VehicleModelType.Tanker, new Vector3(2859.47, 931.92, 11.34), 270, 0, 0));
+            trailerMapIcon = new DynamicMapIcon(truckDepot.Position, DEPOT_COLOR, SampSharp.GameMode.Definitions.MapIconType.LocalCheckPoint);
+            foreach (BasePlayer p in BasePlayer.All)
+                trailerMapIcon.HideForPlayer(p);
 
-            trailers = new List<BaseVehicle>();
-            trailers.Add(BaseVehicle.Create(SampSharp.GameMode.Definitions.VehicleModelType.ArticleTrailer, new Vector3(2855.2, 895.5, 10.67), 0, 0, 0));
-            trailers.Add(BaseVehicle.Create(SampSharp.GameMode.Definitions.VehicleModelType.ArticleTrailer, new Vector3(2827.44, 895.5, 10.68), 0, 0, 0));
-            trailers.Add(BaseVehicle.Create(SampSharp.GameMode.Definitions.VehicleModelType.ArticleTrailer, new Vector3(2817.93, 895.5, 10.67), 0, 0, 0));
+            vehicles = new List<BaseVehicle>
+            {
+                BaseVehicle.Create(SampSharp.GameMode.Definitions.VehicleModelType.Tanker, new Vector3(2838.61, 980.88, 11.34), 180, 0, 0),
+                BaseVehicle.Create(SampSharp.GameMode.Definitions.VehicleModelType.Tanker, new Vector3(2859.47, 937.65, 11.34), 270, 0, 0),
+                BaseVehicle.Create(SampSharp.GameMode.Definitions.VehicleModelType.Tanker, new Vector3(2859.47, 931.92, 11.34), 270, 0, 0)
+            };
+
+            trailers = new List<Trailer>
+            {
+                new Trailer(BaseVehicle.Create(SampSharp.GameMode.Definitions.VehicleModelType.ArticleTrailer, new Vector3(2855.2, 895.5, 10.67), 0, 0, 0), 100),
+                new Trailer(BaseVehicle.Create(SampSharp.GameMode.Definitions.VehicleModelType.ArticleTrailer, new Vector3(2827.44, 895.5, 10.68), 0, 0, 0), 100),
+                new Trailer(BaseVehicle.Create(SampSharp.GameMode.Definitions.VehicleModelType.ArticleTrailer, new Vector3(2817.93, 895.5, 10.67), 0, 0, 0), 100)
+            };
 
             depositPoints = new List<DepositPoint>
             {
@@ -66,7 +91,7 @@ namespace SampSharpGameMode1.Works
         private DynamicCheckpoint currentCP;
         private int currentRound;
         private bool isTrailerAttached;
-        private int trailerPackages;
+        private Trailer currentTrailer;
         public void StartWork(Player player)
         {
             if (!player.IsInWork)
@@ -75,7 +100,7 @@ namespace SampSharpGameMode1.Works
                 player.pWork = this;
                 currentRound = 0;
                 Logger.WriteLineAndClose("TruckWork.cs - TruckWork.StartWork:I: " + player.Name + " has started Truck work");
-                player.SendClientMessage("Truck work has started, please take one of the trucks");
+                player.SendClientMessage($"Truck work has started, please take one of the trucks. You can leave the work with {ColorPalette.Primary.Main}/leavework");
                 player.EnterVehicle += (sender, e) =>
                 {
                     if (vehicles.Contains(e.Vehicle) && !e.IsPassenger)
@@ -88,6 +113,7 @@ namespace SampSharpGameMode1.Works
                         else
                         {
                             isTrailerAttached = true;
+                            currentTrailer = new Trailer(e.Player.Vehicle.Trailer);
                             GoToDepot(player);
                         }
                     }
@@ -96,6 +122,21 @@ namespace SampSharpGameMode1.Works
             }
             else
                 player.SendClientMessage("You must quit your current job before");
+        }
+
+        public void StopWork(Player player)
+        {
+            if(player.IsInWork)
+            {
+                if(currentTrailer != null)
+                    currentTrailer.Vehicle.Respawn();
+                player.Update -= Player_Update;
+                if(currentCP != null)
+                   currentCP.Dispose();
+                player.pWork = null;
+                startWorkCheckpoint.ShowForPlayer(player);
+                player.SendClientMessage("You have quit your job");
+            }
         }
 
         private void Player_Update(object sender, SampSharp.GameMode.Events.PlayerUpdateEventArgs e)
@@ -108,7 +149,9 @@ namespace SampSharpGameMode1.Works
                     if(isTrailerAttached)
                     {
                         Logger.WriteLineAndClose("TruckWork.cs - TruckWork.Player_Update:I: " + p.Name + " has detached his trailer");
+                        p.SendClientMessage($"You've lost your trailer, you can't continue without it ! Take a new trailer in the {DEPOT_COLOR}depot{Color.White} if needed.");
                         currentCP.HideForPlayer(p);
+                        trailerMapIcon.ShowForPlayer(p);
                     }
                     isTrailerAttached = false;
                 }
@@ -116,11 +159,22 @@ namespace SampSharpGameMode1.Works
                 {
                     if (!isTrailerAttached)
                     {
-                        Logger.WriteLineAndClose("TruckWork.cs - TruckWork.Player_Update:I: " + p.Name + " has atached a trailer");
+                        Logger.WriteLineAndClose("TruckWork.cs - TruckWork.Player_Update:I: " + p.Name + " has attached a trailer");
+                        if(currentTrailer == null)
+                            currentTrailer = new Trailer(p.Vehicle.Trailer);
+                        if (p.Vehicle.Trailer.Id != currentTrailer.Vehicle.Id)
+                        {
+                            p.SendClientMessage($"You have been fined $500 for the packages you lost in the previous trailer");
+                            p.GiveMoney(-500);
+                            p.Notificate("~r~- $500");
+                            currentTrailer = new Trailer(p.Vehicle.Trailer);
+                            currentCP = null; // Cancelling the current route
+                        }
                         if (currentCP == null)
                             SetNewDeposit(p);
                         else
                             currentCP.ShowForPlayer(p);
+                        trailerMapIcon.HideForPlayer(p);
                     }
                     isTrailerAttached = true;
                 }
@@ -130,9 +184,9 @@ namespace SampSharpGameMode1.Works
         public void SetNewDeposit(Player player, bool decrementTrailerPackages = true)
         {
             Random rand = new Random();
-            if(decrementTrailerPackages)
-                trailerPackages -= rand.Next(10, 30);
-            if (trailerPackages <= 0)
+            if (decrementTrailerPackages)
+                currentTrailer.Packages -= rand.Next(10, 30);
+            if (currentTrailer.Packages <= 0)
             {
                 GoToDepot(player);
             }
@@ -151,13 +205,13 @@ namespace SampSharpGameMode1.Works
                     SetNewDeposit(e.Player as Player);
                 };
 
-                player.SendClientMessage($"Next destination: {ColorPalette.Primary.Main}{currentDepositPoint.Name}{Color.White} ({trailerPackages}/{MAX_TRAILER_PACKAGES} packages left)");
+                player.SendClientMessage($"Next destination: {ColorPalette.Primary.Main}{currentDepositPoint.Name}{Color.White} ({currentTrailer.Packages}/{MAX_TRAILER_PACKAGES} packages left)");
             }
         }
 
         public void GoToDepot(Player player)
         {
-            trailerPackages = 0;
+            currentTrailer.Packages = 0;
             currentDepositPoint = truckDepot;
 
             if (currentCP != null)
@@ -168,16 +222,17 @@ namespace SampSharpGameMode1.Works
             currentCP.ShowForPlayer(player);
             currentCP.Enter += (sender, e) =>
             {
-                trailerPackages = 100;
+                currentTrailer.Packages = 100;
                 SetNewDeposit(e.Player as Player, false);
             };
-            player.SendClientMessage($"Next destination: {ColorPalette.Primary.Main}{currentDepositPoint.Name}{Color.White}");
-            if (currentRound > 0)
+            player.SendClientMessage($"Your trailer is empty, next destination: {ColorPalette.Primary.Main}{currentDepositPoint.Name}{Color.White}");
+            if(currentRound > 0)
             {
                 int money = currentRound * 1500;
                 player.GiveMoney(money);
-                player.Notificate($"~g~+ {money}$");
+                player.Notificate($"~g~+ ${money}");
             }
+            currentRound++;
         }
     }
 }
