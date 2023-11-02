@@ -5,6 +5,7 @@ using SampSharp.Streamer.World;
 using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
+using static SampSharpGameMode1.Civilisation.PathExtractor;
 
 namespace SampSharpGameMode1.Works
 {
@@ -30,11 +31,10 @@ namespace SampSharpGameMode1.Works
     public class TruckWork : WorkBase
     {
         private const int MAX_TRAILER_PACKAGES = 100;
-        public static readonly Color DEPOT_COLOR = Color.AliceBlue;
+        public static readonly Color COLOR_DEPOT = Color.AliceBlue;
         public static Vector3 StartPosition { get; private set; }
         private static List<BaseVehicle> vehicles;
         private static List<Trailer> trailers;
-        private static Dictionary<int, int> trailersPackages = new Dictionary<int, int>();
         private static List<DepositPoint> depositPoints;
         private static DepositPoint truckDepot = new DepositPoint { Name = "Truck Depot", Position = new Vector3(2824.53, 915.35, 11.33) };
         private static DynamicCheckpoint startWorkCheckpoint;
@@ -50,7 +50,7 @@ namespace SampSharpGameMode1.Works
                 work.StartWork(e.Player as Player);
             };
 
-            trailerMapIcon = new DynamicMapIcon(truckDepot.Position, DEPOT_COLOR, SampSharp.GameMode.Definitions.MapIconType.LocalCheckPoint);
+            trailerMapIcon = new DynamicMapIcon(truckDepot.Position, COLOR_DEPOT, SampSharp.GameMode.Definitions.MapIconType.LocalCheckPoint);
             foreach (BasePlayer p in BasePlayer.All)
                 trailerMapIcon.HideForPlayer(p);
 
@@ -101,32 +101,21 @@ namespace SampSharpGameMode1.Works
                 currentRound = 0;
                 Logger.WriteLineAndClose("TruckWork.cs - TruckWork.StartWork:I: " + player.Name + " has started Truck work");
                 player.SendClientMessage($"Truck work has started, please take one of the trucks. You can leave the work with {ColorPalette.Primary.Main}/leavework");
-                player.EnterVehicle += (sender, e) =>
-                {
-                    if (vehicles.Contains(e.Vehicle) && !e.IsPassenger)
-                    {
-                        if (e.Vehicle.Trailer == null)
-                        {
-                            isTrailerAttached = false;
-                            player.SendClientMessage("Great, now attach a trailer");
-                        }
-                        else
-                        {
-                            isTrailerAttached = true;
-                            currentTrailer = new Trailer(e.Player.Vehicle.Trailer);
-                            GoToDepot(player);
-                        }
-                    }
-                };
+                player.EnterVehicle += Player_EnterVehicle;
                 player.Update += Player_Update;
             }
             else
-                player.SendClientMessage("You must quit your current job before");
+            {
+                if(player.pWork == this)
+                    player.SendClientMessage("You are already working in this truck depot");
+                else
+                    player.SendClientMessage("You must quit your current job before");
+            }
         }
 
         public void StopWork(Player player)
         {
-            if(player.IsInWork)
+            if(player.IsInWork && player.pWork == this)
             {
                 if(currentTrailer != null)
                     currentTrailer.Vehicle.Respawn();
@@ -135,7 +124,27 @@ namespace SampSharpGameMode1.Works
                    currentCP.Dispose();
                 player.pWork = null;
                 startWorkCheckpoint.ShowForPlayer(player);
-                player.SendClientMessage("You have quit your job");
+                player.SendClientMessage("You quit your job");
+            }
+        }
+
+        private void Player_EnterVehicle(object sender, SampSharp.GameMode.Events.EnterVehicleEventArgs e)
+        {
+            if (vehicles.Contains(e.Vehicle) && !e.IsPassenger)
+            {
+                if (e.Vehicle.Trailer == null)
+                {
+                    isTrailerAttached = false;
+                    e.Player.SendClientMessage("Great, now attach a trailer");
+                    e.Player.EnterVehicle -= Player_EnterVehicle;
+                }
+                else
+                {
+                    isTrailerAttached = true;
+                    currentTrailer = new Trailer(e.Vehicle.Trailer);
+                    GoToDepot(e.Player as Player);
+                    e.Player.EnterVehicle -= Player_EnterVehicle;
+                }
             }
         }
 
@@ -149,7 +158,7 @@ namespace SampSharpGameMode1.Works
                     if(isTrailerAttached)
                     {
                         Logger.WriteLineAndClose("TruckWork.cs - TruckWork.Player_Update:I: " + p.Name + " has detached his trailer");
-                        p.SendClientMessage($"You've lost your trailer, you can't continue without it ! Take a new trailer in the {DEPOT_COLOR}depot{Color.White} if needed.");
+                        p.SendClientMessage($"You've lost your trailer, you can't continue without it ! Take a new trailer in the {COLOR_DEPOT}depot{Color.White} if needed.");
                         currentCP.HideForPlayer(p);
                         trailerMapIcon.ShowForPlayer(p);
                     }
