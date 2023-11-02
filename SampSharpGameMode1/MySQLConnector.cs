@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Text;
 using System.Threading;
-using MySql.Data;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 
 namespace SampSharpGameMode1
 {
@@ -50,12 +49,12 @@ namespace SampSharpGameMode1
                 {
                     mySqlConnection = new MySqlConnection(connstring);
                     mySqlConnection.Open();
-                    Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.Connect:I: Connected to the database");
+                    Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.Connect:I: Connected to the database " + mySqlConnection.Database);
                     return true;
                 }
-                catch (MySqlException e)
+                catch(Exception e)
                 {
-                    Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.Connect:E: Unable to connect to the database: " + e.Code);
+                    Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.Connect:E: Unable to connect to the database: " + e.Message);
                     mySqlConnection = null;
                     return false;
                 }
@@ -188,14 +187,14 @@ namespace SampSharpGameMode1
                         if (reader.IsDBNull(i))
                             value = "[null]";
                         else
-                            value = reader.GetString(i);
+                            value = reader.GetValue(i).ToString();
                         try
                         {
                             result.Add(reader.GetName(i), value);
                         }
                         catch(ArgumentException e)
                         {
-                            Console.WriteLine($"Unable to add the key {reader.GetName(i)}, maybe you have this column twice in the result of the SQL query.");
+                            Console.WriteLine($"Unable to add the key {reader.GetName(i)}, you may have this column twice in the result of the SQL query.");
                         }
                     }
                 }

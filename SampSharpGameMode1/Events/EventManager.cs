@@ -1,5 +1,4 @@
-﻿using Google.Protobuf;
-using SampSharp.GameMode.Definitions;
+﻿using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
 using SampSharp.GameMode.SAMP;
 using SampSharpGameMode1.Events.Races;
