@@ -159,7 +159,13 @@ namespace SampSharpGameMode1
                 Adminlevel = 0;
 
                 mySQLConnector = null;
+
+                if (mapCreator != null)
+                    mapCreator.Unload();
                 mapCreator = null;
+
+                if(eventCreator != null)
+                    eventCreator.Unload();
                 eventCreator = null;
 
                 Speedometer = null;
