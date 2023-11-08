@@ -64,6 +64,8 @@ namespace SampSharpGameMode1.Events.Races
 
         HUD hud;
 
+        public int EventId { get => editingRace.Id; }
+
         public Race editingRace = null;
         EditingMode editingMode;
         public bool isNew;

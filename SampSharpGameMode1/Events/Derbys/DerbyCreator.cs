@@ -52,6 +52,7 @@ namespace SampSharpGameMode1.Events.Derbys
         Player player;
         HUD hud;
 
+        public int EventId { get => editingDerby.Id; }
         public Derby editingDerby = null;
         EditingMode editingMode;
         public bool isNew;

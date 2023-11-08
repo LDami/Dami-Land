@@ -183,7 +183,7 @@ namespace SampSharpGameMode1.Events
 
         public void ShowCreateEventNameDialog(Player player, EventType eventType)
         {
-            InputDialog createEventNameDialog = new InputDialog(eventType.ToString() + " name", "Type the " + eventType.ToString() + " name you are looking for, or empty for random. You can also search by creator name", false, "Search", "Cancel");
+            InputDialog createEventNameDialog = new InputDialog(eventType.ToString() + " name", "Type the " + eventType.ToString() + " name you are looking for, or empty for all. You can also search by creator name", false, "Search", "Cancel");
             createEventNameDialog.Show(player);
             createEventNameDialog.Response += (sender, eventArgs) =>
             {
@@ -245,15 +245,36 @@ namespace SampSharpGameMode1.Events
             }
             else
             {
+                // Check if someone is editing a race or a derby
+                List<int> editingEvents = new List<int>();
+                foreach(Player p in Player.All)
+                {
+                    if(p.eventCreator != null)
+                    {
+                        if(p.eventCreator.EventId > -1)
+                        {
+                            editingEvents.Add(p.eventCreator.EventId);
+                        }
+                    }
+                }
+
                 List<int> foundEvents = new List<int>();
                 ListDialog eventSearchDialog = new ListDialog("Found " + eventType.ToString() + "s", "Launch", "Cancel");
                 while (row.Count > 0)
                 {
-                    foundEvents.Add(Convert.ToInt32(row[key_id]));
-                    eventSearchDialog.AddItem(row[key_id] + "_" + ColorPalette.Primary.Main + row[key_name] + ColorPalette.Primary.Lighten + " by " + ColorPalette.Primary.Main + row[key_creator]);
+                    if(!editingEvents.Contains(Convert.ToInt32(row[key_id])))
+                    {
+                        foundEvents.Add(Convert.ToInt32(row[key_id]));
+                        eventSearchDialog.AddItem(row[key_id] + "_" + ColorPalette.Primary.Main + row[key_name] + ColorPalette.Primary.Lighten + " by " + ColorPalette.Primary.Main + row[key_creator]);
+                    }
                     row = GameMode.mySQLConnector.GetNextRow();
                 }
                 GameMode.mySQLConnector.CloseReader();
+                if(foundEvents.Count == 0)
+                {
+                    player.Notificate("No results");
+                    ShowCreateEventNameDialog(player, eventType);
+                }
                 eventSearchDialog.Show(player);
                 eventSearchDialog.Response += (sender, eventArgs) =>
                 {

@@ -7,6 +7,10 @@ namespace SampSharpGameMode1.Events
     public interface EventCreator
     {
         /// <summary>
+        ///     Gets or Sets the edited event ID
+        /// </summary>
+        public int EventId { get; }
+        /// <summary>
         ///     Creates a new event (race, derby, ...)
         /// </summary>
         public void Create();

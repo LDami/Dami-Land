@@ -16,6 +16,7 @@ namespace SampSharpGameMode1.Events.Missions
         protected MySQLConnector mySQLConnector = MySQLConnector.Instance();
 
         Player player;
+        public int EventId { get => editingMission.Id; }
         public Mission editingMission = null;
         public bool isNew;
         public int currentMissionStepIndex;
