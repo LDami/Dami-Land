@@ -1,4 +1,5 @@
-﻿using SampSharp.GameMode;
+﻿using Newtonsoft.Json;
+using SampSharp.GameMode;
 using SampSharp.GameMode.World;
 using System;
 using System.Collections.Generic;
@@ -500,10 +501,81 @@ namespace SampSharpGameMode1.Civilisation
             return null;
         }
 
-        protected static MySQLConnector mySQLConnector = MySQLConnector.Instance();
+        public struct LinkInfoWithID
+        {
+            public string targetNodeID;
+            public NaviNode naviNodeLink;
+        }
+
+        public struct PathNodeWithLinkID
+        {
+            public string id;
+            public int index;
+            public Vector3 position;
+            public UInt16 linkID;
+            public UInt16 areaID;
+            public UInt16 nodeID;
+            public byte pathWidth;
+            public byte nodeType; // 1: vehicle, 2: boats
+            public PathNodeFlag flags;
+
+            public List<LinkInfoWithID> links;
+
+            public override string ToString()
+            {
+                return "ID: " + id + "\r\n" +
+                    "Position: " + position.ToString() + "\r\n" +
+                    "linkID: " + linkID + "\r\n" +
+                    "areaID: " + areaID + "\r\n" +
+                    "nodeID: " + nodeID + "\r\n" +
+                    "pathWidth: " + pathWidth + "\r\n" +
+                    "nodeType: " + nodeType;
+            }
+        }
+
+        public static void ExportPathNodesToJSONFile(string filename)
+        {
+            using(FileStream fs = File.Open(filename, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+            {
+                List<PathNodeWithLinkID> pn = new List<PathNodeWithLinkID>();
+                for (int i = 0; i < 64; i++)
+                {
+                    foreach (PathNode pathNode in pathNodes[i])
+                    {
+                        PathNodeWithLinkID p = new PathNodeWithLinkID();
+                        p.id = pathNode.id;
+                        p.index = pathNode.index;
+                        p.position = pathNode.position;
+                        p.linkID = pathNode.linkID;
+                        p.areaID = pathNode.areaID;
+                        p.nodeID = pathNode.nodeID;
+                        p.pathWidth = pathNode.pathWidth;
+                        p.nodeType = pathNode.nodeType;
+                        p.flags = pathNode.flags;
+                        p.links = new List<LinkInfoWithID>();
+                        foreach(LinkInfo link in pathNode.links)
+                        {
+                            LinkInfoWithID linkInfo = new LinkInfoWithID();
+                            linkInfo.naviNodeLink = link.naviNodeLink;
+                            linkInfo.targetNodeID = link.targetNode.id;
+                            p.links.Add(linkInfo); 
+                        }
+                        pn.Add(p);
+                    }
+                    Logger.WriteLineAndClose("Export done for NODES" + i + ".dat");
+                }
+                string str = JsonConvert.SerializeObject(pn);
+                byte[] buffer = ASCIIEncoding.UTF8.GetBytes(str);
+                fs.Write(buffer);
+            }
+            Logger.WriteLineAndClose("Export done for all");
+        }
+
         public static void ExportPathNodesToSQL()
         {
+            /*
             Dictionary<string, object> param;
+            
             for (int i = 0; i < 64; i++)
             {
                 foreach (PathNode pathNode in pathNodes[i])
@@ -517,12 +589,11 @@ namespace SampSharpGameMode1.Civilisation
                         flagInt |= (1 << 7);
                     if (pathNode.flags.emergencyOnly)
                         flagInt |= (1 << 8);
-                    if (pathNode.flags.isHighway)
+                    if (!pathNode.flags.isHighway)
                         flagInt |= (1 << 12);
+                    if (pathNode.flags.isHighway)
+                        flagInt |= (1 << 13);
                     flagInt |= ((pathNode.flags.spawnProbability & 0xF) << 16);
-
-                    Logger.WriteLineAndClose("flagInt = " + flagInt);
-                    Logger.WriteLineAndClose("flag = " + pathNode.flags.ToString());
 
                     param = new Dictionary<string, object>
                     {
@@ -534,14 +605,17 @@ namespace SampSharpGameMode1.Civilisation
                         { "@index", pathNode.nodeID },
                         { "@path_width", pathNode.pathWidth },
                         { "@type", pathNode.nodeType },
-                        { "@flags", pathNode.flags },
+                        { "@flags", flagInt },
                     };
-                    mySQLConnector.Execute("INSERT INTO map_pathnodes " +
+                    GameMode.mySQLConnector.Execute("INSERT INTO map_pathnodes " +
                         "(node_pos_x, node_pos_y, node_pos_z, node_link_id, node_area_id, node_index, node_path_width, node_type, node_flags) VALUES " +
                         "(@pos_x, @pos_y, @pos_z, @link_id, @area_id, @index, @path_width, @type, @flags)", param);
                 }
                 Logger.WriteLineAndClose("SQL Export done for nodes in NODES" + i + ".dat");
             }
+
+            Logger.WriteLineAndClose("Starting Link export ...");
+            Dictionary<string, string> row;
             for (int i = 0; i < 64; i++)
             {
                 foreach (PathNode pathNode in pathNodes[i])
@@ -550,18 +624,84 @@ namespace SampSharpGameMode1.Civilisation
                     {
                         param = new Dictionary<string, object>
                         {
-                            { "@pathnode_id", pathNode.id },
-                            { "@target_id", link.targetNode.id },
-                            { "@navinode_id", link.naviNodeLink.id },
+                            { "@areaId", pathNode.areaID },
+                            { "@index", pathNode.nodeID }
                         };
-                        mySQLConnector.Execute("INSERT INTO map_pathnodes_links " +
-                            "(pathnode_id, target_id, navinode_id) VALUES " +
-                            "(@pathnode_id, @target_id, @navinode_id)", param);
+                        GameMode.mySQLConnector.OpenReader("SELECT node_id FROM map_pathnodes WHERE node_area_id = @areaId AND node_index = @index", param);
+                        row = GameMode.mySQLConnector.GetNextRow();
+                        if(row.Count > 0)
+                        {
+                            int pId = Convert.ToInt32(row["node_id"]);
+                            GameMode.mySQLConnector.CloseReader();
+                            param = new Dictionary<string, object>
+                            {
+                                { "@areaId", link.targetNode.areaID },
+                                { "@index", link.targetNode.nodeID }
+                            };
+                            GameMode.mySQLConnector.OpenReader("SELECT node_id FROM map_pathnodes WHERE node_area_id = @areaId AND node_index = @index", param);
+                            row = GameMode.mySQLConnector.GetNextRow();
+                            if (row.Count > 0)
+                            {
+                                int tId = Convert.ToInt32(row["node_id"]);
+                                GameMode.mySQLConnector.CloseReader();
+                                param = new Dictionary<string, object>
+                                {
+                                    { "@pathnode_id", pId },
+                                    { "@target_id", tId },
+                                    { "@navinode_id", link.naviNodeLink.id },
+                                };
+                                GameMode.mySQLConnector.Execute("INSERT INTO map_pathnodes_links " +
+                                    "(pathnode_id, target_id, navinode_id) VALUES " +
+                                    "(@pathnode_id, @target_id, @navinode_id)", param);
+                            }
+                        }
                     }
                 }
                 Logger.WriteLineAndClose("SQL Export done for links in NODES" + i + ".dat");
             }
+            Logger.WriteLineAndClose("Link export done.");
+            */
         }
+
+        public static void UpdatePathNodeFlags()
+        {
+            Logger.WriteLineAndClose("Starting SQL Update ...");
+            Dictionary<string, object> param;
+
+            for (int i = 0; i < 64; i++)
+            {
+                foreach (PathNode pathNode in pathNodes[i])
+                {
+                    int flagInt = 0;
+                    flagInt |= (pathNode.flags.linkCount & 0xF);
+                    flagInt |= ((pathNode.flags.trafficLevel & 0x3) << 4);
+                    if (pathNode.flags.roadBlocks)
+                        flagInt |= (1 << 6);
+                    if (pathNode.flags.isWater)
+                        flagInt |= (1 << 7);
+                    if (pathNode.flags.emergencyOnly)
+                        flagInt |= (1 << 8);
+                    if (!pathNode.flags.isHighway)
+                        flagInt |= (1 << 12);
+                    if (pathNode.flags.isHighway)
+                        flagInt |= (1 << 13);
+                    flagInt |= ((pathNode.flags.spawnProbability & 0xF) << 16);
+
+                    param = new Dictionary<string, object>
+                    {
+                        { "@area_id", pathNode.areaID },
+                        { "@index", pathNode.nodeID },
+                        { "@flags", flagInt },
+                    };
+                    GameMode.mySQLConnector.Execute("UPDATE map_pathnodes " +
+                        "SET node_flags = @flags " +
+                        "WHERE node_area_id = @area_id AND node_index = @index", param);
+                }
+                Logger.WriteLineAndClose("SQL Update done for nodes in NODES" + i + ".dat");
+            }
+            Logger.WriteLineAndClose("SQL Update done");
+        }
+
         public static List<PathNode> GetPathNodes()
         {
             List<PathNode> result = new List<PathNode>();
