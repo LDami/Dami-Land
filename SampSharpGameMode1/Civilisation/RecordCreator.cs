@@ -78,19 +78,19 @@ namespace SampSharpGameMode1.Civilisation
                     fs.Write(buffer, 0, 2);
                     // Quaternion 1
                     buffer = new byte[4];
-                    BinaryParser.ConvertFloatToLittleEndian(block.rotQuaternion1, ref buffer, 0);
+                    BitConverter.GetBytes(block.rotQuaternion1).CopyTo(buffer, 0);
                     fs.Write(buffer, 0, 4);
                     // Quaternion 2
                     buffer = new byte[4];
-                    BinaryParser.ConvertFloatToLittleEndian(block.rotQuaternion2, ref buffer, 0);
+                    BitConverter.GetBytes(block.rotQuaternion2).CopyTo(buffer, 0);
                     fs.Write(buffer, 0, 4);
                     // Quaternion 3
                     buffer = new byte[4];
-                    BinaryParser.ConvertFloatToLittleEndian(block.rotQuaternion3, ref buffer, 0);
+                    BitConverter.GetBytes(block.rotQuaternion3).CopyTo(buffer, 0);
                     fs.Write(buffer, 0, 4);
                     // Quaternion 4
                     buffer = new byte[4];
-                    BinaryParser.ConvertFloatToLittleEndian(block.rotQuaternion4, ref buffer, 0);
+                    BitConverter.GetBytes(block.rotQuaternion4).CopyTo(buffer, 0);
                     fs.Write(buffer, 0, 4);
                     // Position X
                     buffer = new byte[4];
