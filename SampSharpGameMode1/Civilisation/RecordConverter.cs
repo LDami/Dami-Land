@@ -44,10 +44,10 @@ namespace SampSharpGameMode1.Civilisation
                         vehicleBlock.lrKeyCode = (ushort)GetLittleEndianInt16FromByteArray(buffer, 6);
                         vehicleBlock.udKeyCode = (ushort)GetLittleEndianInt16FromByteArray(buffer, 8);
                         vehicleBlock.additionnalKeyCode = GetLittleEndianInt16FromByteArray(buffer, 10);
-                        vehicleBlock.rotQuaternion1 = GetLittleEndianInt16FromByteArray(buffer, 12) / 8;
-                        vehicleBlock.rotQuaternion2 = GetLittleEndianInt16FromByteArray(buffer, 16) / 8;
-                        vehicleBlock.rotQuaternion3 = GetLittleEndianInt16FromByteArray(buffer, 20) / 8;
-                        vehicleBlock.rotQuaternion4 = GetLittleEndianInt16FromByteArray(buffer, 24) / 8;
+                        vehicleBlock.rotQuaternion1 = GetFloatFrom4ByteArray(buffer, 12);
+                        vehicleBlock.rotQuaternion2 = GetFloatFrom4ByteArray(buffer, 16);
+                        vehicleBlock.rotQuaternion3 = GetFloatFrom4ByteArray(buffer, 20);
+                        vehicleBlock.rotQuaternion4 = GetFloatFrom4ByteArray(buffer, 24);
 
                         vehicleBlock.position = new Vector3(
                             GetFloatFrom4ByteArray(buffer, 28),
