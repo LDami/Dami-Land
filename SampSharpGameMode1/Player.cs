@@ -100,7 +100,8 @@ namespace SampSharpGameMode1
             this.SendClientMessage(ColorPalette.Primary.Main + "This server is still in beta, type /beta to see what is coming soon !");
             this.SendClientMessage(ColorPalette.Primary.Main + "Please read /event-infos to create events !");
 
-            if(!this.IsNPC)
+            Console.WriteLine("New BasePlayer Connected");
+            if (!this.IsNPC)
             {
 #if DEBUG
                 this.Notificate("DEBUG");
@@ -132,6 +133,11 @@ namespace SampSharpGameMode1
                     ShowLoginForm();
                 else
                     ShowSignupForm();
+            }
+            else
+            {
+                Console.WriteLine("NPC Connected");
+                VehicleAI.npc = this;
             }
         }
 
@@ -182,7 +188,7 @@ namespace SampSharpGameMode1
 
                 if (this.vehicleAI != null)
                 {
-                    this.vehicleAI.Kick();
+                    VehicleAI.Kick();
                 }
             }
         }
@@ -860,11 +866,66 @@ namespace SampSharpGameMode1
                     switch (e.ListItem)
                     {
                         case 0: // create
-                            VehicleAI.Init(VehicleModelType.Infernus, this.Position + new Vector3(-15.0, 0.0, 0.0), 0.0f);
+
+                            //VehicleAI.Init(VehicleModelType.Mower, PathTools.GetNeirestPathNode(this.Position).position, 0.0f);
+                            VehicleAI.Init(VehicleModelType.Mower, new Vector3(1501.22, 1712.39, 10.54), 0.0f);
+                            VehicleAI.SetMode(0);
+
+                            List<PathNode> allPathNodes = GetPathNodes();
+                            List<PathNode> allNearPathNodes = new List<PathNode>();
+
+                            PathNode nearestNodeFrom = new PathNode();
+                            PathNode nearestNodeTo = new PathNode();
+                            PathNode lastNode = new PathNode();
+
+                            Vector3 from = this.Position;
+                            Vector3 to = new Vector3(2595.62, 1472.35, 10.40);
+
+                            foreach (PathNode node in allPathNodes)
+                            {
+                                if (node.position.DistanceTo(from) < from.DistanceTo(to) || node.position.DistanceTo(to) < from.DistanceTo(to))
+                                {
+                                    allNearPathNodes.Add(node);
+                                }
+                            }
+                            foreach (PathNode node in allNearPathNodes)
+                            {
+                                if (lastNode.position != Vector3.Zero)
+                                {
+                                    if (nearestNodeFrom.position == Vector3.Zero || nearestNodeFrom.position.DistanceTo(from) > lastNode.position.DistanceTo(from))
+                                    {
+                                        nearestNodeFrom = lastNode;
+                                    }
+                                    if (nearestNodeTo.position == Vector3.Zero || nearestNodeTo.position.DistanceTo(to) > lastNode.position.DistanceTo(to))
+                                    {
+                                        nearestNodeTo = lastNode;
+                                    }
+                                }
+                                lastNode = node;
+                            }
+
+                            this.SendClientMessage("Initializing Pathfinding ...");
+                            PathFinder pf = new PathFinder(allNearPathNodes, nearestNodeFrom, nearestNodeTo);
+                            this.SendClientMessage("Done.");
+                            this.SendClientMessage("Pathfinding in progress ...");
+                            pf.Find();
+                            pf.Success += (obj, e) =>
+                            {
+                                /*
+                                PathNode[] pathNodes = new PathNode[2];
+                                pathNodes[0] = new PathNode();
+                                pathNodes[0].position = new Vector3(1501.22, 1712.39, 10.54);
+                                pathNodes[1] = new PathNode();
+                                pathNodes[1].position = new Vector3(1402.59, 1858.7728, 10.54);
+                                VehicleAI.SetPath(pathNodes);*/
+                                VehicleAI.SetPath(e.path);
+                            };
+                            pf.Failure += Pf_Failure;
                             this.SendClientMessage("AI created");
                             break;
                         case 1: // reboot
-                            VehicleAI.Restart();
+                            //VehicleAI.Restart();
+                            VehicleAI.StartVehicle();
                             this.SendClientMessage("AI reset in his vehicle");
                             break;
                         case 2: // kick
