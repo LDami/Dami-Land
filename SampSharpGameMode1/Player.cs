@@ -1011,6 +1011,20 @@ namespace SampSharpGameMode1
             this.SendClientMessage("Your position is: " + this.Position.ToString());
         }
 
+        [Command("getangle")]
+        private void GetAngleCommand()
+        {
+            if(this.InAnyVehicle)
+            {
+                this.SendClientMessage("Your vehicle's angle is: " + this.Vehicle.Angle.ToString());
+                float w, x, y, z;
+                this.Vehicle.GetRotationQuat(out w, out x, out y, out z);
+                this.SendClientMessage($"Your vehicle's rotation quat is: ({w}, {x}, {y}, {z})");
+            }
+            else
+                this.SendClientMessage("Your angle is: " + this.Angle.ToString());
+        }
+
         [Command("getz")]
         private void GetZCommand()
         {
