@@ -5,7 +5,6 @@ using SampSharp.Streamer.World;
 using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
-using static SampSharpGameMode1.Civilisation.PathExtractor;
 
 namespace SampSharpGameMode1.Works
 {
@@ -38,7 +37,7 @@ namespace SampSharpGameMode1.Works
         private static List<DepositPoint> depositPoints;
         private static DepositPoint truckDepot = new DepositPoint { Name = "Truck Depot", Position = new Vector3(2824.53, 915.35, 11.33) };
         private static DynamicCheckpoint startWorkCheckpoint;
-        private static DynamicMapIcon trailerMapIcon;
+        private static Dictionary<BasePlayer, DynamicMapIcon> trailerMapIcon = new();
         public static void Init()
         {
             StartPosition = new Vector3(2814.61, 969.70, 10.75);
@@ -49,10 +48,6 @@ namespace SampSharpGameMode1.Works
                 TruckWork work = new TruckWork();
                 work.StartWork(e.Player as Player);
             };
-
-            trailerMapIcon = new DynamicMapIcon(truckDepot.Position, COLOR_DEPOT, SampSharp.GameMode.Definitions.MapIconType.LocalCheckPoint);
-            foreach (BasePlayer p in BasePlayer.All)
-                trailerMapIcon.HideForPlayer(p);
 
             vehicles = new List<BaseVehicle>
             {
@@ -84,6 +79,23 @@ namespace SampSharpGameMode1.Works
                 new DepositPoint { Position = new Vector3(-158.47, 1168.99, 19.46), Name = "Fort Carson Home Furnishings" },
                 new DepositPoint { Position = new Vector3(2356.05, 2772.37, 10.54), Name = "Spinybed Freight Depot" },
             };
+            Logger.WriteLineAndClose("TruckWork.cs - TruckWork.Init:I: Truck work initialised");
+        }
+
+        public static void Dispose()
+        {
+            foreach(Player p in Player.All)
+            {
+                if(p.pWork is TruckWork)
+                {
+                    p.pWork.StopWork(p);
+                }
+            }
+            startWorkCheckpoint.Dispose();
+            startWorkCheckpoint = null;
+            vehicles.ForEach(x => x.Dispose());
+            trailers.ForEach(x => x.Vehicle.Dispose());
+            Logger.WriteLineAndClose("TruckWork.cs - TruckWork.Dispose:I: Truck work disposed");
         }
 
 
@@ -97,6 +109,7 @@ namespace SampSharpGameMode1.Works
             if (!player.IsInWork)
             {
                 startWorkCheckpoint.HideForPlayer(player);
+                trailerMapIcon.Add(player, new DynamicMapIcon(truckDepot.Position, COLOR_DEPOT, SampSharp.GameMode.Definitions.MapIconType.LocalCheckPoint, player:player));
                 player.pWork = this;
                 currentRound = 0;
                 Logger.WriteLineAndClose("TruckWork.cs - TruckWork.StartWork:I: " + player.Name + " has started Truck work");
@@ -109,7 +122,7 @@ namespace SampSharpGameMode1.Works
                 if(player.pWork == this)
                     player.SendClientMessage("You are already working in this truck depot");
                 else
-                    player.SendClientMessage("You must quit your current job before");
+                    player.SendClientMessage("You must quit your current job before starting a new one");
             }
         }
 
@@ -117,7 +130,8 @@ namespace SampSharpGameMode1.Works
         {
             if(player.IsInWork && player.pWork == this)
             {
-                if(currentTrailer != null)
+                trailerMapIcon[player].Dispose();
+                if (currentTrailer != null)
                     currentTrailer.Vehicle.Respawn();
                 player.Update -= Player_Update;
                 if(currentCP != null)
@@ -160,7 +174,7 @@ namespace SampSharpGameMode1.Works
                         Logger.WriteLineAndClose("TruckWork.cs - TruckWork.Player_Update:I: " + p.Name + " has detached his trailer");
                         p.SendClientMessage($"You've lost your trailer, you can't continue without it ! Take a new trailer in the {COLOR_DEPOT}depot{Color.White} if needed.");
                         currentCP.HideForPlayer(p);
-                        trailerMapIcon.ShowForPlayer(p);
+                        trailerMapIcon[p].ShowForPlayer(p);
                     }
                     isTrailerAttached = false;
                 }
@@ -183,7 +197,7 @@ namespace SampSharpGameMode1.Works
                             SetNewDeposit(p);
                         else
                             currentCP.ShowForPlayer(p);
-                        trailerMapIcon.HideForPlayer(p);
+                        trailerMapIcon[p].HideForPlayer(p);
                     }
                     isTrailerAttached = true;
                 }
