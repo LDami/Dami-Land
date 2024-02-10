@@ -34,12 +34,14 @@ namespace SampSharpGameMode1.Events._Tools
 
 		public List<BaseVehicle> vehicles = new List<BaseVehicle>();
 		public float vehicleWidth;
+		public float vehicleHeight;
 		public int world;
 		public VehicleModelType model;
 
 		private Player player;
 
 		private int selectionIndex;
+		private List<DynamicTextLabel> labels = new List<DynamicTextLabel>();
 
 		public SpawnerCreator(Player player, int world, VehicleModelType model) : this(player, world, model, new List<Vector3R>()) { }
 		public SpawnerCreator(Player player, int world, VehicleModelType model, List<Vector3R> existingSpawnPoints)
@@ -49,9 +51,10 @@ namespace SampSharpGameMode1.Events._Tools
 
 			this.world = world;
 			this.model = model;
-			this.vehicleWidth = BaseVehicle.GetModelInfo(model, VehicleModelInfoType.Size).Y;
-			vehicles = existingSpawnPoints.ConvertAll(
+            this.vehicleWidth = BaseVehicle.GetModelInfo(model, VehicleModelInfoType.Size).Y;
+            vehicles = existingSpawnPoints.ConvertAll(
 				new Converter<Vector3R, BaseVehicle>(Vector3RToBaseVehicle));
+            UpdateTextLabels();
 			if (vehicles.Count > 0)
 			{
 				selectionIndex = 0;
@@ -90,7 +93,8 @@ namespace SampSharpGameMode1.Events._Tools
 						selectionIndex--;
 					}
 					vehicles[selectionIndex].ChangeColor(1, 1);
-					player.PutInVehicle(vehicles[selectionIndex]);
+					UpdateTextLabels();
+                    player.PutInVehicle(vehicles[selectionIndex]);
 					player.Notificate(selectionIndex + "/" + (vehicles.Count - 1));
 					break;
 
@@ -116,9 +120,53 @@ namespace SampSharpGameMode1.Events._Tools
 						vehicles.Add(veh);
 					}
 					vehicles[selectionIndex].ChangeColor(1, 1);
-					player.PutInVehicle(vehicles[selectionIndex]);
+                    UpdateTextLabels();
+                    player.PutInVehicle(vehicles[selectionIndex]);
 					player.Notificate(selectionIndex + "/" + (vehicles.Count - 1));
 					break;
+                case Keys.No:
+                    {
+                        vehicles[selectionIndex].Dispose();
+                        List<BaseVehicle> tmp = new List<BaseVehicle>(vehicles);
+                        for (int i = selectionIndex + 1; i < tmp.Count; i++)
+                        {
+                            vehicles[i - 1] = tmp[i];
+                        }
+                        labels[selectionIndex].Dispose();
+                        List<DynamicTextLabel> tmpLabels = new List<DynamicTextLabel>(labels);
+                        for (int i = selectionIndex + 1; i < tmpLabels.Count; i++)
+                        {
+                            labels[i - 1] = tmpLabels[i];
+                        }
+						selectionIndex = Math.Clamp(selectionIndex, 0, vehicles.Count);
+                        vehicles[selectionIndex].ChangeColor(1, 1);
+                        UpdateTextLabels();
+                        player.PutInVehicle(vehicles[selectionIndex]);
+                        break;
+                    }
+            }
+		}
+
+		public void UpdateTextLabels()
+		{
+			for(int i = 0; i < labels.Count; i ++)
+			{
+				switch(i + 1)
+                {
+                    case 1:
+                        labels[i].Text = "1st";
+                        break;
+                    case 2:
+                        labels[i].Text = "2nd";
+                        break;
+                    case 3:
+                        labels[i].Text = "3rd";
+                        break;
+                    default:
+                        labels[i].Text = (i + 1).ToString() + "th";
+                        break;
+                }
+				labels[i].ShowForPlayer(player);
 			}
 		}
 
@@ -133,6 +181,7 @@ namespace SampSharpGameMode1.Events._Tools
 		{
 			BaseVehicle veh = BaseVehicle.Create(this.model, v.Position + Vector3.UnitZ, v.Rotation, 0, 0);
 			veh.VirtualWorld = world;
+			labels.Add(new DynamicTextLabel("N/A", Color.White, v.Position, 200f, null, veh, false, player.VirtualWorld));
 			return veh;
 		}
 

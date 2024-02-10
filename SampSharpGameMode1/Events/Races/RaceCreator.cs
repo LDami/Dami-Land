@@ -82,13 +82,11 @@ namespace SampSharpGameMode1.Events.Races
         const int moverObjectModelID = 19133;
         Vector3 moverObjectOffset = new Vector3(0.0f, 0.0f, 1.0f);
 
-        BaseVehicle[] spawnVehicles;
         public RaceCreator(Player _player)
         {
             player = _player;
             editingRace = null;
             checkpointIndex = 0;
-            spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
             spectatorGroups = new List<Civilisation.SpectatorGroup>();
         }
 
@@ -101,7 +99,6 @@ namespace SampSharpGameMode1.Events.Races
             editingRace.MapId = -1;
             checkpointIndex = 0;
             editingRace.StartingVehicle = VehicleModelType.Infernus;
-            spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
             spectatorGroups = new List<Civilisation.SpectatorGroup>();
             isNew = true;
             this.SetPlayerInEditor();
@@ -128,7 +125,6 @@ namespace SampSharpGameMode1.Events.Races
                     isNew = false;
                     checkpointIndex = 0;
                     editingRace = e.race;
-                    spawnVehicles = new BaseVehicle[Race.MAX_PLAYERS_IN_RACE];
 
                     player.SendClientMessage(Color.Green, "Race #" + e.race.Id + " loaded successfully in creation mode");
                     this.SetPlayerInEditor();
@@ -206,20 +202,11 @@ namespace SampSharpGameMode1.Events.Races
                 moverObject.Dispose();
             }
             moverObject = null;
-            if(spawnVehicles != null)
-			{
-                foreach(BaseVehicle veh in spawnVehicles)
-				{
-                    if(veh != null)
-                        veh.Dispose();
-				}
-            }
             if (spawnerCreator != null)
             {
                 spawnerCreator.Unload();
                 spawnerCreator = null;
             }
-            spawnVehicles = null;
 
             foreach(BaseVehicle veh in BaseVehicle.All)
             {
@@ -571,8 +558,9 @@ namespace SampSharpGameMode1.Events.Races
                             }
                         case 2: // Set/Edit spawn position
                             {
-                                if(editingMode == EditingMode.Checkpoints) // Going to SpawnPos mode
+                                if(editingMode == EditingMode.Checkpoints)
                                 {
+                                    // Going to SpawnPos mode
                                     if (editingRace.checkpoints.Count > 0)
                                     {
                                         checkpointIndex = 0;
@@ -601,8 +589,9 @@ namespace SampSharpGameMode1.Events.Races
                                         player.SendClientMessage(Color.Red, "Error, place a checkpoint first ! (/race addcp)");
                                     }
                                 }
-                                else if(editingMode == EditingMode.SpawnPos) // Going to Checkpoint mode
+                                else if(editingMode == EditingMode.SpawnPos)
                                 {
+                                    // Going to Checkpoint mode
                                     if (spawnerCreator != null)
                                     {
                                         editingRace.SpawnPoints = spawnerCreator.GetSpawnPoints();
