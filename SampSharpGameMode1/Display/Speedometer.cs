@@ -57,8 +57,7 @@ namespace SampSharpGameMode1.Display
                 }
                 hud.SetText("vehiclename", model);
 
-                double vel = Math.Sqrt(player.Vehicle.Velocity.LengthSquared) * 181.5;
-                hud.SetText("speed", vel.ToString(@"N0") + " km/h");
+                hud.SetText("speed", Utils.GetKmhSpeedFromVelocity(player.Vehicle.Velocity).ToString(@"N0") + " km/h");
 
                 hud.SetText("health", (player.Vehicle.Health / 10).ToString(@"N0") + " %");
                 if (player.Vehicle.Health < 250)

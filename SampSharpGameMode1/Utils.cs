@@ -168,15 +168,20 @@ namespace SampSharpGameMode1
         {
             List<string> result = new List<string>();
             string inputsStr = string.Join("\n", inputs);
-            Console.WriteLine("inputStr: " + inputsStr);
+            //Console.WriteLine("inputStr: " + inputsStr);
             Regex rgx = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Multiline);
             MatchCollection collection = rgx.Matches(inputsStr);
-            Console.WriteLine("Matches for " + pattern + ": " + collection.Count);
+            //Console.WriteLine("Matches for " + pattern + ": " + collection.Count);
             foreach (Match match in collection)
             {
                 result.Add(match.Value);
             }
             return result;
+        }
+
+        public static double GetKmhSpeedFromVelocity(Vector3 vel)
+        {
+            return Math.Sqrt(vel.LengthSquared) * 181.5;
         }
     }
 }
