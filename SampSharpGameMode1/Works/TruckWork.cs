@@ -78,8 +78,13 @@ namespace SampSharpGameMode1.Works
                 new DepositPoint { Position = new Vector3(1432.82, 990.97, 10.54), Name = "Las Venturas Freight Depot" },
                 new DepositPoint { Position = new Vector3(-158.47, 1168.99, 19.46), Name = "Fort Carson Home Furnishings" },
                 new DepositPoint { Position = new Vector3(2356.05, 2772.37, 10.54), Name = "Spinybed Freight Depot" },
+                new DepositPoint { Position = new Vector3(-2266.03, 2393.57, 4.70), Name = "Bayside port" },
+                new DepositPoint { Position = new Vector3(-860.77, 1551.73, 23.32), Name = "Las Barrancas" },
+                new DepositPoint { Position = new Vector3(273.15, 1382.45, 10.31), Name = "Green palms refinery" },
+                new DepositPoint { Position = new Vector3(2401.00, 2801.38, 10.54), Name = "Spinybed factory" },
+                new DepositPoint { Position = new Vector3(1634.46, 749.88, 10.54), Name = "Randolph indusrial estate" },
+                new DepositPoint { Position = new Vector3(1977.79, 2463.28, 10.54), Name = "Redsands East commercial center" },
             };
-            Logger.WriteLineAndClose("TruckWork.cs - TruckWork.Init:I: Truck work initialised");
         }
 
         public static void Dispose()
