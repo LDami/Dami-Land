@@ -78,6 +78,16 @@ namespace SampSharpGameMode1.Commands
             Zone.InitZones();
             player.SendClientMessage("Done.");
         }
+        [Command("reload-works", PermissionChecker = typeof(AdminPermissionChecker))]
+        private static void ReloadWorks(Player player)
+        {
+            player.SendClientMessage("Reloading all works ...");
+            Works.TruckWork.Dispose();
+            Works.TramWork.Dispose();
+            Works.TruckWork.Init();
+            Works.TramWork.Init();
+            player.SendClientMessage("Done.");
+        }
         [Command("getmodel")]
         private static void GetModel(Player player, string model)
         {
