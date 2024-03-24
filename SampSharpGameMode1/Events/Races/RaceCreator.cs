@@ -44,7 +44,7 @@ namespace SampSharpGameMode1.Events.Races
                 if(editingMode == EditingMode.Checkpoints)
                     layer.SetTextdrawText("selectedidx", "Selected CP: " + idx);
                 else if(editingMode == EditingMode.SpawnPos)
-                    layer.SetTextdrawText("selectedidx", "Selected Spawn: " + idx);
+                    layer.SetTextdrawText("selectedidx", "Spawn: " + idx);
             }
             public void SetTotalCP(int cp)
             {
@@ -71,11 +71,9 @@ namespace SampSharpGameMode1.Events.Races
         public bool isNew;
         DynamicRaceCheckpoint shownCheckpoint;
         int checkpointIndex;
-        int spawnIndex;
 
         SpawnerCreator spawnerCreator;
         BaseVehicle? playerVehicle;
-
         List<Civilisation.SpectatorGroup> spectatorGroups;
 
         PlayerObject moverObject;
@@ -576,6 +574,10 @@ namespace SampSharpGameMode1.Events.Races
                                         }
                                         playerVehicle = player.Vehicle;
                                         spawnerCreator = new SpawnerCreator(player, player.VirtualWorld, editingRace.StartingVehicle.GetValueOrDefault(VehicleModelType.Infernus), spawns);
+                                        spawnerCreator.Update += (object sender, SpawnCreatorUpdateEventArgs e) =>
+                                        {
+                                            hud.SetSelectedIdx((e.selectedIndex + 1) + "/" + e.spawnCount, EditingMode.SpawnPos);
+                                        };
                                         spawnerCreator.Quit += (object sender, SpawnCreatorQuitEventArgs e) => {
                                             editingRace.SpawnPoints = e.spawnPoints;
                                             editingMode = EditingMode.Checkpoints;
@@ -583,6 +585,7 @@ namespace SampSharpGameMode1.Events.Races
                                         };
                                         editingMode = EditingMode.SpawnPos;
                                         hud.SetEditingMode(editingMode);
+                                        hud.SetSelectedIdx("1", EditingMode.SpawnPos);
                                     }
                                     else
                                     {
@@ -600,6 +603,7 @@ namespace SampSharpGameMode1.Events.Races
                                     }
                                     editingMode = EditingMode.Checkpoints;
                                     hud.SetEditingMode(editingMode);
+                                    SelectCP(checkpointIndex); // Update the textdraw
                                     if (playerVehicle != null)
                                         player.PutInVehicle(playerVehicle);
                                 }

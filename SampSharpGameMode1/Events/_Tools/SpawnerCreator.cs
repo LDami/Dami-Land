@@ -13,19 +13,30 @@ using System.Text;
 
 namespace SampSharpGameMode1.Events._Tools
 {
-	public class SpawnCreatorQuitEventArgs : EventArgs
-	{
-		public List<Vector3R> spawnPoints { get; set; }
-		public SpawnCreatorQuitEventArgs(List<Vector3R> points)
-		{
-			this.spawnPoints = points;
-		}
-	}
+    public class SpawnCreatorUpdateEventArgs : EventArgs
+    {
+		public int selectedIndex { get; set; }
+        public int spawnCount { get; set; }
+        public SpawnCreatorUpdateEventArgs(int index, int count)
+        {
+			this.selectedIndex = index;
+            this.spawnCount = count;
+        }
+    }
+    public class SpawnCreatorQuitEventArgs : EventArgs
+    {
+        public List<Vector3R> spawnPoints { get; set; }
+        public SpawnCreatorQuitEventArgs(List<Vector3R> points)
+        {
+            this.spawnPoints = points;
+        }
+    }
 
-	public class SpawnerCreator
+    public class SpawnerCreator
 	{
 		public event EventHandler<SpawnCreatorQuitEventArgs> Quit;
 
+		public event EventHandler<SpawnCreatorUpdateEventArgs> Update;
 		public virtual void OnQuit(SpawnCreatorQuitEventArgs e)
 		{
 			Unload();
@@ -95,7 +106,8 @@ namespace SampSharpGameMode1.Events._Tools
 					vehicles[selectionIndex].ChangeColor(1, 1);
 					UpdateTextLabels();
                     player.PutInVehicle(vehicles[selectionIndex]);
-					player.Notificate(selectionIndex + "/" + (vehicles.Count - 1));
+					player.Notificate((selectionIndex + 1) + "/" + vehicles.Count);
+					Update?.Invoke(this, new SpawnCreatorUpdateEventArgs(selectionIndex, vehicles.Count));
 					break;
 
 				case Keys.AnalogRight:
@@ -118,32 +130,26 @@ namespace SampSharpGameMode1.Events._Tools
 							veh.VirtualWorld = player.VirtualWorld;
 						}
 						vehicles.Add(veh);
-					}
+                        labels.Add(new DynamicTextLabel("N/A", Color.White, veh.Position, 200f, null, veh, false, player.VirtualWorld));
+                    }
 					vehicles[selectionIndex].ChangeColor(1, 1);
                     UpdateTextLabels();
                     player.PutInVehicle(vehicles[selectionIndex]);
-					player.Notificate(selectionIndex + "/" + (vehicles.Count - 1));
-					break;
+                    player.Notificate((selectionIndex + 1) + "/" + vehicles.Count);
+                    Update?.Invoke(this, new SpawnCreatorUpdateEventArgs(selectionIndex, vehicles.Count));
+                    break;
                 case Keys.No:
-                    {
-                        vehicles[selectionIndex].Dispose();
-                        List<BaseVehicle> tmp = new List<BaseVehicle>(vehicles);
-                        for (int i = selectionIndex + 1; i < tmp.Count; i++)
-                        {
-                            vehicles[i - 1] = tmp[i];
-                        }
-                        labels[selectionIndex].Dispose();
-                        List<DynamicTextLabel> tmpLabels = new List<DynamicTextLabel>(labels);
-                        for (int i = selectionIndex + 1; i < tmpLabels.Count; i++)
-                        {
-                            labels[i - 1] = tmpLabels[i];
-                        }
-						selectionIndex = Math.Clamp(selectionIndex, 0, vehicles.Count);
-                        vehicles[selectionIndex].ChangeColor(1, 1);
-                        UpdateTextLabels();
-                        player.PutInVehicle(vehicles[selectionIndex]);
-                        break;
-                    }
+                    vehicles[selectionIndex].Dispose();
+					vehicles.RemoveAt(selectionIndex);
+                    labels[selectionIndex].Dispose();
+					labels.RemoveAt(selectionIndex);
+
+					selectionIndex = Math.Clamp(selectionIndex, 0, (vehicles.Count -1));
+                    vehicles[selectionIndex].ChangeColor(1, 1);
+                    UpdateTextLabels();
+                    player.PutInVehicle(vehicles[selectionIndex]);
+                    Update?.Invoke(this, new SpawnCreatorUpdateEventArgs(selectionIndex, vehicles.Count));
+                    break;
             }
 		}
 
