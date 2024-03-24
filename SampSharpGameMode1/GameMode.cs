@@ -157,6 +157,9 @@ namespace SampSharpGameMode1
 
             logger.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Initializing works ...");
             Works.TruckWork.Init();
+            logger.WriteLine("GameMode.cs - GameMode.OnInitialized:I: - Truck work initialized");
+            Works.TramWork.Init();
+            logger.WriteLine("GameMode.cs - GameMode.OnInitialized:I: - Tram work initialized");
             logger.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Works initialized.");
 
             DisableInteriorEnterExits();

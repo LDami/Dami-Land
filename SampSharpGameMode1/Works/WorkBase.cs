@@ -10,8 +10,9 @@ namespace SampSharpGameMode1.Works
         /*
          * C# 11 feature only
          * 
-        public static Vector3 StartPosition { get; }
         public static abstract void Init();
+        public static abstract void Dispose();
+        public static Vector3 StartPosition { get; }
         public static void StartWork(Player player);
         */
         public void StartWork(Player player);
