@@ -60,6 +60,11 @@ namespace SampSharpGameMode1
                         this.Id = Convert.ToInt32(row["map_id"]);
                         this.Name = row["map_name"].ToString();
                         this.Creator = Convert.ToInt32(row["map_creator"]);
+                        this.Spawn = new Vector3(
+                            (float)Convert.ToDouble(row["spawn_pos_x"]),
+                            (float)Convert.ToDouble(row["spawn_pos_y"]),
+                            (float)Convert.ToDouble(row["spawn_pos_z"])
+                        );
                     }
                     else
                         errorFlag = true;

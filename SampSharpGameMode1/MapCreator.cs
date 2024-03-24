@@ -160,12 +160,8 @@ namespace SampSharpGameMode1
 		{
 			Dictionary<string, object> param = new Dictionary<string, object>();
 
-			string queryUpdate = "UPDATE mapobjects_groups SET group_color=@color, group_name=@name WHERE group_id=@id;";
-			string queryInsert = "INSERT INTO mapobjects_groups (group_id, group_color, group_name) VALUES (@id, @color, @name);";
-
-
-			queryUpdate = "UPDATE mapobjects SET obj_model=@model, obj_pos_x=@posx, obj_pos_y=@posy, obj_pos_z=@posz, obj_rot_x=@rotx, obj_rot_y=@roty, obj_rot_z=@rotz, group_id=@grp_id WHERE obj_id=@id;";
-			queryInsert = "INSERT INTO mapobjects (map_id, obj_model, obj_pos_x, obj_pos_y, obj_pos_z, obj_rot_x, obj_rot_y, obj_rot_z, group_id) VALUES (@mapid, @model, @posx, @posy, @posz, @rotx, @roty, @rotz, @grp_id);";
+            string queryUpdate = "UPDATE mapobjects SET obj_model=@model, obj_pos_x=@posx, obj_pos_y=@posy, obj_pos_z=@posz, obj_rot_x=@rotx, obj_rot_y=@roty, obj_rot_z=@rotz, group_id=@grp_id WHERE obj_id=@id;";
+            string queryInsert = "INSERT INTO mapobjects (map_id, obj_model, obj_pos_x, obj_pos_y, obj_pos_z, obj_rot_x, obj_rot_y, obj_rot_z, group_id) VALUES (@mapid, @model, @posx, @posy, @posz, @rotx, @roty, @rotz, @grp_id);";
 			foreach (MapObject obj in editingMap.Objects)
 			{
 				if(!obj.IsDisposed)
@@ -207,7 +203,10 @@ namespace SampSharpGameMode1
 			param.Add("@name", editingMap.Name);
 			param.Add("@lastedit", DateTime.Now);
 			param.Add("@id", editingMap.Id);
-			mySQLConnector.Execute("UPDATE maps SET map_name=@name, map_lasteditdate=@lastedit WHERE map_id=@id", param);
+			param.Add("@spawnx", editingMap.Spawn.X);
+			param.Add("@spawny", editingMap.Spawn.Y);
+			param.Add("@spawnz", editingMap.Spawn.Z);
+            mySQLConnector.Execute("UPDATE maps SET map_name=@name, map_lasteditdate=@lastedit, @spawn_pos_x=@spawnx, @spawn_pos_y=@spawny, @spawn_pos_z=@spawnz WHERE map_id=@id", param);
 			isNew = false;
 			return mySQLConnector.RowsAffected > 0;
 		}
