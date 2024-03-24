@@ -21,5 +21,9 @@ namespace SampSharpGameMode1
             this.Position = _position;
             this.Rotation = _rotation;
         }
+        public bool IsZero()
+        {
+            return this.Position == Vector3.Zero && this.Rotation == 0.0f;
+        }
     }
 }

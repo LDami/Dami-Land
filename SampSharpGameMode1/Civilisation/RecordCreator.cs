@@ -9,33 +9,6 @@ namespace SampSharpGameMode1.Civilisation
 {
     class RecordCreator
     {
-
-        RecordInfo.Header header;
-        List<RecordInfo.VehicleBlock> vehicleBlocks;
-
-        /// <summary>
-        /// Returns a RecordCreator element
-        /// </summary>
-        /// <param name="recordType">1 for vehicle recordings, 2 for on-foot recordings</param>
-        public RecordCreator(RecordInfo.RECORD_TYPE recordType)
-        {
-            if(recordType == RecordInfo.RECORD_TYPE.VEHICLE || recordType == RecordInfo.RECORD_TYPE.ONFOOT)
-            {
-                header = new RecordInfo.Header();
-                header.id = 1000;
-                header.recordType = recordType;
-                vehicleBlocks = new List<RecordInfo.VehicleBlock>();
-            }
-        }
-
-        public void AddVehicleBlock(RecordInfo.VehicleBlock vehicleBlock)
-        {
-            if(vehicleBlocks != null)
-            {
-                vehicleBlocks.Add(vehicleBlock);
-            }
-        }
-
         /// <summary>
         /// Save the record file into the npcmodes\recordings folder
         /// </summary>
@@ -54,99 +27,196 @@ namespace SampSharpGameMode1.Civilisation
                 BinaryParser.ConvertIntToLittleEndian((int)record.Header.recordType, ref buffer, 0);
                 fs.Write(buffer, 0, 4);
 
-                record.VehicleBlocks.ForEach(block =>
+                record.Blocks.ForEach(block =>
                 {
                     // Time
                     buffer = new byte[4];
                     BinaryParser.ConvertIntToLittleEndian((int)block.time, ref buffer, 0);
                     fs.Write(buffer, 0, 4);
-                    // Vehicle ID
-                    buffer = new byte[2];
-                    BinaryParser.ConvertShorttoLittleEndian(block.vehicleID, ref buffer, 0);
-                    fs.Write(buffer, 0, 2);
-                    // Left/Right key code
-                    buffer = new byte[2];
-                    BinaryParser.ConvertUnsignedShorttoLittleEndian((ushort)block.lrKeyCode, ref buffer, 0);
-                    fs.Write(buffer, 0, 2);
-                    // Up/Down key code
-                    buffer = new byte[2];
-                    BinaryParser.ConvertUnsignedShorttoLittleEndian((ushort)block.udKeyCode, ref buffer, 0);
-                    fs.Write(buffer, 0, 2);
-                    // Additional key code
-                    buffer = new byte[2];
-                    BinaryParser.ConvertShorttoLittleEndian(block.additionnalKeyCode, ref buffer, 0);
-                    fs.Write(buffer, 0, 2);
-                    // Quaternion 1
-                    buffer = new byte[4];
-                    BitConverter.GetBytes(block.rotQuaternion1).CopyTo(buffer, 0);
-                    fs.Write(buffer, 0, 4);
-                    // Quaternion 2
-                    buffer = new byte[4];
-                    BitConverter.GetBytes(block.rotQuaternion2).CopyTo(buffer, 0);
-                    fs.Write(buffer, 0, 4);
-                    // Quaternion 3
-                    buffer = new byte[4];
-                    BitConverter.GetBytes(block.rotQuaternion3).CopyTo(buffer, 0);
-                    fs.Write(buffer, 0, 4);
-                    // Quaternion 4
-                    buffer = new byte[4];
-                    BitConverter.GetBytes(block.rotQuaternion4).CopyTo(buffer, 0);
-                    fs.Write(buffer, 0, 4);
-                    // Position X
-                    buffer = new byte[4];
-                    BitConverter.GetBytes(block.position.X).CopyTo(buffer, 0);
-                    fs.Write(buffer, 0, 4);
-                    // Position Y
-                    buffer = new byte[4];
-                    BitConverter.GetBytes(block.position.Y).CopyTo(buffer, 0);
-                    fs.Write(buffer, 0, 4);
-                    // Position Z
-                    buffer = new byte[4];
-                    BitConverter.GetBytes(block.position.Z).CopyTo(buffer, 0);
-                    fs.Write(buffer, 0, 4);
-                    // Velocity X
-                    buffer = new byte[4];
-                    BitConverter.GetBytes(block.velocity.X).CopyTo(buffer, 0);
-                    fs.Write(buffer, 0, 4);
-                    // Velocity Y
-                    buffer = new byte[4];
-                    BitConverter.GetBytes(block.velocity.Y).CopyTo(buffer, 0);
-                    fs.Write(buffer, 0, 4);
-                    // Velocity Z
-                    buffer = new byte[4];
-                    BitConverter.GetBytes(block.velocity.Z).CopyTo(buffer, 0);
-                    fs.Write(buffer, 0, 4);
-                    // Vehicle Health
-                    buffer = new byte[4];
-                    BitConverter.GetBytes(block.vehicleHealth).CopyTo(buffer, 0);
-                    fs.Write(buffer, 0, 4);
-                    // Driver Health
-                    buffer = new byte[1];
-                    buffer[0] = block.driverHealth;
-                    fs.Write(buffer, 0, 1);
-                    // Driver Armor
-                    buffer = new byte[1];
-                    buffer[0] = block.driverArmor;
-                    fs.Write(buffer, 0, 1);
-                    // Driver Weapon
-                    buffer = new byte[1];
-                    buffer[0] = block.driverWeaponID;
-                    fs.Write(buffer, 0, 1);
-                    // Siren state
-                    buffer = new byte[1];
-                    buffer[0] = block.vehicleSirenState;
-                    fs.Write(buffer, 0, 1);
-                    // Gear state
-                    buffer = new byte[1];
-                    buffer[0] = block.vehicleGearState;
-                    fs.Write(buffer, 0, 1);
-                    // Trailer ID
-                    buffer = new byte[2];
-                    BinaryParser.ConvertUnsignedShorttoLittleEndian((ushort)block.vehicleTrailerID, ref buffer, 0);
-                    fs.Write(buffer, 0, 2);
-                    // Unknown
-                    buffer = new byte[4];// Unknown
-                    fs.Write(buffer, 0, 4);
+                    if (block is RecordInfo.PedBlock pedBlock)
+                    {
+                        // Left/Right key code
+                        buffer = new byte[2];
+                        BinaryParser.ConvertShortToLittleEndian(pedBlock.lrKeyCode, ref buffer, 0);
+                        fs.Write(buffer, 0, 2);
+                        // Up/Down key code
+                        buffer = new byte[2];
+                        BinaryParser.ConvertShortToLittleEndian(pedBlock.udKeyCode, ref buffer, 0);
+                        fs.Write(buffer, 0, 2);
+                        // Additional key code
+                        buffer = new byte[2];
+                        BinaryParser.ConvertShortToLittleEndian(pedBlock.additionnalKeyCode, ref buffer, 0);
+                        fs.Write(buffer, 0, 2);
+                        // Position X
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(pedBlock.position.X).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Position Y
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(pedBlock.position.Y).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Position Z
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(pedBlock.position.Z).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Quaternion 1
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(pedBlock.rotQuaternion1).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Quaternion 2
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(pedBlock.rotQuaternion2).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Quaternion 3
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(pedBlock.rotQuaternion3).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Quaternion 4
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(pedBlock.rotQuaternion4).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Health
+                        buffer = new byte[1];
+                        buffer[0] = pedBlock.health;
+                        fs.Write(buffer, 0, 1);
+                        // Armor
+                        buffer = new byte[1];
+                        buffer[0] = pedBlock.armor;
+                        fs.Write(buffer, 0, 1);
+                        // Weapon ID
+                        buffer = new byte[1];
+                        buffer[0] = pedBlock.weapon;
+                        fs.Write(buffer, 0, 1);
+                        // Currently applied special action
+                        buffer = new byte[1];
+                        buffer[0] = pedBlock.currentlyAppliedSpecialAction;
+                        fs.Write(buffer, 0, 1);
+                        // Current Velocity X
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(pedBlock.currentVelocity.X).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Current Velocity Y
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(pedBlock.currentVelocity.Y).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Current Velocity Z
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(pedBlock.currentVelocity.Z).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Current surfing X
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(pedBlock.currentSurfing.X).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Current surfing Y
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(pedBlock.currentSurfing.Y).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Current surfing Z
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(pedBlock.currentSurfing.Z).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Current surfing Vehicle ID
+                        buffer = new byte[2];
+                        BinaryParser.ConvertUnsignedShorttoLittleEndian((ushort)pedBlock.currentlySurfingVehicleID, ref buffer, 0);
+                        fs.Write(buffer, 0, 2);
+                        // Currently applied Animation index
+                        buffer = new byte[2];
+                        BinaryParser.ConvertUnsignedShorttoLittleEndian((ushort)pedBlock.currentlyAppliedAnimationIndex, ref buffer, 0);
+                        fs.Write(buffer, 0, 2);
+                        // Some animation parameters
+                        buffer = new byte[2];// Unknown
+                        fs.Write(buffer, 0, 2);
+                    }
+                    if(block is RecordInfo.VehicleBlock vehicleBlock)
+                    {
+                        // Vehicle ID
+                        buffer = new byte[2];
+                        BinaryParser.ConvertShortToLittleEndian(vehicleBlock.vehicleID, ref buffer, 0);
+                        fs.Write(buffer, 0, 2);
+                        // Left/Right key code
+                        buffer = new byte[2];
+                        BinaryParser.ConvertUnsignedShorttoLittleEndian((ushort)vehicleBlock.lrKeyCode, ref buffer, 0);
+                        fs.Write(buffer, 0, 2);
+                        // Up/Down key code
+                        buffer = new byte[2];
+                        BinaryParser.ConvertUnsignedShorttoLittleEndian((ushort)vehicleBlock.udKeyCode, ref buffer, 0);
+                        fs.Write(buffer, 0, 2);
+                        // Additional key code
+                        buffer = new byte[2];
+                        BinaryParser.ConvertShortToLittleEndian(vehicleBlock.additionnalKeyCode, ref buffer, 0);
+                        fs.Write(buffer, 0, 2);
+                        // Quaternion 1
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(vehicleBlock.rotQuaternion1).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Quaternion 2
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(vehicleBlock.rotQuaternion2).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Quaternion 3
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(vehicleBlock.rotQuaternion3).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Quaternion 4
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(vehicleBlock.rotQuaternion4).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Position X
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(vehicleBlock.position.X).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Position Y
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(vehicleBlock.position.Y).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Position Z
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(vehicleBlock.position.Z).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Velocity X
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(vehicleBlock.velocity.X).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Velocity Y
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(vehicleBlock.velocity.Y).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Velocity Z
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(vehicleBlock.velocity.Z).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Vehicle Health
+                        buffer = new byte[4];
+                        BitConverter.GetBytes(vehicleBlock.vehicleHealth).CopyTo(buffer, 0);
+                        fs.Write(buffer, 0, 4);
+                        // Driver Health
+                        buffer = new byte[1];
+                        buffer[0] = vehicleBlock.driverHealth;
+                        fs.Write(buffer, 0, 1);
+                        // Driver Armor
+                        buffer = new byte[1];
+                        buffer[0] = vehicleBlock.driverArmor;
+                        fs.Write(buffer, 0, 1);
+                        // Driver Weapon
+                        buffer = new byte[1];
+                        buffer[0] = vehicleBlock.driverWeaponID;
+                        fs.Write(buffer, 0, 1);
+                        // Siren state
+                        buffer = new byte[1];
+                        buffer[0] = vehicleBlock.vehicleSirenState;
+                        fs.Write(buffer, 0, 1);
+                        // Gear state
+                        buffer = new byte[1];
+                        buffer[0] = vehicleBlock.vehicleGearState;
+                        fs.Write(buffer, 0, 1);
+                        // Trailer ID
+                        buffer = new byte[2];
+                        BinaryParser.ConvertUnsignedShorttoLittleEndian((ushort)vehicleBlock.vehicleTrailerID, ref buffer, 0);
+                        fs.Write(buffer, 0, 2);
+                        // Unknown
+                        buffer = new byte[4];// Unknown
+                        fs.Write(buffer, 0, 4);
+                    }
 
                 });
 

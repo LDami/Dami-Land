@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Threading;
 using SampSharp.Core.Natives;
 using SampSharp.GameMode;
+using SampSharp.GameMode.Controllers;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
@@ -21,6 +22,13 @@ namespace SampSharpGameMode1
         public static EventManager eventManager = null;
         public MySocketIO socket = null;
         #region Overrides of BaseMode
+        protected override void LoadControllers(ControllerCollection controllers)
+        {
+            // Load the default controllers first
+            base.LoadControllers(controllers);
+
+            controllers.Add(new NPCController());
+        }
 
         protected override void OnInitialized(EventArgs e)
         {
@@ -127,6 +135,52 @@ namespace SampSharpGameMode1
             sw.Stop();
             logger.WriteLine($"Done in {sw.ElapsedMilliseconds} ms");
             RecordConverter.Parse(@"C:\Serveur OpenMP\npcmodes\recordings\recreated.rec");
+            /*
+            
+
+            VehicleAI.Init(VehicleModelType.Mower, PathTools.GetNeirestPathNode(new Vector3(2486.78, 1531.6, 10.81)).position, 0);
+
+            List<PathNode> allPathNodes = GetPathNodes();
+            List<PathNode> allNearPathNodes = new List<PathNode>();
+
+            PathNode nearestNodeFrom = new PathNode();
+            PathNode nearestNodeTo = new PathNode();
+            PathNode lastNode = new PathNode();
+
+            Vector3 from = new Vector3(2486.78, 1531.6, 10.81);
+            Vector3 to = new Vector3(2595.62, 1472.35, 10.40);
+
+            foreach (PathNode node in allPathNodes)
+            {
+                if (node.position.DistanceTo(from) < from.DistanceTo(to) || node.position.DistanceTo(to) < from.DistanceTo(to))
+                {
+                    allNearPathNodes.Add(node);
+                }
+            }
+            foreach (PathNode node in allNearPathNodes)
+            {
+                if (lastNode.position != Vector3.Zero)
+                {
+                    if (nearestNodeFrom.position == Vector3.Zero || nearestNodeFrom.position.DistanceTo(from) > lastNode.position.DistanceTo(from))
+                    {
+                        nearestNodeFrom = lastNode;
+                    }
+                    if (nearestNodeTo.position == Vector3.Zero || nearestNodeTo.position.DistanceTo(to) > lastNode.position.DistanceTo(to))
+                    {
+                        nearestNodeTo = lastNode;
+                    }
+                }
+                lastNode = node;
+            }
+
+            PathFinder pf = new PathFinder(allNearPathNodes, nearestNodeFrom, nearestNodeTo);
+            pf.Find();
+            pf.Success += (obj, e) =>
+            {
+                VehicleAI.SetPath(e.path);
+            };
+
+            */
 
             /* Loading parked vehicles */
             logger.Write("GameMode.cs - GameMode.OnInitialized:I: Loading parked vehicles ... ");

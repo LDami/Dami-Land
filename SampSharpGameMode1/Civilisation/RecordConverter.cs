@@ -66,7 +66,7 @@ namespace SampSharpGameMode1.Civilisation
                         vehicleBlock.vehicleSirenState = buffer[59];
                         vehicleBlock.vehicleGearState = buffer[60];
                         vehicleBlock.vehicleTrailerID = (ushort)GetLittleEndianInt16FromByteArray(buffer, 61);
-                        record.VehicleBlocks.Add(vehicleBlock);
+                        record.Blocks.Add(vehicleBlock);
                     }
                 }
                 fs.Close();

@@ -45,15 +45,17 @@ namespace SampSharpGameMode1.Civilisation
         static double vehicleAccel = 1.5; // + 1.5 velocity per second
         static int timeMultiplier = 20;
         static TextLabel lbl, lbl2, lblStatus;
-        public static void Init(VehicleModelType vehicleModel, Vector3 position, float angle)
+        public static string Init(VehicleModelType vehicleModel, Vector3 position, float angle)
         {
             Console.WriteLine("VehicleAI.cs - VehicleAI:Init called with position = " + position);
             processEnded = true;
             vehicle = BaseVehicle.Create(vehicleModel, position + Vector3.UnitZ, angle, 0, 0);
             Console.WriteLine("VehicleAI.cs - VehicleAI:Init vehicle position = " + vehicle.Position);
 
-            Server.ConnectNPC("stayinvehicle" + BasePlayer.PoolSize, "npctest2");
+            string npcName = "stayinvehicle" + BasePlayer.PoolSize;
+            Server.ConnectNPC(npcName, "npctest2");
             status = Status.WaitingDestination;
+            return npcName;
         }
 
         public static void Restart()
@@ -256,145 +258,102 @@ namespace SampSharpGameMode1.Civilisation
             recordPathObjects = new List<DynamicObject>();
 
             uint deltaTime = 0;
-            Vector3 lastToPos = vehicle.Position; // Le dernier Vector3 to devient le prochain Vector3 from
+            Vector3 estimatedVehiclePos = vehicle.Position; // Le dernier Vector3 to devient le prochain Vector3 from
+            double prevNodeDistance = 0;
             Console.WriteLine("vehicle.Position = " + vehicle.Position.ToString());
             if(mode == 0)
             {
-                RecordInfo.VehicleBlock block;
+                vehicleSpeed = 0.02;
                 for (int i = 0; i < path.Count; i++)
                 {
                     Console.WriteLine("");
                     PathNode node = path.Dequeue();
 
-                    block = record.VehicleBlocks[i];
-
-                    Quaternion quat = Quaternion.Identity;
-                    Vector3 from = new Vector3(lastToPos.X, lastToPos.Y, lastToPos.Z);
-                    Vector3 to = new Vector3(node.position.X, node.position.Y, FindZFromVector2(node.position.X, node.position.Y));
-                    if (node.position != Vector3.Zero)
+                    if (record.Blocks[i] is RecordInfo.VehicleBlock block)
                     {
-                        Vector3 direction;
-                        Console.WriteLine("from: " + from);
-                        Console.WriteLine("to: " + to);
-
-                        float epsilon = 0.0001f; // Ajustez cela en fonction de la tolérance appropriée pour votre cas
-                        if (Vector3.DistanceSquared(from, to) < epsilon * epsilon)
+                        Quaternion quat = Quaternion.Identity;
+                        Vector3 from = new Vector3(estimatedVehiclePos.X, estimatedVehiclePos.Y, estimatedVehiclePos.Z);
+                        Vector3 to = new Vector3(node.position.X, node.position.Y, FindZFromVector2(node.position.X, node.position.Y));
+                        if (node.position != Vector3.Zero)
                         {
-                            // Points très proches, renvoyer un quaternion d'identité (pas de rotation)
-                            Console.WriteLine("!! Points trop proche, renvoi d'un Quaternion Identity");
-                            quat = Quaternion.Identity;
+                            Console.WriteLine("from: " + from);
+                            Console.WriteLine("to: " + to);
+
+                            float epsilon = 0.0001f; // Ajustez cela en fonction de la tolérance appropriée pour votre cas
+                            if (Vector3.DistanceSquared(from, to) < epsilon * epsilon)
+                            {
+                                // Points très proches, renvoyer un quaternion d'identité (pas de rotation)
+                                Console.WriteLine("!! Points trop proche, renvoi d'un Quaternion Identity");
+                                quat = Quaternion.Identity;
+                            }
+                            else
+                            {
+                                // Création du quaternion
+                                quat = LookRotationToPoint(from, to);
+                                Vector3 vec3 = ToEuler(quat.W, quat.X, quat.Y, quat.Z).Normalized();
+                                block.velocity = new Vector3(vec3.X * vehicleSpeed, vec3.Y * vehicleSpeed, vec3.Z * vehicleSpeed);
+                            }
+
+                            Console.WriteLine($"Quaternion: x = {quat.X} ; y = {quat.Y} ; z = {quat.Z} ; w = {quat.W}");
+                            quat = Quaternion.Normalize(quat);
                         }
+
+
+                        if (i > 0)
+                            block.time = record.Blocks[i - 1].time + (uint)(prevNodeDistance / vehicleSpeed) * 5;
                         else
-                        {
-                            // Calcul de l'angle
-                            Console.WriteLine("Calculating cosX: ");
-                            double cosX = CalculateAngle(new Vector3(0, to.Y, to.Z), new Vector3(0, from.Y, from.Z));
-                            Console.WriteLine("Calculating cosY: ");
-                            double cosY = CalculateAngle(new Vector3(to.X, 0, to.Z), new Vector3(from.X, 0, from.Z));
-                            Console.WriteLine("Calculating cosZ: ");
-                            double cosZ = CalculateAngle(new Vector3(to.X, to.Y, 0), new Vector3(from.X, from.Y, 0));
-                            cosZ = CalculateRotationAngle(new Vector2(from.X, from.Y), new Vector2(to.X, to.Y));
+                            block.time = 0;
 
-                            direction = new Vector3(cosX, cosY, cosZ);
-                            Console.WriteLine("direction: " + direction);
-
-                            float dot = Vector3.Dot(Vector3.UnitZ, direction);
-                            Console.WriteLine("Dot: " + dot);
-                            float angle = (float)Math.Acos(dot);
-
-                            // Calcul de l'axe de rotation
-
-                            Vector3 axis = Vector3.Normalize(Vector3.Cross(new Vector3(1, 1, 0), direction));
-                            // TODO il faut que axis ~= 0,0,1 dans l'exemple (véhicule à plat)
-                            // On ne peut pas forcer à UnitZ car le véhicule pourrait être en rotation (sur les routes de SF notament)
-
-                            Console.WriteLine("Angle en radians: " + angle);
-                            Console.WriteLine("Axe de rotation (tmp): " + axis);
-                            axis = direction;
-
-                            // Création du quaternion
-                            quat = Quaternion.CreateFromAxisAngle(axis, angle);
-                            quat = LookRotationToPoint(from, to);
-                            Vector3 vec3 = ToEuler(quat.W, quat.X, quat.Y, quat.Z).Normalized();
-                            block.velocity = new Vector3(vec3.X * vehicleSpeed, vec3.Y * vehicleSpeed, vec3.Z * vehicleSpeed);
-
-                            lastToPos = to;
-                        }
-
-                        //Console.WriteLine($"\tnode.position = {node.position} ; lastPos = {lastPos}");
-
-                        //Vector3 axis = Vector3.Cross(lastPos, node.position).Normalized();
-
+                        // For 500ms steps:
                         /*
-                        quat = new Quaternion(x: axis.X, y: axis.Y, z: axis.Z,
-                            w: (float)(Math.Sqrt(Math.Pow(lastPos.Length, 2) * Math.Pow(node.position.Length, 2))) + Vector3.Dot(lastPos, node.position)
-                        );
+                        Player velocity: (0, 01735576, -0, 0019036975, -2, 0593627E-05); Distance ran in 500ms: 0,052331124
+                        Player velocity: (0, 072712064, -0, 015453491, -3, 840732E-05); Distance ran in 500ms: 1,4043567
+                        Player velocity: (0, 117630996, -0, 023287239, -6, 19408E-05); Distance ran in 500ms: 2,561746
+                        Player velocity: (0, 15140219, -0, 015345437, -0, 0002563792); Distance ran in 500ms: 3,6772563
+                        Player velocity: (0, 18521197, -0, 01883218, 1, 2021027E-05); Distance ran in 500ms: 4,6937623
+                        Player velocity: (0, 21316706, -0, 021677177, 0, 00010614364); Distance ran in 500ms: 5,367864
+                        Player velocity: (0, 22709104, -0, 023096712, -0, 0004229768); Distance ran in 500ms: 5,6239614
+                        Player velocity: (0, 24148698, -0, 024681868, -9, 976953E-06); Distance ran in 500ms: 6,2685437
+                        Player velocity: (0, 25550264, -0, 026032628, 4, 0788427E-07); Distance ran in 500ms: 6,645635
+                        Player velocity: (0, 25935885, -0, 026399791, 1, 7690545E-06); Distance ran in 500ms: 7,313462
                         */
-                        Console.WriteLine($"Quaternion: x = {quat.X} ; y = {quat.Y} ; z = {quat.Z} ; w = {quat.W}");
-                        quat = Quaternion.Normalize(quat);
 
-                        Console.WriteLine($"Quaternion normalized = {quat.ToVector4()}");
-                        //quat = Quaternion.CreateFromAxisAngle(new Vector3(xAxis, yAxis, 0), (float)angle);
-                        /*
-                        Quaternion q;
-                        vector a = crossproduct(v1, v2);
-                        q.xyz = a;
-                        q.w = sqrt((v1.Length ^ 2) * (v2.Length ^ 2)) + dotproduct(v1, v2);
-                        */
+                        // Mower acceleration: 12.0 (0.1 to 10.0)
+                        // En 5s: 0 à 7.3
+
+                        //block.position = new Vector3(lastPos.X + (moveX * deltaTime * 0.5 * VEH_VELOCITY), lastPos.Y + (moveY * deltaTime * 0.5 * VEH_VELOCITY), destination.Z + 1);
+                        block.position = from;
+                        Console.WriteLine($"block.position[{i}] = {block.position} ; time = {block.time} ; vel = {block.velocity} ; d = {Vector3.Distance(from, to)}");
+                        recordPathObjects.Add(new DynamicObject(19131, block.position + new Vector3(0, 0, 2), Vector3.Zero, 200));
+                        //Console.WriteLine($"block[{i}].position = {block.position} ; block[{i}].velocity: = {block.velocity}");
+                        block.rotQuaternion1 = quat.W;
+                        block.rotQuaternion2 = quat.X;
+                        block.rotQuaternion3 = quat.Y;
+                        block.rotQuaternion4 = quat.Z;
+                        block.additionnalKeyCode = 8;
+                        if (i >= path.Count - 1)
+                            block.additionnalKeyCode = 0;
+                        block.vehicleHealth = 1000;
+                        record.Blocks[i] = block;
+
+                        vehicleSpeed *= 1.2;
+                        Console.WriteLine($"VehicleSpeed for block[{i}]: {vehicleSpeed}");
+                        estimatedVehiclePos = to; // The vehicle should be at 'to' position at the end of the block
+                        prevNodeDistance = Vector3.Distance(from , to);
+
                     }
-
-
-                    if (i > 0)
-                        block.time = record.VehicleBlocks[i - 1].time + deltaTime;
-                    else
-                        block.time = 0;
-
-                    // For 500ms steps:
-                    /*
-                    Player velocity: (0, 01735576, -0, 0019036975, -2, 0593627E-05); Distance ran in 500ms: 0,052331124
-                    Player velocity: (0, 072712064, -0, 015453491, -3, 840732E-05); Distance ran in 500ms: 1,4043567
-                    Player velocity: (0, 117630996, -0, 023287239, -6, 19408E-05); Distance ran in 500ms: 2,561746
-                    Player velocity: (0, 15140219, -0, 015345437, -0, 0002563792); Distance ran in 500ms: 3,6772563
-                    Player velocity: (0, 18521197, -0, 01883218, 1, 2021027E-05); Distance ran in 500ms: 4,6937623
-                    Player velocity: (0, 21316706, -0, 021677177, 0, 00010614364); Distance ran in 500ms: 5,367864
-                    Player velocity: (0, 22709104, -0, 023096712, -0, 0004229768); Distance ran in 500ms: 5,6239614
-                    Player velocity: (0, 24148698, -0, 024681868, -9, 976953E-06); Distance ran in 500ms: 6,2685437
-                    Player velocity: (0, 25550264, -0, 026032628, 4, 0788427E-07); Distance ran in 500ms: 6,645635
-                    Player velocity: (0, 25935885, -0, 026399791, 1, 7690545E-06); Distance ran in 500ms: 7,313462
-                    */
-
-                    // Mower acceleration: 12.0 (0.1 to 10.0)
-                    // En 5s: 0 à 7.3
-
-                    //block.position = new Vector3(lastPos.X + (moveX * deltaTime * 0.5 * VEH_VELOCITY), lastPos.Y + (moveY * deltaTime * 0.5 * VEH_VELOCITY), destination.Z + 1);
-                    block.position = from;
-                    Console.WriteLine($"block.position[{i}] = {block.position} ; time = {block.time} ; dt (from last) = {deltaTime} ; vel = {block.velocity} ; d = {Vector3.Distance(lastToPos, node.position)}");
-                    recordPathObjects.Add(new DynamicObject(19131, block.position + new Vector3(0, 0, 2), Vector3.Zero, 200));
-                    //Console.WriteLine($"block[{i}].position = {block.position} ; block[{i}].velocity: = {block.velocity}");
-                    block.rotQuaternion1 = quat.W;
-                    block.rotQuaternion2 = quat.X;
-                    block.rotQuaternion3 = quat.Y;
-                    block.rotQuaternion4 = quat.Z;
-                    block.additionnalKeyCode = 8;
-                    if (i >= path.Count - 1)
-                        block.additionnalKeyCode = 0;
-                    block.vehicleHealth = 1000;
-                    record.VehicleBlocks[i] = block;
-
-                    // deltatime calculated from the previous node to the current one
-                    deltaTime = (uint)((Vector3.Distance(lastToPos, node.position) / vehicleSpeed) * 20);
                 }
-                record.VehicleBlocks = record.VehicleBlocks.GetRange(0, path.Count);
-                Player.SendClientMessageToAll("Record duration = " + (record.VehicleBlocks[^1].time - record.VehicleBlocks[0].time).ToString() + "ms");
+                record.Blocks = record.Blocks.GetRange(0, path.Count);
+                Player.SendClientMessageToAll("Record duration = " + (record.Blocks[^1].time - record.Blocks[0].time).ToString() + "ms");
             }
-            else
+            else if(mode == 1)
             {
                 RecordInfo.VehicleBlock block = new RecordInfo.VehicleBlock();
                 Console.WriteLine("");
                 PathNode node = path.Dequeue();
 
                 Quaternion quat = Quaternion.Identity;
-                Vector3 from = new Vector3(lastToPos.X, lastToPos.Y, lastToPos.Z);
+                Vector3 from = new Vector3(estimatedVehiclePos.X, estimatedVehiclePos.Y, estimatedVehiclePos.Z);
                 Vector3 to = new Vector3(node.position.X, node.position.Y, FindZFromVector2(node.position.X, node.position.Y));
                 block.velocity = Vector3.Zero;
                 if (node.position != Vector3.Zero)
@@ -416,20 +375,19 @@ namespace SampSharpGameMode1.Civilisation
                         Vector3 vec3 = ToEuler(quat.W, quat.X, quat.Y, quat.Z).Normalized();
                         block.velocity = new Vector3(vec3.X * vehicleSpeed, vec3.Y * vehicleSpeed, vec3.Z * vehicleSpeed);
 
-                        lastToPos = to;
+                        estimatedVehiclePos = to;
                     }
-                    
+
                     Console.WriteLine($"Quaternion: x = {quat.X} ; y = {quat.Y} ; z = {quat.Z} ; w = {quat.W}");
                     quat = Quaternion.Normalize(quat);
 
                     Console.WriteLine($"Quaternion normalized = {quat.ToVector4()}");
                 }
-
                 block.time = 0;
 
                 //block.position = new Vector3(lastPos.X + (moveX * deltaTime * 0.5 * VEH_VELOCITY), lastPos.Y + (moveY * deltaTime * 0.5 * VEH_VELOCITY), destination.Z + 1);
                 block.position = from;
-                Console.WriteLine($"block.position = {block.position} ; time = {block.time} ; dt (from last) = {deltaTime} ; vel = {block.velocity} ; d = {Vector3.Distance(lastToPos, node.position)}");
+                Console.WriteLine($"block.position = {block.position} ; time = {block.time} ; dt (from last) = {deltaTime} ; vel = {block.velocity} ; d = {Vector3.Distance(estimatedVehiclePos, node.position)}");
                 recordPathObjects.Add(new DynamicObject(19131, block.position + new Vector3(0, 0, 2), Vector3.Zero, 200));
                 //Console.WriteLine($"block[{i}].position = {block.position} ; block[{i}].velocity: = {block.velocity}");
                 block.rotQuaternion1 = quat.W;
@@ -438,7 +396,7 @@ namespace SampSharpGameMode1.Civilisation
                 block.rotQuaternion4 = quat.Z;
                 block.additionnalKeyCode = 0;
                 block.vehicleHealth = 1000;
-                record.VehicleBlocks = new List<RecordInfo.VehicleBlock>
+                record.Blocks = new List<RecordInfo.Block>
                 {
                     block
                 };
@@ -453,36 +411,6 @@ namespace SampSharpGameMode1.Civilisation
 
             Restart();
         }
-
-        // Fonction pour calculer l'angle entre deux vecteurs en degrés
-        static double CalculateAngle(Vector3 fromVector, Vector3 toVector)
-        {
-            /*
-            double vDot = Vector3.Dot(fromVector, toVector) / (fromVector.Length * toVector.Length);
-            if (vDot < -1.0) vDot = -1.0;
-            if (vDot > 1.0) vDot = 1.0;
-            return ((double)(Math.Acos(vDot)));
-            */
-
-            // Utilise Math.Acos pour calculer l'arc cosinus du produit scalaire normalisé des deux vecteurs
-            //double dotProduct = Vector3.Dot(fromVector.Normalized(), toVector.Normalized());
-            double dotProduct = Vector3.Dot(fromVector.Normalized(), toVector.Normalized());
-
-
-            Console.WriteLine("dotProduct: " + dotProduct);
-            if (dotProduct < -1.0) dotProduct = -1.0;
-            if (dotProduct > 1.0) dotProduct = 1.0;
-            Console.WriteLine("dotProduct normalized: " + dotProduct);
-            double angleInRadians = Math.Acos(dotProduct);
-            Console.WriteLine("angleInRadians: " + angleInRadians);
-
-            // Convertir l'angle en degrés
-            double angleInDegrees = angleInRadians * (180.0 / Math.PI);
-            Console.WriteLine("angleInDegrees: " + angleInDegrees);
-
-            return angleInDegrees;
-        }
-
         static float CalculateRotationAngle(Vector2 pointA, Vector2 pointB, bool isZAngle = false)
         {
             // Calculer la différence entre les coordonnées de B et A
@@ -619,28 +547,6 @@ namespace SampSharpGameMode1.Civilisation
             return result;
         }
 
-        /*
-        Quaternion ToQuaternion(double roll, double pitch, double yaw) // roll (x), pitch (y), yaw (z), angles are in radians
-        {
-            // Abbreviations for the various angular functions
-
-            double cr = Math.Cos(roll * 0.5);
-            double sr = Math.Sin(roll * 0.5);
-            double cp = Math.Cos(pitch * 0.5);
-            double sp = Math.Sin(pitch * 0.5);
-            double cy = Math.Cos(yaw * 0.5);
-            double sy = Math.Sin(yaw * 0.5);
-
-            Quaternion q = new Quaternion(
-                w: (float)(cr * cp * cy + sr * sp * sy),
-                x: (float)(sr * cp * cy - cr * sp * sy),
-                y: (float)(cr * sp * cy + sr * cp * sy),
-                z: (float)(cr * cp * sy - sr * sp * cy)
-            );
-
-            return q;
-        }
-        */
         public static void StopVehicle()
         {
             Console.WriteLine("VehicleAI.cs - VehicleAI.StopVehicle:I: Stopping vehicle");
@@ -653,21 +559,23 @@ namespace SampSharpGameMode1.Civilisation
 
             uint deltaTime = 0;
             Vector3 lastPos = vehicle.Position;
-            for (int i = 0; i < record.VehicleBlocks.Count; i++)
+            for (int i = 0; i < record.Blocks.Count; i++)
             {
                 if(vehicleSpeed > 0)
                     vehicleSpeed -= 0.1;
                 if (i > 0)
                 {
-                    deltaTime = record.VehicleBlocks[i].time - record.VehicleBlocks[i - 1].time;
-                    lastPos = record.VehicleBlocks[i - 1].position;
+                    deltaTime = record.Blocks[i].time - record.Blocks[i - 1].time;
+                    lastPos = record.Blocks[i - 1].position;
                 }
-                RecordInfo.VehicleBlock block = record.VehicleBlocks[i];
-                block.velocity = new Vector3(0.0, vehicleSpeed, 0.0);
-                block.position = new Vector3(block.position.X, lastPos.Y + (0.001 * deltaTime * 0.5 * VEH_VELOCITY), block.position.Z);
-                block.additionnalKeyCode = 0;
-                block.vehicleHealth = 1000;
-                record.VehicleBlocks[i] = block;
+                if(record.Blocks[i] is RecordInfo.VehicleBlock block)
+                {
+                    block.velocity = new Vector3(0.0, vehicleSpeed, 0.0);
+                    block.position = new Vector3(block.position.X, lastPos.Y + (0.001 * deltaTime * 0.5 * VEH_VELOCITY), block.position.Z);
+                    block.additionnalKeyCode = 0;
+                    block.vehicleHealth = 1000;
+                    record.Blocks[i] = block;
+                }
             }
 
             RecordCreator.Save(record, "recreated.rec");

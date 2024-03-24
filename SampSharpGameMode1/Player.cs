@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
+using System.Xml.Linq;
 using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
@@ -78,7 +80,7 @@ namespace SampSharpGameMode1
         //NPC npc;
         VehicleAI vehicleAI;
         private SampSharp.GameMode.SAMP.Timer pathObjectsTimer;
-        private List<GlobalObject> pathObjects = new List<GlobalObject>();
+        private List<DynamicObject> pathObjects = new List<DynamicObject>();
         private List<GlobalObject> naviObjects = new List<GlobalObject>();
         private TextLabel[] pathLabels = new TextLabel[1000];
         private TextLabel[] naviLabels = new TextLabel[1000];
@@ -86,7 +88,9 @@ namespace SampSharpGameMode1
         //Interior Preview
         public InteriorPreview InteriorPreview { get; private set; }
 
-        private int viewAreaID = -1;
+        public Vector3R LastPositionBeforeSpectate { get; set; }
+        public BaseVehicle? LastVehicleUsedBeforeSpectate { get; set; }
+        public int LastVehicleSeatUsedBeforeSpectate { get; set; }
 
 		#region Overrides of BasePlayer
         public override void OnConnected(EventArgs e)
@@ -134,11 +138,6 @@ namespace SampSharpGameMode1
                 else
                     ShowSignupForm();
             }
-            else
-            {
-                Console.WriteLine("NPC Connected");
-                VehicleAI.npc = this;
-            }
         }
 
         private void PathObjectsTimer_Tick(object sender, EventArgs e)
@@ -180,7 +179,7 @@ namespace SampSharpGameMode1
                 pathObjectsTimer.Dispose();
                 pathObjectsTimer = null;
 
-                pathObjects = new List<GlobalObject>();
+                pathObjects = new List<DynamicObject>();
                 naviObjects = new List<GlobalObject>();
                 pathLabels = new TextLabel[1000];
                 naviLabels = new TextLabel[1000];
@@ -257,11 +256,16 @@ namespace SampSharpGameMode1
         public override void OnSpawned(SpawnEventArgs e)
         {
             base.OnSpawned(e);
-            if(this.IsNPC)
+            if(!LastPositionBeforeSpectate.IsZero())
             {
-                Console.WriteLine("NPC Spawned");
-                this.PutInVehicle(VehicleAI.vehicle);
-                VehicleAI.Process();
+                this.Position = LastPositionBeforeSpectate.Position;
+                this.Angle = LastPositionBeforeSpectate.Rotation;
+                if(LastVehicleUsedBeforeSpectate != null)
+                {
+                    this.PutInVehicle(LastVehicleUsedBeforeSpectate, LastVehicleSeatUsedBeforeSpectate);
+                }
+                LastPositionBeforeSpectate = Vector3R.Zero;
+                LastVehicleUsedBeforeSpectate = null;
             }
         }
 
@@ -559,7 +563,7 @@ namespace SampSharpGameMode1
         }
 
         private void UpdatePath()
-        {
+        {/*
             this.Notificate("Updating ...");
             int naviNodeCount = 0;
 
@@ -649,10 +653,17 @@ namespace SampSharpGameMode1
             Console.WriteLine("Player.cs - Number of Navinodes <= 200: " + naviNodeCount);
 
             this.Notificate("Updated !");
+            */
         }
 
-        void CalculateWay(Vector3 from, Vector3 to)
+        public void CalculateWay(Vector3 from, Vector3 to)
         {
+            foreach(DynamicObject obj in pathObjects)
+            {
+                obj.Dispose();
+            }
+            pathObjects.Clear();
+
             PathNode startNode, endNode;
             List<PathNode> allPathNodes = GetPathNodes();
             List<PathNode> allNearPathNodes = new List<PathNode>();
@@ -753,18 +764,18 @@ namespace SampSharpGameMode1
             {
                 if(lastNode != null)
                 {
-                    GlobalObject go = new GlobalObject(19130, node.position + new Vector3(0.0, 0.0, 1.0), Vector3.Zero);
+                    DynamicObject dynamicObject = new DynamicObject(19187, node.position + new Vector3(0.0, 0.0, 1.0), Vector3.Zero, player: this);
 
                     double angle = Math.Atan((node.position.X - lastNode.GetValueOrDefault().position.X) / (node.position.Y - lastNode.GetValueOrDefault().position.Y));
                     double angledegree = angle * 57.295779513;
 
-                    go.Rotation = new Vector3(90.0, 0.0, -angledegree);
-                    pathObjects.Add(go);
+                    dynamicObject.Rotation = new Vector3(90.0, 0.0, -angledegree);
+                    pathObjects.Add(dynamicObject);
 
                     string txt = "ID: " + node.id + "\n" +
                         "Path Node ID: " + node.nodeID;
-                    TextLabel lbl = new TextLabel(txt, Color.White, node.position + new Vector3(0.0, 0.0, 2.0), 200.0f);
-                    pathLabels[pathObjects.Count - 1] = lbl;
+                    //TextLabel lbl = new TextLabel(txt, Color.White, node.position + new Vector3(0.0, 0.0, 2.0), 200.0f);
+                    //pathLabels[pathObjects.Count - 1] = lbl;
                 }
                 lastNode = node;
             }
@@ -779,12 +790,31 @@ namespace SampSharpGameMode1
                 this.SendClientMessage($"Id: {label.Id} ; Text: {label.Text}");
             }
         }
-
+        /*
         [Command("create-script")]
         private void CreateScriptCommand()
         {
             Record record = RecordConverter.Parse(@"C:\stayinvehicle.rec");
             this.SendClientMessage("Record read");
+
+            Vector3 destination = new Vector3(1600, 1610, 10.54);
+            //Quaternion quat = Quaternion.CreateFromYawPitchRoll(destination.Z - this.Position.Z, destination.Y - this.Position.Y, destination.X - this.Position.X);
+            float xAxis = (float)Math.Acos((destination.X - this.Position.X)/3000);
+            float yAxis = (float)Math.Asin((destination.Y - this.Position.Y)/3000);
+            double angle = Math.Acos(
+                (this.Position.X * destination.X + this.Position.Y * destination.Y + this.Position.Z * destination.Z) / 
+                (this.Position.LengthSquared * destination.LengthSquared)
+            );
+            angle *= 180 / Math.PI;
+            this.SendClientMessage("xAxis: " + xAxis.ToString());
+            this.SendClientMessage("yAxis: " + yAxis.ToString());
+            this.SendClientMessage("angle: " + angle.ToString());
+            Quaternion quat = Quaternion.CreateFromAxisAngle(new Vector3(xAxis, yAxis, 0), (float)angle);
+            this.SendClientMessage("Quat: " + quat.ToVector4().ToString());
+            this.SendClientMessage("QuatX: " + quat.X.ToString());
+
+            float dot = Vector3.Dot(this.Position, destination);
+            Console.WriteLine(Vector3.Normalize(destination).ToString());
 
             int recordCount = 20;
             uint deltaTime = 0;
@@ -798,9 +828,12 @@ namespace SampSharpGameMode1
                     lastPos = record.VehicleBlocks[i - 1].position;
                 }
                 RecordInfo.VehicleBlock block = record.VehicleBlocks[i];
-                block.velocity = new Vector3(0.0, speed, 0.0);
-                block.position = new Vector3(block.position.X, lastPos.Y + (22.55 * (deltaTime/1000)), block.position.Z);
-                block.position = new Vector3(block.position.X, lastPos.Y + (0.001 * deltaTime * 0.5 * 45.1), block.position.Z);
+                //block.velocity = new Vector3(0.0, speed, 0.0);
+                //block.position = new Vector3(block.position.X, lastPos.Y + (0.001 * deltaTime * 0.5 * 45.1), block.position.Z);
+                block.rotQuaternion1 = quat.W;
+                block.rotQuaternion2 = quat.X;
+                block.rotQuaternion3 = quat.Y;
+                block.rotQuaternion4 = quat.Z;
                 block.additionnalKeyCode = 8;
                 block.vehicleHealth = 1000;
                 record.VehicleBlocks[i] = block;
@@ -847,6 +880,7 @@ namespace SampSharpGameMode1
             }));
             t.Start();
         }
+        */
 
         [Command("ai-cmds")]
         private void AICmdsCommand()
@@ -854,9 +888,9 @@ namespace SampSharpGameMode1
             ListDialog dialog = new ListDialog("AI Actions", "Execute", "Cancel");
             dialog.AddItems(new string[] {
                 "create",
-                "reboot",
+                "start",
                 "kick",
-                "set in vehicle",
+                "go to next pos",
                 "restart AI"
             });
             dialog.Response += (sender, e) =>
@@ -868,8 +902,8 @@ namespace SampSharpGameMode1
                         case 0: // create
 
                             //VehicleAI.Init(VehicleModelType.Mower, PathTools.GetNeirestPathNode(this.Position).position, 0.0f);
-                            VehicleAI.Init(VehicleModelType.Mower, new Vector3(1501.22, 1712.39, 10.54), 0.0f);
-                            VehicleAI.SetMode(0);
+                            //string npcName = VehicleAI.Init(VehicleModelType.Mower, new Vector3(1501.22, 1712.39, 10.54), 0.0f);
+                            //VehicleAI.SetMode(1);
 
                             List<PathNode> allPathNodes = GetPathNodes();
                             List<PathNode> allNearPathNodes = new List<PathNode>();
@@ -918,23 +952,43 @@ namespace SampSharpGameMode1
                                 pathNodes[1] = new PathNode();
                                 pathNodes[1].position = new Vector3(1402.59, 1858.7728, 10.54);
                                 VehicleAI.SetPath(pathNodes);*/
-                                VehicleAI.SetPath(e.path);
+
+                                //VehicleAI.SetPath(e.path);
+                                NPCController.Add("npctest2", new Queue<Vector3>(e.path.Select(x => x.position)));
                             };
                             pf.Failure += Pf_Failure;
                             this.SendClientMessage("AI created");
                             break;
-                        case 1: // reboot
-                            //VehicleAI.Restart();
-                            VehicleAI.StartVehicle();
+                        case 1: // start
+                            ListDialog listDialog = new ListDialog("Chose the NPC to start", "Start", "Cancel");
+                            List<string> botNames = NPCController.GetConnectedBotNames().ToList();
+                            listDialog.AddItems(botNames);
+                            listDialog.Response += (obj, evt) =>
+                            {
+                                ListDialog listDialog2 = new ListDialog("Chose the way to start", "Start", "Cancel");
+                                listDialog2.AddItems(new List<string>() { "On foot", "Vehicle" });
+                                listDialog2.Response += (obj, evt) =>
+                                {
+                                    NPCController.StartAI(botNames[evt.ListItem], evt.ListItem == 0 ? "onfoot" : "vehicle");
+                                };
+                                listDialog2.Show(this);
+                            };
+                            listDialog.Show(this);
                             this.SendClientMessage("AI reset in his vehicle");
                             break;
                         case 2: // kick
                             VehicleAI.Kick();
                             this.SendClientMessage("AI kicked");
                             break;
-                        case 3: // set in vehicle
-                            VehicleAI.SetInVehicle();
-                            this.SendClientMessage("AI set in vehicle");
+                        case 3: // go to next
+                            ListDialog listDialog2 = new ListDialog("Chose the NPC you want to update", "Start", "Cancel");
+                            List<string> botNames2 = NPCController.GetConnectedBotNames().ToList();
+                            listDialog2.AddItems(botNames2);
+                            listDialog2.Response += (obj, evt) =>
+                            {
+                                NPCController.GoToNextPos(botNames2[evt.ListItem]);
+                            };
+                            listDialog2.Show(this);
                             break;
                         case 4: // restart AI
                             VehicleAI.StartVehicle();
@@ -946,14 +1000,47 @@ namespace SampSharpGameMode1
             };
             dialog.Show(this);
         }
+        [Command("ai-speed")]
+        private void AISpeedCommand(float speed)
+        {
+            VehicleAI.SetSpeed(speed);
+        }
+        [Command("ai-timemul")]
+        private void AITimeMulCommand(int multiplier)
+        {
+            VehicleAI.SetTimeMultiplier(multiplier);
+        }
+
+
+        [Command("record-start")]
+        private void RecordStartCommand(int start)
+        {
+            bool stopRequested = false;
+            Thread t = new Thread(new ThreadStart(() =>
+            {
+                Vector3 lastPos = this.Position;
+                while(!stopRequested)
+                {
+                    Console.WriteLine("Player velocity: " + this.Vehicle.Velocity + "; Distance ran in 500ms: " + Vector3.Distance(lastPos, this.Vehicle.Position));
+                    lastPos = this.Vehicle.Position;
+                    Thread.Sleep(500);
+                }
+            }));
+            if(start == 0)
+            {
+                stopRequested = true;
+            }
+            else
+            {
+                stopRequested = false;
+                t.Start();
+            }
+        }
 
         [Command("followme")]
         private void FollowMeCommand()
         {
-            if (vehicleAI != null)
-                vehicleAI.SetDestination(this.Position + new Vector3(0.0, 5.0, 0.0), 0.5);
-            else
-                Console.WriteLine("vehicleAI is null !");
+            VehicleAI.SetDestination(this.Position + new Vector3(0.0, 5.0, 0.0), 0.5);
         }
         [Command("start")]
         private void StartAICommand()
@@ -972,6 +1059,21 @@ namespace SampSharpGameMode1
                 vehicleAI.SetNPCHealth(health);
             else
                 Console.WriteLine("vehicleAI is null !");
+        }
+        [Command("accel")]
+        private void AccelCommand()
+        {
+            if(this.InAnyVehicle)
+            {
+                Thread t = new Thread(() =>
+                {
+                    this.Vehicle.Velocity = new Vector3(0, 1, 0);
+                    Vector3 prev = this.Vehicle.Position;
+                    Thread.Sleep(1000);
+                    this.SendClientMessage("Difference in 1s: " + (prev - this.Vehicle.Position));
+                });
+                t.Start();
+            }
         }
 
         [Command("select-td")]

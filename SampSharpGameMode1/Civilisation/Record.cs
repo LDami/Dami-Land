@@ -8,6 +8,6 @@ namespace SampSharpGameMode1.Civilisation
     internal class Record
     {
         public RecordInfo.Header Header { get; set; }
-        public List<RecordInfo.VehicleBlock> VehicleBlocks { get; set; } = new List<RecordInfo.VehicleBlock>();
+        public List<RecordInfo.Block> Blocks { get; set; } = new List<RecordInfo.Block>();
     }
 }
