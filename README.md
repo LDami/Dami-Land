@@ -15,3 +15,5 @@ This gamemode is developped with [SampSharp](https://github.com/ikkentim/SampSha
 * In game Map Editor (work in progress)
 * In game Textdraw Editor
 * ColAndreas plugin's adaptation
+
+How to run it with docker: `sudo docker run --rm -d -p 7777:7777/udp --name ompserver omp`
