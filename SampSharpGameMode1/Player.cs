@@ -88,6 +88,8 @@ namespace SampSharpGameMode1
         //Interior Preview
         public InteriorPreview InteriorPreview { get; private set; }
 
+        public Player SpectatingTarget { get; set; } 
+        public List<Player> Spectators { get; private set; }
         public Vector3R LastPositionBeforeSpectate { get; set; }
         public BaseVehicle? LastVehicleUsedBeforeSpectate { get; set; }
         public int LastVehicleSeatUsedBeforeSpectate { get; set; }
@@ -132,6 +134,8 @@ namespace SampSharpGameMode1
 
                 SampSharp.Streamer.Streamer s = new SampSharp.Streamer.Streamer();
                 s.ToggleIdleUpdate(this, true);
+
+                Spectators = new List<Player>();
 
                 if (this.IsRegistered())
                     ShowLoginForm();
@@ -232,13 +236,21 @@ namespace SampSharpGameMode1
             
             if(!this.IsNPC)
             {
-                if (e.NewState == PlayerState.Driving)
+                if (e.NewState == PlayerState.Driving || e.NewState == PlayerState.Passenger)
                 {
                     Speedometer.Show();
+                    foreach(Player s in this.Spectators)
+                    {
+                        s.SpectateVehicle(this.Vehicle);
+                    }
                 }
                 else
                 {
                     Speedometer.Hide();
+                    foreach (Player s in this.Spectators)
+                    {
+                        s.SpectatePlayer(this);
+                    }
                 }
             }
         }
