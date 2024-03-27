@@ -4,8 +4,14 @@ using SampSharp.GameMode.Display;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
 using SampSharp.GameMode.World;
+using SampSharp.Streamer.Controllers;
+using SampSharp.Streamer.World;
+using SampSharpGameMode1.Civilisation;
+using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using static SampSharpGameMode1.Civilisation.PathExtractor;
 
 namespace SampSharpGameMode1.Commands
 {
@@ -61,7 +67,7 @@ namespace SampSharpGameMode1.Commands
         private static void ReloadTextdraws(Player player)
         {
             player.SendClientMessage("Reloading all player's textdraws ...");
-            foreach(Player p in Player.All)
+            foreach(Player p in Player.All.Cast<Player>())
             {
                 p.Speedometer.Hide();
                 p.Speedometer = null;
@@ -117,19 +123,19 @@ namespace SampSharpGameMode1.Commands
         [Command("acmds")]
         private static void AdminCommandsListCommand(Player player)
         {
-            Display.ColorPalette.SAMPColor color1 = Display.ColorPalette.Primary.Main;
-            Display.ColorPalette.SAMPColor color2 = new Display.ColorPalette.SAMPColor(Color.White);
-            string cmdList =
-                $"{color1}/vmenu [vehicleid] {color2} Open Vehicle menu\n" +
-                $"{color1}/kick /ban [player] [reason] {color2} Kick or Ban player\n" +
-                $"{color1}/freeze /unfreeze [player] {color2} Freeze/Unfreeze player\n" +
-                $"{color1}/kill [player] {color2} Kill player\n" +
-                $"{color1}/get [player] {color2} Teleport player to your position\n" +
-                $"{color1}/goto [player] {color2} Teleport yourself to player\n" +
-                $"{color1}/clearveh {color2} Respawn all vehicles\n" +
-                $"{color1}/whereis [player] {color2} Get the position and virtualworld of player\n"
-                ;
-            new MessageDialog("Admin command list", cmdList, "Close").Show(player);
+            CommandList commandList = new CommandList("Admin command list");
+            commandList.Add("/vmenu [vehicleid]", "Open Vehicle menu");
+            commandList.Add("/kick [player] [reason]", "Kick a player");
+            commandList.Add("/ban [player] [reason]", "Ban a player");
+            commandList.Add("/(un)freeze [player]", "Freeze/Unfreeze player");
+            commandList.Add("/kill [player]", "Kill player");
+            commandList.Add("/get [player]", "Teleport player to your position");
+            commandList.Add("/goto [player]", "Teleport yourself to player");
+            commandList.Add("/clearveh", "Respawn all vehicles");
+            commandList.Add("/whereis [player]", "Get the position and virtualworld of player");
+            commandList.Add("/spec [player]", "Spectate player");
+            commandList.Add("/pickup", "List available pickups");
+            commandList.Show(player);
         }
 
         [Command("clearveh", PermissionChecker = typeof(AdminPermissionChecker))]
@@ -430,6 +436,42 @@ namespace SampSharpGameMode1.Commands
         private static void PickupCommand(Player player, int id)
         {
             Events.Derbys.DerbyPickupRandomEvent pickup = new Events.Derbys.DerbyPickupRandomEvent(player, id);
+        }
+        [Command("ak47", PermissionChecker = typeof(AdminPermissionChecker))]
+        private static void AK47Command(Player player)
+        {
+            player.GiveWeapon(Weapon.AK47, 200);
+        }
+        [Command("spec", PermissionChecker = typeof(AdminPermissionChecker))]
+        private static void SpecCommand(Player player, Player targetPlayer)
+        {
+            player.LastPositionBeforeSpectate = new Vector3R(player.Position, player.Angle);
+            if (player.InAnyVehicle)
+            {
+                player.LastVehicleUsedBeforeSpectate = player.Vehicle;
+                player.LastVehicleSeatUsedBeforeSpectate = player.VehicleSeat;
+            }
+            else
+                player.LastVehicleUsedBeforeSpectate = null;
+
+            player.ToggleSpectating(true);
+            player.SpectatingTarget = targetPlayer;
+            player.SpectatePlayer(targetPlayer);
+            targetPlayer.Spectators.Add(player);
+            player.Notificate("Spectating " + targetPlayer.Name);
+            player.SendClientMessage($"{ColorPalette.Primary.Main}Type {ColorPalette.Secondary.Main}/specoff{ColorPalette.Primary.Main} to switch off the spectate mode.");
+        }
+        [Command("specoff", PermissionChecker = typeof(AdminPermissionChecker))]
+        private static void SpecOffCommand(Player player)
+        {
+            player.SpectatingTarget.Spectators.Remove(player);
+            player.ToggleSpectating(false);
+            player.Position = player.LastPositionBeforeSpectate.Position;
+            player.Angle = player.LastPositionBeforeSpectate.Rotation;
+            if(player.LastVehicleUsedBeforeSpectate != null)
+            {
+                player.PutInVehicle(player.LastVehicleUsedBeforeSpectate, player.LastVehicleSeatUsedBeforeSpectate);
+            }
         }
     }
 }
