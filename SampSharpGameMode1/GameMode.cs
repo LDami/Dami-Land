@@ -10,6 +10,7 @@ using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using SampSharpGameMode1.Civilisation;
+using SampSharpGameMode1.CustomDatas;
 using SampSharpGameMode1.Events;
 using static SampSharp.GameMode.SAMP.Server;
 using static SampSharpGameMode1.Civilisation.PathExtractor;
@@ -242,96 +243,48 @@ namespace SampSharpGameMode1
         }
 
 #endregion
-        DateTime startedTime = DateTime.Now;
-        private void CalculateWay(Vector3 from, Vector3 to)
+
+        private void ExtractMapObjects()
         {
-            PathNode startNode, endNode;
-            List<PathNode> allPathNodes = GetPathNodes();
-            List<PathNode> allNearPathNodes = new List<PathNode>();
+            // Chemin vers votre fichier contenant les données
+            string filePath = "C:\\Serveur OpenMP\\scriptfiles\\mapobjects.txt";
 
-            PathNode nearestNodeFrom = new PathNode();
-            PathNode nearestNodeTo = new PathNode();
-            PathNode lastNode = new PathNode();
+            // Liste pour stocker les objets de la carte
+            List<MapObjectData> mapObjects = new();
 
+            // Lire les lignes du fichier
+            string[] lines = System.IO.File.ReadAllLines(filePath);
 
-            GameMode gm = this;
-            bool isSocketAlive = false;
-            MySocketIO socket = gm.socket;
-            if (socket.GetStatus() == MySocketIO.SocketStatus.CONNECTED)
+            // Variable temporaire pour stocker la catégorie en cours de traitement
+            MapObjectGroupData currentCategory = new("A51 Replacement Land Bit", "");
+            string comment = "";
+
+            foreach (string line in lines)
             {
-                isSocketAlive = true;
-                Console.WriteLine("Player.cs - Player.CalculateWay:I: Sending datas ... ");
-            }
-
-            string data;
-            foreach (PathNode node in allPathNodes)
-            {
-                if (node.position.DistanceTo(from) < from.DistanceTo(to) || node.position.DistanceTo(to) < from.DistanceTo(to))
+                // Vérifier si la ligne est vide ou si elle commence par "###" pour identifier une nouvelle catégorie
+                if (!string.IsNullOrWhiteSpace(line))
                 {
-                    allNearPathNodes.Add(node);
-                    data = "{ \"id\": \"" + node.id + "\", \"posX\": " + node.position.X + ", \"posY\": " + node.position.Y + ", \"links\": [";
-                    int idx = 1;
-                    foreach (LinkInfo link in node.links)
+                    if (line.StartsWith("###"))
                     {
-                        data += "\"" + link.targetNode.id + "\"";
-                        if (idx < node.links.Count)
-                            data += ",";
-                        idx++;
+                        // Si c'est une nouvelle catégorie, mettez à jour la variable de catégorie
+                        currentCategory = new(line.Replace("###", "").Replace("*", "").Trim(), "");
+                        comment = "";
                     }
-                    data += "] }";
-                    if (socket.GetStatus() == MySocketIO.SocketStatus.CONNECTED)
+                    else
                     {
-                        isSocketAlive = true;
-                    }
-                    if (isSocketAlive)
-                    {
-                        if (socket.Write(data) == -1) isSocketAlive = false;
+                        string[] parts = line.Split('\t');
+                        if (int.TryParse(parts[0], out int id))
+                        {
+                            string name = parts[1];
+                            // Ajouter l'objet de la carte à la liste
+                            mapObjects.Add(new MapObjectData(id, name, currentCategory));
+                        }
+                        else
+                            comment += line;
                     }
                 }
             }
-            if (isSocketAlive)
-                Console.WriteLine("Done");
-            else
-                Console.WriteLine("KO");
-
-            foreach (PathNode node in allNearPathNodes)
-            {
-                if (lastNode.position != Vector3.Zero)
-                {
-                    if (nearestNodeFrom.position == Vector3.Zero || nearestNodeFrom.position.DistanceTo(from) > lastNode.position.DistanceTo(from))
-                    {
-                        nearestNodeFrom = lastNode;
-                    }
-                    if (nearestNodeTo.position == Vector3.Zero || nearestNodeTo.position.DistanceTo(to) > lastNode.position.DistanceTo(to))
-                    {
-                        nearestNodeTo = lastNode;
-                    }
-                }
-                lastNode = node;
-            }
-
-
-            startNode = nearestNodeFrom;
-            endNode = nearestNodeTo;
-            PathFinder pf = new PathFinder(allNearPathNodes, startNode, endNode);
-
-            startedTime = DateTime.Now;
-            pf.Find();
-            pf.Success += Pf_Success;
-            pf.Failure += Pf_Failure;
-
-        }
-
-        private void Pf_Failure(object sender, EventArgs e)
-        {
-            Console.WriteLine("Failure");
-        }
-
-        private void Pf_Success(object sender, PathFindingDoneEventArgs e)
-        {
-            Console.WriteLine("Success");
-            TimeSpan duration = DateTime.Now - startedTime;
-            Console.WriteLine("Path found in " + duration.ToString());
+            MapObjectData.UpdateMapObject(mapObjects);
         }
     }
 }

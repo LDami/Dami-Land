@@ -4,6 +4,7 @@ using SampSharp.GameMode.Events;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using SampSharp.Streamer.World;
+using SampSharpGameMode1.CustomDatas;
 using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
@@ -253,6 +254,18 @@ namespace SampSharpGameMode1
 				player.Disconnected -= Player_Disconnected;
 				player.KeyStateChanged -= Player_KeyStateChanged;
 			}
+		}
+
+		public void ShowObjectList()
+		{
+			ListDialog<MapObjectGroupData> listDialog = new("Categories", "Select", "Cancel");
+			//listDialog.AddItems(MapObjectData.MapObjectCategories);
+			listDialog.AddItem(MapObjectData.MapObjectCategories[0]);
+			listDialog.AddItem(MapObjectData.MapObjectCategories[1]);
+			listDialog.Response += (sender, e) =>
+			{
+			};
+			listDialog.Show(player);
 		}
 
 		/// <summary>

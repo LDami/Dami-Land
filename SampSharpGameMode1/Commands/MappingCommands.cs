@@ -218,6 +218,14 @@ namespace SampSharpGameMode1.Commands
                 else
                     player.SendClientMessage("There is no loaded map");
             }
+            [Command("listo")]
+            private static void ListObjectcommand(Player player)
+            {
+                if (!(player.mapCreator is null))
+                    player.mapCreator.ShowObjectList();
+                else
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+            }
             [Command("addo")]
             private static void AddObjectCommand(Player player, int modelid)
             {
