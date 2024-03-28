@@ -6,6 +6,7 @@ using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using SampSharp.Streamer;
 using SampSharp.Streamer.World;
+using SampSharpGameMode1.Civilisation;
 using SampSharpGameMode1.Display;
 using SampSharpGameMode1.Events._Tools;
 using System;
@@ -437,7 +438,22 @@ namespace SampSharpGameMode1.Events.Races
         }
         public void AddSpectatorGroup(Vector3 position)
         {
-            spectatorGroups.Add(new Civilisation.SpectatorGroup(player, position + new Vector3(0.0, 5.0, 0.0), player.VirtualWorld));
+            // TODO remove parameter
+            List<PathNode> allPathNodes = PathExtractor.pedNodes;
+            List<PathNode> allNearPathNodes = new();
+
+            Vector3 from = editingRace.checkpoints[checkpointIndex].Position;
+            foreach (PathNode node in allPathNodes)
+            {
+                if (node.position.DistanceTo(from) < 40)
+                {
+                    allNearPathNodes.Add(node);
+                }
+            }
+            foreach (PathNode node in allNearPathNodes)
+            {
+                spectatorGroups.Add(new SpectatorGroup(node.position + new Vector3(0, 0, 1.7), from, player.VirtualWorld));
+            }
         }
         private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
         {

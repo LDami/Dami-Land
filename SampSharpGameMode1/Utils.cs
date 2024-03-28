@@ -92,6 +92,16 @@ namespace SampSharpGameMode1
             return player.Position + new Vector3(-distance * Math.Sin(angle), distance * Math.Cos(angle), 0);
         }
 
+        public static float GetAbsoluteAngle(float angle)
+        {
+            return (float)((angle / 360.0) - Math.Floor(angle / 360.0)) * 360.0f;
+        }
+
+        public static float GetAngleToPoint(Vector2 origin, Vector2 target)
+        {
+            return GetAbsoluteAngle((float)(Math.Atan2(target.Y - origin.Y, target.X - origin.X) * 180 / Math.PI));
+        }
+
         /// <summary>
         ///  This function returns True if <paramref name="check"/> is between <paramref name="pos1"/> and <paramref name="pos2"/>
         /// </summary>
