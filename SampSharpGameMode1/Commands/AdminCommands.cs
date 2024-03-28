@@ -71,7 +71,7 @@ namespace SampSharpGameMode1.Commands
             {
                 p.Speedometer.Hide();
                 p.Speedometer = null;
-                p.Speedometer = new Display.Speedometer(p);
+                p.Speedometer = new Speedometer(p);
                 if (p.InAnyVehicle)
                     p.Speedometer.Show();
             }
@@ -135,6 +135,7 @@ namespace SampSharpGameMode1.Commands
             commandList.Add("/whereis [player]", "Get the position and virtualworld of player");
             commandList.Add("/spec [player]", "Spectate player");
             commandList.Add("/pickup", "List available pickups");
+            commandList.Add("/map loaded", "List all loaded maps");
             commandList.Show(player);
         }
 
@@ -281,7 +282,7 @@ namespace SampSharpGameMode1.Commands
         private static void KickCommand(Player player, Player targetPlayer, string reason = "No reason")
         {
             Logger.WriteLineAndClose(targetPlayer.Name + " has been kicked by " + player.Name + ". Reason: " + reason);
-            player.SendClientMessage(Display.ColorPalette.Primary.Main + targetPlayer.Name + Display.ColorPalette.Secondary.Main + " has been kicked");
+            player.SendClientMessage(ColorPalette.Primary.Main + targetPlayer.Name + ColorPalette.Secondary.Main + " has been kicked");
             targetPlayer.Kick("You have been kicked by " + player.Name + ". Reason: " + reason);
         }
         [Command("ban", PermissionChecker = typeof(AdminPermissionChecker))]
@@ -289,26 +290,26 @@ namespace SampSharpGameMode1.Commands
         {
             targetPlayer.SendClientMessage("You have been banned by " + player.Name + ". Reason: " + reason);
             Logger.WriteLineAndClose(targetPlayer.Name + " has been banned by " + player.Name + ". Reason: " + reason);
-            player.SendClientMessage(Display.ColorPalette.Primary.Main + targetPlayer.Name + Display.ColorPalette.Secondary.Main + " has been banned");
+            player.SendClientMessage(ColorPalette.Primary.Main + targetPlayer.Name + ColorPalette.Secondary.Main + " has been banned");
             targetPlayer.Ban(reason);
         }
         [Command("unfreeze", PermissionChecker = typeof(AdminPermissionChecker))]
         private static void UnfreezeCommand(Player player, Player targetPlayer)
         {
             targetPlayer.ToggleControllable(true);
-            player.SendClientMessage(Display.ColorPalette.Primary.Main + targetPlayer.Name + Display.ColorPalette.Secondary.Main + " has been unfreezed");
+            player.SendClientMessage(ColorPalette.Primary.Main + targetPlayer.Name + ColorPalette.Secondary.Main + " has been unfreezed");
         }
         [Command("freeze", PermissionChecker = typeof(AdminPermissionChecker))]
         private static void FreezeCommand(Player player, Player targetPlayer)
         {
             targetPlayer.ToggleControllable(false);
-            player.SendClientMessage(Display.ColorPalette.Primary.Main + targetPlayer.Name + Display.ColorPalette.Secondary.Main + " has been freezed");
+            player.SendClientMessage(ColorPalette.Primary.Main + targetPlayer.Name + ColorPalette.Secondary.Main + " has been freezed");
         }
         [Command("kill", PermissionChecker = typeof(AdminPermissionChecker))]
         private static void KillCommand(Player player, Player targetPlayer)
         {
             targetPlayer.Health = 0;
-            player.SendClientMessage(Display.ColorPalette.Primary.Main + targetPlayer.Name + Display.ColorPalette.Secondary.Main + " has been killed");
+            player.SendClientMessage(ColorPalette.Primary.Main + targetPlayer.Name + ColorPalette.Secondary.Main + " has been killed");
         }
 
         [Command("vw", "virtualworld", DisplayName = "vw")]
@@ -330,7 +331,7 @@ namespace SampSharpGameMode1.Commands
                     player.VirtualWorld = virtualworld;
                     player.Notificate("World ~g~" + virtualworld, 1);
                     if (virtualworld != (int)VirtualWord.Main)
-                        player.SendClientMessage($"You have been teleported to a new VirtualWorld ! Type {Display.ColorPalette.Primary.Main}/vw 0{Color.White} to go back to the main world");
+                        player.SendClientMessage($"You have been teleported to a new VirtualWorld ! Type {ColorPalette.Primary.Main}/vw 0{Color.White} to go back to the main world");
                 }
                 else
                     player.SendClientMessage("Invalid VirtualWorld id");
@@ -355,7 +356,7 @@ namespace SampSharpGameMode1.Commands
                     player.VirtualWorld = (int)virtualworld;
                     player.Notificate("World ~g~" + virtualworld, 1);
                     if (virtualworld != VirtualWord.Main)
-                        player.SendClientMessage($"You have been teleported to a new VirtualWorld ! Type {Display.ColorPalette.Primary.Main}/vw 0{Color.White} to go back to the main world");
+                        player.SendClientMessage($"You have been teleported to a new VirtualWorld ! Type {ColorPalette.Primary.Main}/vw 0{Color.White} to go back to the main world");
                 }
                 else
                     player.SendClientMessage("Invalid VirtualWorld id");
@@ -378,7 +379,7 @@ namespace SampSharpGameMode1.Commands
                 if (targetPlayer.VirtualWorld != player.VirtualWorld)
                 {
                     targetPlayer.VirtualWorld = player.VirtualWorld;
-                    targetPlayer.SendClientMessage($"You have been teleported to a new VirtualWorld ! Type {Display.ColorPalette.Primary.Main}/vw 0{Color.White} to go back to the main world");
+                    targetPlayer.SendClientMessage($"You have been teleported to a new VirtualWorld ! Type {ColorPalette.Primary.Main}/vw 0{Color.White} to go back to the main world");
                 }
                 targetPlayer.Teleport(player.Position + Vector3.UnitZ);
             }
@@ -402,7 +403,7 @@ namespace SampSharpGameMode1.Commands
                     if (isAdmin.Check(player))
                     {
                         player.VirtualWorld = targetPlayer.VirtualWorld;
-                        player.SendClientMessage($"You have been teleported to a new VirtualWorld ! Type {Display.ColorPalette.Primary.Main}/vw 0{Color.White} to go back to the main world");
+                        player.SendClientMessage($"You have been teleported to a new VirtualWorld ! Type {ColorPalette.Primary.Main}/vw 0{Color.White} to go back to the main world");
                         player.Teleport(targetPlayer.Position + Vector3.UnitZ);
                     }
                     else
