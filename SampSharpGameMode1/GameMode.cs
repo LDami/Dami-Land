@@ -218,6 +218,23 @@ namespace SampSharpGameMode1
             logger.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Works initialized.");
 
             DisableInteriorEnterExits();
+            SampSharp.GameMode.SAMP.Timer t = new(60000 * 3, true);
+            string[] randomMessageList =
+            {
+                $"Try {ColorPalette.Secondary.Main}/event-infos {ColorPalette.Primary.Main}to create events !",
+                $"Type {ColorPalette.Secondary.Main}/help {ColorPalette.Primary.Main}for help !",
+                $"Use {ColorPalette.Secondary.Main}/v {ColorPalette.Primary.Main}to spawn a vehicle !",
+                $"Please report any issue on the Github project, or in the discord channel !",
+                $"Join the discord server now ! {ColorPalette.Secondary.Main}https://discord.gg/82fdEvJ96U",
+                $"You can do some truck or tram missions to earn some cash !",
+                $"You can save your current position with {ColorPalette.Secondary.Main}/s {ColorPalette.Primary.Main}and go back to it later with {ColorPalette.Secondary.Main}/r",
+            };
+            t.Tick += (sender, e) =>
+            {
+                Random rdm = new();
+                BasePlayer.SendClientMessageToAll(ColorPalette.Primary.Main + "Tip: " + randomMessageList[rdm.Next(randomMessageList.Length)]);
+            };
+            ExtractMapObjects();
             logger.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Gamemode ready !");
 
             logger.Close();
