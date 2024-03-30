@@ -178,6 +178,7 @@ namespace SampSharpGameMode1.Display
             textdrawList[targetName].Shadow = textdrawList[name].Shadow;
             textdrawList[targetName].type = textdrawList[name].type;
             textdrawList[targetName].Show();
+            textdrawType[targetName] = textdrawType[name];
             textdrawEditMode.Add(targetName, EditingMode.Unselected);
         }
 
