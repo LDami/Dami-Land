@@ -58,7 +58,7 @@ namespace SampSharpGameMode1
             array[2 + off] = (byte)((i & 0x00FF0000) >> 16);
             array[3 + off] = (byte)((i & 0xFF000000) >> 24);
         }
-        public static void ConvertShorttoLittleEndian(short s, ref byte[] array, int off = 0)
+        public static void ConvertShortToLittleEndian(short s, ref byte[] array, int off = 0)
         {
             array[0 + off] = (byte)(s & 0x000000FF);
             array[1 + off] = (byte)((s & 0x0000FF00) >> 8);

@@ -423,7 +423,7 @@ namespace SampSharpGameMode1
         {
             if (passwordEntryTries > 0)
             {
-                InputDialog pwdDialog = new InputDialog("Login", "You are registered, please enter your password\nRemaining attempts:" + passwordEntryTries + "/3", true, "Login", "Quit");
+                InputDialog pwdDialog = new InputDialog("Login", "You are registered, please enter your password\nRemaining attempts: " + passwordEntryTries + "/3", true, "Login", "Quit");
                 pwdDialog.Show(this);
                 pwdDialog.Response += PwdLoginDialog_Response;
             }
