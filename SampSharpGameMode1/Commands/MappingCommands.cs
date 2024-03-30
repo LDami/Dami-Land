@@ -3,10 +3,10 @@ using SampSharp.GameMode.Display;
 using SampSharp.GameMode.Events;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
+using SampSharp.GameMode.World;
 using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SampSharpGameMode1.Commands
 {
@@ -22,13 +22,13 @@ namespace SampSharpGameMode1.Commands
                 player.SendClientMessage("You don't have any maps");
             else
             {
-                ListDialog list = new ListDialog(player.Name + "'s maps", "Options", "Close");
+                ListDialog list = new(player.Name + "'s maps", "Options", "Close");
                 list.AddItems(maps);
                 list.Response += (object sender, DialogResponseEventArgs e) =>
                 {
                     if (e.DialogButton == DialogButton.Left)
                     {
-                        ListDialog actionList = new ListDialog("Action", "Select", "Cancel");
+                        ListDialog actionList = new("Action", "Select", "Cancel");
                         actionList.AddItem("Infos ...");
                         actionList.AddItem("Edit");
                         actionList.AddItem("Delete");
@@ -66,6 +66,14 @@ namespace SampSharpGameMode1.Commands
                 list.Show(player);
             }
         }
+#if DEBUG
+        [Command("deleteobj")]
+        private static void DeleteObjectCommand(Player player, int modelid)
+        {
+            GlobalObject.Remove(player, modelid, player.Position, 500f);
+            player.SendClientMessage($"Model ID remove: {ColorPalette.Secondary.Main}{modelid}");
+        }
+#endif
         [Command("mapping", Shortcut = "map")]
         private static void MappingCommand(Player player)
         {
@@ -79,16 +87,13 @@ namespace SampSharpGameMode1.Commands
             [Command("help")]
             private static void HelpCommand(Player player)
             {
-                Display.CommandList commandList = new Display.CommandList("Event command list");
+                CommandList commandList = new CommandList("Event command list");
                 commandList.Add("/mapping create", "Create a new map");
                 commandList.Add("/mapping loadc [id]", "Load a map");
                 commandList.Add("/mapping save", "Save the map");
                 commandList.Add("/mapping exit", "Close the editor (save your map first !)");
                 commandList.Add("/mapping info [id]", "Display the info of a map");
-                commandList.Add("/mapping addo [modelid] ([groupid])", "Create an object with specified modelid into the group groupid");
-                commandList.Add("/mapping delo [objectid]", "Delete the object");
-                commandList.Add("/mapping replace [objectid] [modelid]", "Replace the object by the s modelid");
-                commandList.Add("/mapping dupl [objectid]", "Duplicate the object");
+                commandList.Add("/mapping object [action]", "Add, replace, delete or list objects");
                 commandList.Add("/mapping marker [1-2]", "Edit the marker position to get distance");
                 commandList.Add("/mapping dist", "Displays the distance between the markers");
                 commandList.Add("/mapping edit [objectid]", "Edit position/rotation of object");
@@ -111,7 +116,7 @@ namespace SampSharpGameMode1.Commands
                 player.mapCreator ??= new MapCreator(player);
                 if(player.mapCreator.editingMap != null)
 				{
-                    MessageDialog msg = new MessageDialog("Confirm", "You are currently editing a map, do you want to close and lost all unsaved data to load the next map ?", "Yes, load", "No, I will save");
+                    MessageDialog msg = new("Confirm", "You are currently editing a map, do you want to close and lost all unsaved data to load the next map ?", "Yes, load", "No, I will save");
                     msg.Response += (object sender, DialogResponseEventArgs e) =>
                     {
                         if (e.DialogButton == DialogButton.Left)
@@ -128,11 +133,11 @@ namespace SampSharpGameMode1.Commands
             [Command("save")]
             private static void SaveCommand(Player player)
             {
-                if (!(player.mapCreator is null))
+                if (player.mapCreator is not null)
                 {
                     if(player.mapCreator.editingMap.Name == "[Untitled]")
 					{
-                        InputDialog nameDialog = new InputDialog("Name of the map", "Please enter the name of the map", false, "Save", "Cancel");
+                        InputDialog nameDialog = new("Name of the map", "Please enter the name of the map", false, "Save", "Cancel");
                         nameDialog.Response += (object sender, DialogResponseEventArgs e) => {
                             if (e.DialogButton == DialogButton.Left)
                             {
@@ -177,7 +182,7 @@ namespace SampSharpGameMode1.Commands
             [Command("list")]
             private static void ListCommand(Player player)
             {
-                InputDialog dialog = new InputDialog("Map list", "Enter keywords (separated with space) if you want to search a specific map, otherwise let the field empty", false, "Search", "Cancel");
+                InputDialog dialog = new("Map list", "Enter keywords (separated with space) if you want to search a specific map, otherwise let the field empty", false, "Search", "Cancel");
                 dialog.Response += (object sender, DialogResponseEventArgs e) =>
                 {
                     if (e.DialogButton == DialogButton.Left)
@@ -192,7 +197,7 @@ namespace SampSharpGameMode1.Commands
             private static void ListLoadedCommand(Player player)
             {
                 List<Map> maps = Map.GetAllLoadedMaps();
-                ListDialog dialog = new ListDialog("List of loaded maps", "Select", "Cancel");
+                ListDialog dialog = new("List of loaded maps", "Select", "Cancel");
                 if (maps.Count > 0)
                 {
                     foreach (Map map in maps)
@@ -203,7 +208,7 @@ namespace SampSharpGameMode1.Commands
                     {
                         if (e.DialogButton == DialogButton.Left)
                         {
-                            ListDialog mapMenuDialog = new ListDialog("Map menu", "Select", "Cancel");
+                            ListDialog mapMenuDialog = new("Map menu", "Select", "Cancel");
                             mapMenuDialog.AddItem(Color.Red + "Unload");
                             mapMenuDialog.Response += (object sender, DialogResponseEventArgs e) =>
                             {
@@ -218,58 +223,74 @@ namespace SampSharpGameMode1.Commands
                 else
                     player.SendClientMessage("There is no loaded map");
             }
-            [Command("listo")]
-            private static void ListObjectcommand(Player player)
+
+            [Command("object", "obj")]
+            private static void ObjectCommand(Player player)
             {
-                if (!(player.mapCreator is null))
-                    player.mapCreator.ShowObjectList();
+                if (player.mapCreator is not null)
+                {
+                    player.SendClientMessage("Usage: /mapping object [action]");
+                    player.SendClientMessage("Actions: a(dd), del(ete), r(eplace), dupl(icate), l(ist)");
+                }
                 else
                     player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
             }
-            [Command("addo")]
-            private static void AddObjectCommand(Player player, int modelid)
+            [CommandGroup("object", "obj")]
+            class MappingObjectCommandClass
             {
-                if (!(player.mapCreator is null))
-                    player.mapCreator.AddObject(modelid);
-                else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
-            }
-            [Command("addo")] 
-            private static void AddObjectCommand(Player player, int modelid, int groupid)
-            {
-                if (!(player.mapCreator is null))
-                    player.mapCreator.AddObject(modelid, groupid);
-                else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
-            }
-            [Command("delo")]
-            private static void DelObjectCommand(Player player, int objectid)
-            {
-                if (!(player.mapCreator is null))
-                    player.mapCreator.DelObject(objectid);
-                else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
-            }
-            [Command("replace")]
-            private static void ReplaceCommand(Player player, int objectid, int modelid)
-            {
-                if (!(player.mapCreator is null))
-                    player.mapCreator.ReplaceObject(objectid, modelid);
-                else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
-            }
-            [Command("dupl")]
-            private static void DuplicateCommand(Player player, int objectid)
-            {
-                if (!(player.mapCreator is null))
-                    player.mapCreator.DuplicateObject(objectid);
-                else
-                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+                [Command("a", "add")]
+                private static void AddObjectCommand(Player player, int modelid)
+                {
+                    if (player.mapCreator is not null)
+                        player.mapCreator.AddObject(modelid);
+                    else
+                        player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+                }
+                [Command("a", "add")]
+                private static void AddObjectCommand(Player player, int modelid, int groupid)
+                {
+                    if (player.mapCreator is not null)
+                        player.mapCreator.AddObject(modelid, groupid);
+                    else
+                        player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+                }
+                [Command("del", "delete")]
+                private static void DelObjectCommand(Player player, int objectid)
+                {
+                    if (player.mapCreator is not null)
+                        player.mapCreator.DelObject(objectid);
+                    else
+                        player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+                }
+                [Command("r", "replace")]
+                private static void ReplaceCommand(Player player, int objectid, int modelid)
+                {
+                    if (player.mapCreator is not null)
+                        player.mapCreator.ReplaceObject(objectid, modelid);
+                    else
+                        player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+                }
+                [Command("dupl", "duplicate")]
+                private static void DuplicateCommand(Player player, int objectid)
+                {
+                    if (player.mapCreator is not null)
+                        player.mapCreator.DuplicateObject(objectid);
+                    else
+                        player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+                }
+                [Command("l", "list")]
+                private static void ListObjectcommand(Player player)
+                {
+                    if (player.mapCreator is not null)
+                        player.mapCreator.ShowObjectList();
+                    else
+                        player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+                }
             }
             [Command("marker")]
             private static void MarkerCommand(Player player, int marker)
             {
-                if (!(player.mapCreator is null))
+                if (player.mapCreator is not null)
                     player.mapCreator.EditMarker(marker);
                 else
                     player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
@@ -277,7 +298,7 @@ namespace SampSharpGameMode1.Commands
             [Command("dist")]
             private static void DistCommand(Player player)
             {
-                if (!(player.mapCreator is null))
+                if (player.mapCreator is not null)
                     player.mapCreator.GetMarkersDistance();
                 else
                     player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
@@ -285,7 +306,7 @@ namespace SampSharpGameMode1.Commands
             [Command("edit")]
             private static void EditCommand(Player player, int objectid)
             {
-                if (!(player.mapCreator is null))
+                if (player.mapCreator is not null)
                     player.mapCreator.EditObject(objectid);
                 else
                     player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
@@ -293,7 +314,7 @@ namespace SampSharpGameMode1.Commands
             [Command("magnet")]
             private static void MagnetCommand(Player player)
             {
-                if (!(player.mapCreator is null))
+                if (player.mapCreator is not null)
                     player.mapCreator.Magnet = !player.mapCreator.Magnet;
                 else
                     player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
@@ -307,15 +328,15 @@ namespace SampSharpGameMode1.Commands
                     player.SendClientMessage("No map found !");
                 else
                 {
-                    var infoList = new ListDialog("Map info", "Ok", "");
+                    ListDialog infoList = new("Map info", "Ok", "");
                     string str = "";
                     foreach (KeyValuePair<string, string> kvp in result)
                     {
-                        str = Display.ColorPalette.Primary.Main + kvp.Key + ": " + new Color(255, 255, 255) + kvp.Value;
+                        str = ColorPalette.Primary.Main + kvp.Key + ": " + new Color(255, 255, 255) + kvp.Value;
                         if (str.Length >= 64)
                         {
-                            infoList.AddItem(str.Substring(0, 63));
-                            infoList.AddItem(str.Substring(63));
+                            infoList.AddItem(str[..63]);
+                            infoList.AddItem(str[63..]);
                         }
                         else
                             infoList.AddItem(str);
