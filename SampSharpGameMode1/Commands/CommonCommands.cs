@@ -16,7 +16,7 @@ namespace SampSharpGameMode1.Commands
         [Command("help")]
         private static void HelpCommand(Player player)
         {
-            player.SendClientMessage(ColorPalette.Primary.Main + "This is a SA-MP where you can create your own maps, races and derbies !");
+            player.SendClientMessage(ColorPalette.Primary.Main + "Welcome to Dami's Land, a server where you can create your own maps, races and derbies !");
             player.SendClientMessage($"Type {ColorPalette.Secondary.Main}/event-infos{Color.White} to get more information about how to create a map, a race, or a derby.");
             player.SendClientMessage($"Teleport yourself where you want with {ColorPalette.Secondary.Main}/tlps");
             player.SendClientMessage($"This server is still in beta, type {ColorPalette.Secondary.Main}/beta{Color.White} to see what is coming soon !");
@@ -37,7 +37,7 @@ namespace SampSharpGameMode1.Commands
             player.SendClientMessage($" - You can only edit your own event");
             player.SendClientMessage($" - If you want to add a map to your event, create the map first with {ColorPalette.Secondary.Main}/map{Color.White} commands, then load it into your event");
             player.SendClientMessage($" - Don't forget to save your creations with {ColorPalette.Secondary.Main}/race save{Color.White}, {ColorPalette.Secondary.Main}/derby save{Color.White} or {ColorPalette.Secondary.Main}/map save{Color.White}");
-            player.SendClientMessage($" - Once your event is playable, everybody can load it and join it");
+            player.SendClientMessage($" - Once your event is playable, everybody can load it and join it with {ColorPalette.Secondary.Main}/event manage{Color.White} command");
         }
 
         [Command("s")]
