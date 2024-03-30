@@ -29,6 +29,7 @@ namespace SampSharpGameMode1.CustomDatas
         {
             MapObjects = mapObjects;
             MapObjectCategories = mapObjects.Select(x => x.Group).ToList();
+            MapObjectCategories = MapObjectCategories.GroupBy(x => x.Name).Select(group => group.First()).ToList();
         }
         public int Id { get; }
         public string Name { get; }

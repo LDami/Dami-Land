@@ -25,8 +25,10 @@ namespace SampSharpGameMode1.Display
         public HUD(BasePlayer _player, string jsonFilename)
         {
             player = _player;
-            layer = new TextdrawLayer();
-            layer.AutoUpdate = false;
+            layer = new TextdrawLayer
+            {
+                AutoUpdate = false
+            };
             filename = $@"{Directory.GetCurrentDirectory()}\scriptfiles\{jsonFilename}";
             this.Load();
         }
@@ -158,7 +160,7 @@ namespace SampSharpGameMode1.Display
                 {
                     foreach (string td in Utils.GetStringsMatchingRegex(new List<string>(layer.GetTextdrawList().Keys), element))
                     {
-                        Console.WriteLine("Hiding td " + td);
+                        //Console.WriteLine("Hiding td " + td);
                         layer.Hide(td);
                     }
                 }
@@ -253,9 +255,38 @@ namespace SampSharpGameMode1.Display
             }
         }
 
-        public void DynamicDuplicateLayer()
+        public void DynamicDuplicateLayer(string element, int number, string containerElement)
         {
+            float spacing = 5f;
+            Vector2 elementSize = layer.GetTextdrawSize(element);
+            Vector2 containerSize = layer.GetTextdrawPosition(containerElement);
 
+            if(!element.Contains('#'))
+            {
+                throw new Exception("Can't duplicate an element having name  without # char");
+            }
+
+            layer.Hide(element);
+
+            for(int i = 0; i < number; i++)
+            {
+                string newName = element.Replace("#", $"[{i}]");
+                layer.Duplicate(player, element, newName);
+                _ = layer.SetTextdrawPosition(newName, new Vector2(containerSize.X + (elementSize.X + spacing) * i, layer.GetTextdrawPosition(element).Y));
+            }
+
+
+            // On verra plus tard
+            float minX = layer.GetTextdrawPosition(containerElement).X;
+            float maxX = layer.GetTextdrawPosition(containerElement).X + layer.GetTextdrawSize(containerElement).X;
+            float minY = layer.GetTextdrawPosition(containerElement).Y;
+            float maxY = layer.GetTextdrawPosition(containerElement).Y + layer.GetTextdrawSize(containerElement).Y;
+
+            // Count how many element we can fit
+            if((layer.GetTextdrawSize(element).Y + spacing) > maxY) // Only one row possible
+            {
+
+            }
         }
     }
 }

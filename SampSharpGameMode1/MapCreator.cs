@@ -9,6 +9,7 @@ using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace SampSharpGameMode1
 {
@@ -38,7 +39,8 @@ namespace SampSharpGameMode1
 
 		private Player player;
 		private HUD hud;
-		private PlayerObject[] markers;
+		private MapObjectSelector mapObjectSelector;
+        private PlayerObject[] markers;
 		private Dictionary<int, DynamicTextLabel> textLabels;
 		private MySQLConnector mySQLConnector = MySQLConnector.Instance();
 		private List<int> deletedObjects; // Contains list of MapObject's DbId that must be deleted on save
@@ -239,9 +241,10 @@ namespace SampSharpGameMode1
 				obj.Dispose();
 			}
 			editingMap = null;
-			if (hud != null)
-				hud.Hide();
+            hud?.Unload();
 			hud = null;
+            mapObjectSelector?.Unload();
+            mapObjectSelector = null;
 			foreach(DynamicTextLabel label in textLabels.Values)
             {
 				label?.Dispose();
@@ -258,25 +261,36 @@ namespace SampSharpGameMode1
 
 		public void ShowObjectList()
 		{
-			ListDialog<MapObjectGroupData> listDialog = new("Categories", "Select", "Cancel");
-			//listDialog.AddItems(MapObjectData.MapObjectCategories);
-			listDialog.AddItem(MapObjectData.MapObjectCategories[0]);
-			listDialog.AddItem(MapObjectData.MapObjectCategories[1]);
-			listDialog.Response += (sender, e) =>
+            mapObjectSelector?.Unload();
+
+            ListDialog<MapObjectGroupData> listDialog = new("Categories", "Select", "Cancel");
+			listDialog.AddItems(MapObjectData.MapObjectCategories);
+			listDialog.Response += (_, e) =>
 			{
-			};
+				mapObjectSelector = new(player, e.ItemValue);
+				mapObjectSelector.Selected += (_, f) =>
+				{
+					player.CancelSelectTextDraw();
+					AddObject(f.Id);
+				};
+				player.SelectTextDraw(ColorPalette.Primary.Main.GetColor());
+				player.CancelClickTextDraw += (_, _) =>
+                {
+                    mapObjectSelector?.Unload();
+                };
+            };
 			listDialog.Show(player);
 		}
 
-		/// <summary>
-		/// Creates a new object and returns its ID
-		/// </summary>
-		/// <param name="modelid">Model ID of the object to create</param>
-		/// <param name="position">Position of the new object</param>
-		/// <param name="rotation">Rotation of the new object</param>
-		/// <returns>Returns the object ID, -1 if the object is not created</returns>
-		public int AddObject(int modelid, Vector3? position = null, Vector3? rotation = null)
-		{
+        /// <summary>
+        /// Creates a new object and returns its ID
+        /// </summary>
+        /// <param name="modelid">Model ID of the object to create</param>
+        /// <param name="position">Position of the new object</param>
+        /// <param name="rotation">Rotation of the new object</param>
+        /// <returns>Returns the object ID, -1 if the object is not created</returns>
+        public int AddObject(int modelid, Vector3? position = null, Vector3? rotation = null)
+        {
 			if(editingMap.Objects.Count >= MAX_OBJECTS_PER_MAP)
             {
 				player.SendClientMessage(Color.Red, "You reached the max number of objects per map");
