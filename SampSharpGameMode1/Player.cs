@@ -169,9 +169,6 @@ namespace SampSharpGameMode1
 
                 mySQLConnector = null;
 
-                if (mapCreator != null)
-                    mapCreator.Unload();
-                mapCreator = null;
 
                 if(eventCreator != null)
                     eventCreator.Unload();
