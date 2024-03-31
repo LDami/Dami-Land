@@ -111,19 +111,12 @@ namespace SampSharpGameMode1
 			if(editingMap.Spawn != Vector3.Zero)
 				player.Position = editingMap.Spawn;
 
-			Stopwatch sw = new Stopwatch();
-			sw.Start();
 			hud = new HUD(player, "mapcreator.json");
-			sw.Stop();
-			Console.WriteLine("Time for load HUD: " + sw.ElapsedMilliseconds + "ms");
-			sw.Restart();
 			hud.SetText("mapname", editingMap.Name);
 			hud.SetText("totalobj", "Total: " + editingMap.Objects.Count.ToString() + " objects");
 			
 			hud.Hide(@"^group.*$");
 			
-			sw.Stop();
-			Console.WriteLine("Time for edit HUD: " + sw.ElapsedMilliseconds + "ms");
 			Magnet = true;
 			deletedObjects = new List<int>();
 			player.SendClientMessage("Here are the controls:");
@@ -267,17 +260,20 @@ namespace SampSharpGameMode1
 			listDialog.AddItems(MapObjectData.MapObjectCategories);
 			listDialog.Response += (_, e) =>
 			{
-				mapObjectSelector = new(player, e.ItemValue);
-				mapObjectSelector.Selected += (_, f) =>
-				{
-					player.CancelSelectTextDraw();
-					AddObject(f.Id);
-				};
-				player.SelectTextDraw(ColorPalette.Primary.Main.GetColor());
-				player.CancelClickTextDraw += (_, _) =>
+				if(e.DialogButton == SampSharp.GameMode.Definitions.DialogButton.Left)
                 {
-                    mapObjectSelector?.Unload();
-                };
+                    mapObjectSelector = new(player, e.ItemValue);
+                    mapObjectSelector.Selected += (_, f) =>
+                    {
+                        player.CancelSelectTextDraw();
+                        AddObject(f.Id);
+                    };
+                    player.SelectTextDraw(ColorPalette.Primary.Main.GetColor());
+                    player.CancelClickTextDraw += (_, _) =>
+                    {
+                        mapObjectSelector?.Unload();
+                    };
+                }
             };
 			listDialog.Show(player);
 		}
