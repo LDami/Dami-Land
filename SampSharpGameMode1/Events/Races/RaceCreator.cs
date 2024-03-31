@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using SampSharp.GameMode;
+﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
 using SampSharp.GameMode.SAMP;
@@ -11,9 +10,6 @@ using SampSharpGameMode1.Display;
 using SampSharpGameMode1.Events._Tools;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Xml;
 
 namespace SampSharpGameMode1.Events.Races
 {
@@ -876,13 +872,16 @@ namespace SampSharpGameMode1.Events.Races
                     {
                         case 0: // Vehicle event
                             {
-                                InputDialog cpEventCarNameDialog = new InputDialog("Vehicle name", "Enter the vehicle name:", false, "Find", "Cancel");
+                                InputDialog cpEventCarNameDialog = new InputDialog("Vehicle name", "Enter the vehicle name or leave blank to remove:", false, "Find", "Cancel");
                                 cpEventCarNameDialog.Show(player);
                                 cpEventCarNameDialog.Response += (sender, eventArgs) =>
                                 {
                                     if (eventArgs.DialogButton == DialogButton.Left)
                                     {
-                                        cp.NextVehicle = Utils.GetVehicleModelType(eventArgs.InputText);
+                                        if (eventArgs.InputText == "")
+                                            cp.NextVehicle = null;
+                                        else
+                                            cp.NextVehicle = Utils.GetVehicleModelType(eventArgs.InputText);
                                         player.Notificate("Updated");
                                         ShowCheckpointEventDialog();
                                     }
