@@ -182,6 +182,15 @@ namespace SampSharpGameMode1.Display
             textdrawEditMode.Add(targetName, EditingMode.Unselected);
         }
 
+        public void Delete(string name)
+        {
+            if (textdrawList.ContainsKey(name))
+            {
+                textdrawList[name].Dispose();
+                textdrawList.Remove(name);
+            }
+        }
+
 		public void Show(string name)
         {
             if (!textdrawList.ContainsKey(name))

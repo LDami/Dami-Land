@@ -805,6 +805,18 @@ namespace SampSharpGameMode1.Display
             }
         }
 
+        public void DeleteTextdraw(string name)
+        {
+            if (isEditing)
+            {
+                if (layers[layerIndex].Exists(name))
+                {
+                    layers[layerIndex].Delete(name);
+                    player.SendClientMessage("Textdraw deleted: " + name);
+                }
+            }
+        }
+
         private void CreateLayerIfNotExist()
         {
             if (layers.Count == 0)

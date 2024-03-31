@@ -1,9 +1,6 @@
 ﻿using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
 using SampSharpGameMode1.Display;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace SampSharpGameMode1.Commands
 {
@@ -13,7 +10,7 @@ namespace SampSharpGameMode1.Commands
         private static void TDCommand(Player player)
 		{
             player.SendClientMessage("Usage: /td [action]");
-            player.SendClientMessage("Actions: init, exit, load, save, hudswitch, add, set box, set text, select, unselect");
+            player.SendClientMessage("Actions: init, exit, load, save, hudswitch, add, delete, set box, set text, select, unselect");
         }
 
         [CommandGroup("td")]
@@ -76,7 +73,7 @@ namespace SampSharpGameMode1.Commands
                     player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
             }
             [Command("add")]
-            private static void AddBox(Player player)
+            private static void AddCommand(Player player)
             {
                 player.SendClientMessage("Usage: /td add [background/box/text/previewmodel] [name]");
             }
@@ -116,6 +113,16 @@ namespace SampSharpGameMode1.Commands
                 if (player.textdrawCreator != null)
                 {
                     player.textdrawCreator.AddPreviewModel(name);
+                }
+                else
+                    player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
+            }
+            [Command("delete")]
+            private static void Delete(Player player, string name)
+            {
+                if (player.textdrawCreator != null)
+                {
+                    player.textdrawCreator.DeleteTextdraw(name);
                 }
                 else
                     player.SendClientMessage(Color.Red, "The Textdraw creator has not been initialized");
