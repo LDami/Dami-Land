@@ -261,7 +261,7 @@ namespace SampSharpGameMode1
 
 #endregion
 
-        private void ExtractMapObjects()
+        public static void ExtractMapObjects()
         {
             // Chemin vers votre fichier contenant les données
             string filePath = "C:\\Serveur OpenMP\\scriptfiles\\mapobjects.txt";
@@ -284,7 +284,7 @@ namespace SampSharpGameMode1
                     if (line.StartsWith("###"))
                     {
                         // Si c'est une nouvelle catégorie, mettez à jour la variable de catégorie
-                        currentCategory = new(line.Replace("###", "").Replace("*", "").Trim(), "");
+                        currentCategory = new(line.Replace("###", "").Replace("*", "").Trim(), comment);
                         comment = "";
                     }
                     else
@@ -297,10 +297,11 @@ namespace SampSharpGameMode1
                             mapObjects.Add(new MapObjectData(id, name, currentCategory));
                         }
                         else
-                            comment += line;
+                            comment += " " + line;
                     }
                 }
             }
+            Console.WriteLine("GameMode.ExtractMapObjects:I: Got " + mapObjects.Count + " map objects");
             MapObjectData.UpdateMapObject(mapObjects);
         }
     }
