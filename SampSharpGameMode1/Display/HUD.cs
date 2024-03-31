@@ -5,6 +5,7 @@ using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 
@@ -17,6 +18,7 @@ namespace SampSharpGameMode1.Display
         protected BasePlayer player;
         protected TextdrawLayer layer;
         protected string filename;
+
         /// <summary>
         /// Create a HUD for a player from a JSON file
         /// </summary>
@@ -24,6 +26,8 @@ namespace SampSharpGameMode1.Display
         /// <param name="jsonFilename">The JSON file name, with ".json" extension</param>
         public HUD(BasePlayer _player, string jsonFilename)
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             player = _player;
             layer = new TextdrawLayer
             {
@@ -31,6 +35,7 @@ namespace SampSharpGameMode1.Display
             };
             filename = $@"{Directory.GetCurrentDirectory()}\scriptfiles\{jsonFilename}";
             this.Load();
+            Console.WriteLine("Time for load HUD: " + sw.ElapsedMilliseconds + "ms (filename: " + jsonFilename + ")");
         }
 
         public void Load()
@@ -255,38 +260,61 @@ namespace SampSharpGameMode1.Display
             }
         }
 
-        public void DynamicDuplicateLayer(string element, int number, string containerElement)
+        /// <summary>
+        /// Duplicate the element textdraw inside a container element
+        /// </summary>
+        /// <param name="element">The textdraw to duplicate</param>
+        /// <param name="number">Number of duplicate textdraws</param>
+        /// <param name="containerElement">The container textdraw</param>
+        /// <exception cref="Exception">Throw an exception if the element textdraw name does not contain #</exception>
+        /// <returns>The number of item that has been correctly displayed</returns>
+        public int DynamicDuplicateLayer(string element, int number, string containerElement)
         {
             float spacing = 5f;
+            Vector2 elementPosition = layer.GetTextdrawPosition(element);
             Vector2 elementSize = layer.GetTextdrawSize(element);
-            Vector2 containerSize = layer.GetTextdrawPosition(containerElement);
+            Vector2 containerPosition = layer.GetTextdrawPosition(containerElement);
+            Vector2 containerSize = layer.GetTextdrawSize(containerElement);
 
             if(!element.Contains('#'))
             {
-                throw new Exception("Can't duplicate an element having name  without # char");
+                throw new Exception("Can't duplicate an element having name without # char");
             }
 
             layer.Hide(element);
 
-            for(int i = 0; i < number; i++)
+            int index = 0;
+            int itemsPerRow = (int)Math.Truncate(containerSize.X / (elementSize.X + spacing));
+
+            void AddItemsToRow(int row)
             {
-                string newName = element.Replace("#", $"[{i}]");
-                layer.Duplicate(player, element, newName);
-                _ = layer.SetTextdrawPosition(newName, new Vector2(containerSize.X + (elementSize.X + spacing) * i, layer.GetTextdrawPosition(element).Y));
-            }
+                for (int i = 0; i < itemsPerRow; i++)
+                {
+                    if (i < number)
+                    {
+                        string newName = element.Replace("#", $"[{index++}]");
+                        Vector2 newPosition = new(
+                            containerPosition.X + (elementSize.X + spacing) * i + spacing,
+                            elementPosition.Y + (elementSize.Y + spacing) * row
+                        );
+                        layer.Duplicate(player, element, newName);
+                        _ = layer.SetTextdrawPosition(newName, newPosition);
+                        Console.WriteLine("HUD.cs - HUD:DynamicDuplicateLayer:I: Adding " + newName + " at pos: " + layer.GetTextdrawPosition(newName).ToString());
+                    }
+                }
+            };
 
-
-            // On verra plus tard
-            float minX = layer.GetTextdrawPosition(containerElement).X;
-            float maxX = layer.GetTextdrawPosition(containerElement).X + layer.GetTextdrawSize(containerElement).X;
-            float minY = layer.GetTextdrawPosition(containerElement).Y;
-            float maxY = layer.GetTextdrawPosition(containerElement).Y + layer.GetTextdrawSize(containerElement).Y;
-
-            // Count how many element we can fit
-            if((layer.GetTextdrawSize(element).Y + spacing) > maxY) // Only one row possible
+            if (number > itemsPerRow)
             {
-
+                int possibleRows = (int)Math.Truncate((containerSize.Y - (elementPosition.Y - containerPosition.Y)) / (elementSize.Y + spacing));
+                for (int i = 0; i < possibleRows; i++)
+                {
+                    AddItemsToRow(i);
+                }
             }
+            else
+                AddItemsToRow(0);
+            return index;
         }
     }
 }
