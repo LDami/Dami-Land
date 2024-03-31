@@ -50,7 +50,9 @@ namespace SampSharpGameMode1.Display
         {
             if(IsDisplayed)
             {
-                string model = player.Vehicle?.ModelInfo.Name ?? "Unknown model";
+                if (player.Vehicle == null)
+                    return;
+                string model = player.Vehicle.ModelInfo.Name ?? "Unknown model";
                 if (model.Length > 11)
                 {
                     model = model.Insert(11, "\n");
