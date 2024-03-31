@@ -240,11 +240,16 @@ namespace SampSharpGameMode1.Events.Races
                                 checkpoint.NextVehicle = (VehicleModelType)Convert.ToInt32(row["checkpoint_vehiclechange"]);
 
                             if (row["checkpoint_nitro"].Equals("[null]"))
-                                checkpoint.NextNitro = Checkpoint.NitroEvent.None;
+                                checkpoint.NextNitro = Checkpoint.EnableDisableEvent.None;
                             else
-                                checkpoint.NextNitro = (Checkpoint.NitroEvent)Convert.ToInt32(row["checkpoint_nitro"]);
+                                checkpoint.NextNitro = (Checkpoint.EnableDisableEvent)Convert.ToInt32(row["checkpoint_nitro"]);
 
-							checkpoint.PlayerVehicleChanged += Checkpoint_PlayerVehicleChanged;
+                            if (row["checkpoint_collision"].Equals("[null]"))
+                                checkpoint.NextCollision = Checkpoint.EnableDisableEvent.None;
+                            else
+                                checkpoint.NextCollision = (Checkpoint.EnableDisableEvent)Convert.ToInt32(row["checkpoint_collision"]);
+
+                            checkpoint.PlayerVehicleChanged += Checkpoint_PlayerVehicleChanged;
                             this.checkpoints.Add(idx++, checkpoint);
                             row = GameMode.mySQLConnector.GetNextRow();
                         }
@@ -575,9 +580,9 @@ namespace SampSharpGameMode1.Events.Races
                     playerLastCheckpointData[player] = new PlayerCheckpointData(this.checkpoints[cpidx], cpTime, player.Vehicle.Model, player.Vehicle.Velocity, player.Vehicle.Angle);
 
                     this.checkpoints[cpidx].ExecuteEvents(player);
-                    if (this.checkpoints[cpidx].NextNitro == Checkpoint.NitroEvent.Give)
+                    if (this.checkpoints[cpidx].NextNitro == Checkpoint.EnableDisableEvent.Enable)
                         playersLiveInfoHUD[player].Show("nitro");
-                    if (this.checkpoints[cpidx].NextNitro == Checkpoint.NitroEvent.Remove)
+                    if (this.checkpoints[cpidx].NextNitro == Checkpoint.EnableDisableEvent.Disable)
                         playersLiveInfoHUD[player].Hide("nitro");
                 }
             }

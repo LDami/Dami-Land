@@ -253,11 +253,12 @@ namespace SampSharpGameMode1.Events.Races
                         { "@checkpoint_size", kvp.Value.Size },
                         { "@checkpoint_type", kvp.Value.Type },
                         { "@checkpoint_vehiclechange", kvp.Value.NextVehicle },
-                        { "@checkpoint_nitro", kvp.Value.NextNitro }
+                        { "@checkpoint_nitro", kvp.Value.NextNitro },
+                        { "@checkpoint_collision", kvp.Value.NextCollision },
                     };
                     mySQLConnector.Execute("INSERT INTO race_checkpoints " +
-                        "(race_id, checkpoint_number, checkpoint_pos_x, checkpoint_pos_y, checkpoint_pos_z, checkpoint_size, checkpoint_type, checkpoint_vehiclechange, checkpoint_nitro) VALUES" +
-                        "(@id, @checkpoint_number, @checkpoint_pos_x, @checkpoint_pos_y, @checkpoint_pos_z, @checkpoint_size, @checkpoint_type, @checkpoint_vehiclechange, @checkpoint_nitro)", param);
+                        "(race_id, checkpoint_number, checkpoint_pos_x, checkpoint_pos_y, checkpoint_pos_z, checkpoint_size, checkpoint_type, checkpoint_vehiclechange, checkpoint_nitro, checkpoint_collision) VALUES" +
+                        "(@id, @checkpoint_number, @checkpoint_pos_x, @checkpoint_pos_y, @checkpoint_pos_z, @checkpoint_size, @checkpoint_type, @checkpoint_vehiclechange, @checkpoint_nitro, @checkpoint_collision)", param);
                 }
                 param = new Dictionary<string, object>
                 {
@@ -855,23 +856,11 @@ namespace SampSharpGameMode1.Events.Races
         {
             ListDialog cpEventDialog = new ListDialog("Checkpoint events", "Select", "Cancel");
             if (editingRace.checkpoints[checkpointIndex].NextVehicle == null)
-                cpEventDialog.AddItem("Vehicle change [None]");
+                cpEventDialog.AddItem("Vehicle change [Unchanged]");
             else
                 cpEventDialog.AddItem("Vehicle change [" + Color.Green + editingRace.checkpoints[checkpointIndex].NextVehicle.ToString() + Color.White + "]");
-            switch (editingRace.checkpoints[checkpointIndex].NextNitro)
-            {
-                case Checkpoint.NitroEvent.None:
-                    cpEventDialog.AddItem("Set Nitro [Unchanged]");
-                    break;
-                case Checkpoint.NitroEvent.Give:
-                    cpEventDialog.AddItem("Set Nitro [" + Color.Green + "Give" + Color.White + "]");
-                    break;
-                case Checkpoint.NitroEvent.Remove:
-                    cpEventDialog.AddItem("Set Nitro [" + Color.Green + "Remove" + Color.White + "]");
-                    break;
-                default:
-                    break;
-            }
+            cpEventDialog.AddItem("Set Nitro " + Checkpoint.GetEventStringStatus(editingRace.checkpoints[checkpointIndex].NextNitro));
+            cpEventDialog.AddItem("Set Collision " + Checkpoint.GetEventStringStatus(editingRace.checkpoints[checkpointIndex].NextCollision));
             cpEventDialog.Show(player);
             cpEventDialog.Response += CpEventDialog_Response;
         }
@@ -908,15 +897,38 @@ namespace SampSharpGameMode1.Events.Races
                         case 1: // Nitro event
                             {
                                 ListDialog cpNitroEventDialog = new ListDialog("Nitro event", "Update", "Cancel");
-                                cpNitroEventDialog.AddItem(((cp.NextNitro == Checkpoint.NitroEvent.None) ? "> " : "") + "[Unchanged]");
-                                cpNitroEventDialog.AddItem(((cp.NextNitro == Checkpoint.NitroEvent.Give) ? "> " : "") + "[Give]");
-                                cpNitroEventDialog.AddItem(((cp.NextNitro == Checkpoint.NitroEvent.Remove) ? "> " : "") + "[Remove]");
+                                cpNitroEventDialog.AddItem(((cp.NextNitro == Checkpoint.EnableDisableEvent.None) ? "> " : "") + "[Unchanged]");
+                                cpNitroEventDialog.AddItem(((cp.NextNitro == Checkpoint.EnableDisableEvent.Enable) ? "> " : "") + "[Enable]");
+                                cpNitroEventDialog.AddItem(((cp.NextNitro == Checkpoint.EnableDisableEvent.Disable) ? "> " : "") + "[Disable]");
                                 cpNitroEventDialog.Show(player);
                                 cpNitroEventDialog.Response += (sender, eventArgs) =>
                                 {
                                     if (eventArgs.DialogButton == DialogButton.Left)
                                     {
-                                        cp.NextNitro = (Checkpoint.NitroEvent)eventArgs.ListItem;
+                                        cp.NextNitro = (Checkpoint.EnableDisableEvent)eventArgs.ListItem;
+                                        player.Notificate("Updated");
+                                        ShowCheckpointEventDialog();
+                                    }
+                                    else
+                                    {
+                                        player.Notificate("Cancelled");
+                                        ShowCheckpointEventDialog();
+                                    }
+                                };
+                                break;
+                            }
+                        case 2: // Collision event
+                            {
+                                ListDialog cpNitroEventDialog = new ListDialog("Collision event", "Update", "Cancel");
+                                cpNitroEventDialog.AddItem(((cp.NextCollision == Checkpoint.EnableDisableEvent.None) ? "> " : "") + "[Unchanged]");
+                                cpNitroEventDialog.AddItem(((cp.NextCollision == Checkpoint.EnableDisableEvent.Enable) ? "> " : "") + "[Enable]");
+                                cpNitroEventDialog.AddItem(((cp.NextCollision == Checkpoint.EnableDisableEvent.Disable) ? "> " : "") + "[Disable]");
+                                cpNitroEventDialog.Show(player);
+                                cpNitroEventDialog.Response += (sender, eventArgs) =>
+                                {
+                                    if (eventArgs.DialogButton == DialogButton.Left)
+                                    {
+                                        cp.NextCollision = (Checkpoint.EnableDisableEvent)eventArgs.ListItem;
                                         player.Notificate("Updated");
                                         ShowCheckpointEventDialog();
                                     }

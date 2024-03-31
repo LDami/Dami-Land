@@ -1,8 +1,10 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Events;
+using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using System;
+using System.Reflection;
 
 namespace SampSharpGameMode1.Events.Races
 {
@@ -14,11 +16,25 @@ namespace SampSharpGameMode1.Events.Races
             PlayerVehicleChanged?.Invoke(this, e);
 		}
 
-        public enum NitroEvent
+        public enum EnableDisableEvent
         {
             None,
-            Give,
-            Remove
+            Enable,
+            Disable
+        }
+        public static string GetEventStringStatus(EnableDisableEvent evt)
+        {
+            switch (evt)
+            {
+                case Checkpoint.EnableDisableEvent.None:
+                    return "[Unchanged]";
+                case Checkpoint.EnableDisableEvent.Enable:
+                    return "[" + Color.Green + "Enable" + Color.White + "]";
+                case Checkpoint.EnableDisableEvent.Disable:
+                    return "[" + Color.Green + "Disable" + Color.White + "]";
+                default:
+                    return "[Unknown state]";
+            }
         }
         public const float DefaultSize = 5.0f;
         public int Idx { get; set; }
@@ -27,16 +43,9 @@ namespace SampSharpGameMode1.Events.Races
         public CheckpointType Type { get; set; }
         public float Size { get; set; }
         public VehicleModelType? NextVehicle { get; set; }
-        public NitroEvent NextNitro { get; set; }
+        public EnableDisableEvent NextNitro { get; set; }
+        public EnableDisableEvent NextCollision { get; set; }
 
-        public Checkpoint(Vector3 _pos, CheckpointType _type, float _size = DefaultSize)
-        {
-            this.Position = _pos;
-            this.Type = _type;
-            this.Size = _size;
-            this.NextVehicle = null;
-            this.NextNitro = NitroEvent.None;
-        }
         public Checkpoint(int _index, Vector3 _pos, CheckpointType _type, float _size = DefaultSize)
         {
             this.Idx = _index;
@@ -44,8 +53,11 @@ namespace SampSharpGameMode1.Events.Races
             this.Type = _type;
             this.Size = _size;
             this.NextVehicle = null;
-            this.NextNitro = NitroEvent.None;
+            this.NextNitro = EnableDisableEvent.None;
+            this.NextCollision = EnableDisableEvent.None;
         }
+        public Checkpoint(Vector3 _pos, CheckpointType _type, float _size = DefaultSize) : this(-1, _pos, _type, _size)
+        { }
 
         public void ExecuteEvents(Player player)
         {
@@ -75,7 +87,7 @@ namespace SampSharpGameMode1.Events.Races
 
                 this.OnPlayerVehicleChanged(new PlayerEventArgs(player));
             }
-            if (this.NextNitro == NitroEvent.Give)
+            if (this.NextNitro == EnableDisableEvent.Enable)
             {
                 if (player.InAnyVehicle)
                 {
@@ -83,21 +95,31 @@ namespace SampSharpGameMode1.Events.Races
                     if (VehicleComponents.Get(1010).IsCompatibleWithVehicle(veh))
                     {
                         veh.AddComponent(1010);
-                        player.Notificate("Nitro added !");
+                        player.Notificate("Nitro enabled !");
                         player.PlaySound(36842);
                     }
                     else
                         Logger.WriteLineAndClose("Checkpoint.cs - Checkpoint.ExecuteEvents:E: Component ID 1010 is not compatible with vehicle id " + veh.Id);
                 }
             }
-            if (this.NextNitro == NitroEvent.Remove)
+            if (this.NextNitro == EnableDisableEvent.Disable)
             {
                 if (player.InAnyVehicle)
                 {
                     BaseVehicle veh = player.Vehicle;
                     veh.RemoveComponent(1010);
-                    player.Notificate("Nitro removed !");
+                    player.Notificate("Nitro disabled !");
                 }
+            }
+            if (this.NextCollision == EnableDisableEvent.Enable)
+            {
+                player.DisableRemoteVehicleCollisions(false);
+                player.Notificate("Collision enabled !");
+            }
+            if (this.NextCollision == EnableDisableEvent.Disable)
+            {
+                player.DisableRemoteVehicleCollisions(true);
+                player.Notificate("Collision disabled !");
             }
         }
     }
