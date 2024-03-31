@@ -66,6 +66,7 @@ namespace SampSharpGameMode1.Events.Races
         private List<CheckpointLiveInfo> checkpointLiveInfos = new List<CheckpointLiveInfo>();
         private Dictionary<Player, TimeSpan> playersTimeSpan = new Dictionary<Player, TimeSpan>();
         private Dictionary<string, TimeSpan> records = new Dictionary<string, TimeSpan>();
+        Dictionary<BasePlayer, BaseVehicle> playersVehicles = new(); // Used in Prepare
         private int virtualWorld;
         private SampSharp.GameMode.SAMP.Timer countdownTimer;
         private int countdown;
@@ -362,6 +363,7 @@ namespace SampSharpGameMode1.Events.Races
                 */
 
                 Dictionary<string, string> row;
+                playersVehicles = new Dictionary<BasePlayer, BaseVehicle>();
                 foreach (EventSlot slot in slots)
                 {
                     slot.Player.Position = slot.Player.Position;
@@ -427,6 +429,7 @@ namespace SampSharpGameMode1.Events.Races
                     veh.VirtualWorld = virtualWorld;
                     veh.Engine = false;
                     veh.Died += OnPlayerVehicleDied;
+                    playersVehicles.Add(slot.Player, veh);
                     slot.Player.PutInVehicle(veh);
 
                     slot.Player.GameText("Press ~k~~CONVERSATION_YES~ ~n~or type /rr~n~ to respawn", 2000, 6);
@@ -495,6 +498,10 @@ namespace SampSharpGameMode1.Events.Races
             {
                 foreach (Player p in players)
                 {
+                    if (!p.InAnyVehicle)
+                    {
+                        p.PutInVehicle(playersVehicles[p]);
+                    }
                     if (p.InAnyVehicle)
                     {
                         p.Vehicle.Position = playersData[p].startPosition.Position + Vector3.UnitZ;
