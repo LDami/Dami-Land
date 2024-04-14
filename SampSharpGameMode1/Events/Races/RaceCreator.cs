@@ -680,7 +680,7 @@ namespace SampSharpGameMode1.Events.Races
 
         private void ShowLoadMapDialog(string text)
         {
-            Dictionary<int, string> maps = Map.FindAll(text, player);
+            Dictionary<int, string> maps = Map.Map.FindAll(text, player);
             if (maps.Count == 0)
             {
                 player.Notificate("No results");

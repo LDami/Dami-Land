@@ -16,7 +16,7 @@ using System.Text;
 
 namespace SampSharpGameMode1.Events.Derbys
 {
-	public class DerbyCreator : EventCreator
+    public class DerbyCreator : EventCreator
     {
         class HUD : Display.HUD
         {
@@ -522,7 +522,7 @@ namespace SampSharpGameMode1.Events.Derbys
         }
         private void ShowLoadMapDialog(string text)
         {
-            Dictionary<int, string> maps = Map.FindAll(text, player);
+            Dictionary<int, string> maps = Map.Map.FindAll(text, player);
             if (maps.Count == 0)
             {
                 player.Notificate("No results");

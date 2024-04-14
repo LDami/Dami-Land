@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
-namespace SampSharpGameMode1
+namespace SampSharpGameMode1.Map
 {
     public class MapLoadedEventArgs : EventArgs
     {
@@ -36,8 +36,8 @@ namespace SampSharpGameMode1
         }
 
         public Map()
-		{
-            this.Id = -1;
+        {
+            Id = -1;
         }
         public void Load(int id, int virtualworld)
         {
@@ -45,7 +45,7 @@ namespace SampSharpGameMode1
             {
                 Thread t = new Thread(() =>
                 {
-                    this.VirtualWorld = virtualworld;
+                    VirtualWorld = virtualworld;
 
                     bool errorFlag = false;
                     Dictionary<string, string> row;
@@ -57,10 +57,10 @@ namespace SampSharpGameMode1
                     row = GameMode.mySQLConnector.GetNextRow();
                     if (row.Count > 0)
                     {
-                        this.Id = Convert.ToInt32(row["map_id"]);
-                        this.Name = row["map_name"].ToString();
-                        this.Creator = Convert.ToInt32(row["map_creator"]);
-                        this.Spawn = new Vector3(
+                        Id = Convert.ToInt32(row["map_id"]);
+                        Name = row["map_name"].ToString();
+                        Creator = Convert.ToInt32(row["map_creator"]);
+                        Spawn = new Vector3(
                             (float)Convert.ToDouble(row["spawn_pos_x"]),
                             (float)Convert.ToDouble(row["spawn_pos_y"]),
                             (float)Convert.ToDouble(row["spawn_pos_z"])
@@ -71,23 +71,22 @@ namespace SampSharpGameMode1
                     GameMode.mySQLConnector.CloseReader();
 
                     if (!errorFlag)
-					{
+                    {
                         GameMode.mySQLConnector.OpenReader("SELECT mapobjects.*, groups.group_Color, groups.group_Name FROM mapobjects LEFT JOIN mapobjects_groups AS groups ON (mapobjects.group_id = groups.group_id) WHERE map_id=@id", param);
-                        //GameMode.mySQLConnector.OpenReader("SELECT * FROM mapobjects WHERE map_id=@id", param);
                         row = GameMode.mySQLConnector.GetNextRow();
-                        this.Objects.Clear();
-                        MapGroup? objGroup = null;
+                        Objects.Clear();
+                        MapGroup objGroup = null;
                         while (row.Count > 0)
                         {
-                            if (row["mapobjects.group_id"] != null)
+                            if (row["group_id"] != "[null]")
                             {
-                                objGroup = MapGroup.GetOrCreate(Convert.ToInt32(row["mapobjects.group_id"]));
+                                objGroup = MapGroup.GetOrCreate(Convert.ToInt32(row["group_id"]));
                                 objGroup.ForeColor ??= Utils.GetColorFromString("0x" + row["group_color"]) ?? Color.AliceBlue;
                             }
                             else
                                 objGroup = null;
 
-                            this.Objects.Add(new MapObject(
+                            Objects.Add(new MapObject(
                                 Convert.ToInt32(row["obj_id"]),
                                 Convert.ToInt32(row["obj_model"]),
                                 new Vector3(
@@ -110,9 +109,9 @@ namespace SampSharpGameMode1
                     MapLoadedEventArgs args = new MapLoadedEventArgs();
                     args.success = !errorFlag;
                     args.map = this;
-                    args.loadedObjects = this.Objects.Count;
+                    args.loadedObjects = Objects.Count;
                     OnLoaded(args);
-                    Map.AddPool(this);
+                    AddPool(this);
                 });
                 t.Start();
             }
@@ -120,24 +119,24 @@ namespace SampSharpGameMode1
 
         public void Unload()
         {
-            if(this.Objects.Count > 0)
+            if (Objects.Count > 0)
             {
-                this.Objects.ForEach(map => map.Dispose());
-                this.Objects.Clear();
-                this.Id = -1;
-                this.Name = "";
-                this.IsLoaded = false;
-                Map.RemovePool(this);
+                Objects.ForEach(map => map.Dispose());
+                Objects.Clear();
+                Id = -1;
+                Name = "";
+                IsLoaded = false;
+                RemovePool(this);
             }
         }
 
         protected static void AddPool(Map map)
         {
-            Map.pool.Add(map);
+            pool.Add(map);
         }
         protected static void RemovePool(Map map)
         {
-            Map.pool.Remove(map);
+            pool.Remove(map);
         }
         public static List<Map> GetAllLoadedMaps()
         {
@@ -157,7 +156,7 @@ namespace SampSharpGameMode1
             mySQLConnector.OpenReader("SELECT map_id, map_name FROM maps WHERE map_name LIKE @name AND map_creator = @playerid", param);
             Dictionary<string, string> row = mySQLConnector.GetNextRow();
 
-            while(row.Count > 0)
+            while (row.Count > 0)
             {
                 results.Add(Convert.ToInt32(row["map_id"]), row["map_name"]);
                 row = mySQLConnector.GetNextRow();

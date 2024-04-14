@@ -1,13 +1,15 @@
 ﻿using SampSharp.GameMode.World;
 using SampSharpGameMode1.CustomDatas;
+using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace SampSharpGameMode1.Display
+namespace SampSharpGameMode1.Map
 {
     public class MapObjectSelected : EventArgs
     {
@@ -28,8 +30,11 @@ namespace SampSharpGameMode1.Display
             layer.SetTextdrawText("category", group.Name);
             layer.SetTextdrawText("description", group.Description);
             List<MapObjectData> objList = MapObjectData.MapObjects.Where(x => x.Group.Name == group.Name).ToList();
-            int nbrOfItems = this.DynamicDuplicateLayer("model#", objList.Count, "background");
+            int nbrOfItems = DynamicDuplicateLayer("model#", objList.Count, "background");
+            Console.WriteLine("MapObjectSelector.cs - MapObjectSelector._:I: objList = " + objList.Count);
+            Console.WriteLine("MapObjectSelector.cs - MapObjectSelector._:I: nbrOfItems = " + nbrOfItems);
             nbrOfPages = objList.Count / nbrOfItems;
+            Console.WriteLine("MapObjectSelector.cs - MapObjectSelector._:I: nbrOfPages = " + nbrOfPages);
             if (nbrOfItems != objList.Count)
                 player.SendClientMessage("Warning: All objects cannot be displayed");
             shownObjects = new();
@@ -40,6 +45,7 @@ namespace SampSharpGameMode1.Display
                     layer.SetTextdrawPreviewModel($"model[{i}]", objList[i].Id);
                     layer.SetClickable($"model[{i}]");
                     shownObjects.Add(objList[i].Id);
+                    Console.WriteLine($"MapObjectSelector.cs - MapObjectSelector._:I: model[{i}] = " + objList[i].Id);
                 }
             }
             currentPage = 1;
@@ -51,22 +57,29 @@ namespace SampSharpGameMode1.Display
 
         private void Layer_TextdrawClicked(object sender, TextdrawLayer.TextdrawEventArgs e)
         {
-            if(e.TextdrawName == "prevPage")
+            if (e.TextdrawName == "prevPage")
             {
                 currentPage = Math.Clamp(--currentPage, 1, nbrOfPages);
-                layer.SetTextdrawText("page", String.Format("{0,2}", currentPage));
+                layer.SetTextdrawText("page", string.Format("{0,2}", currentPage));
             }
-            else if(e.TextdrawName == "nextPage")
+            else if (e.TextdrawName == "nextPage")
             {
                 currentPage = Math.Clamp(++currentPage, 1, nbrOfPages);
-                layer.SetTextdrawText("page", String.Format("{0,2}", currentPage));
+                layer.SetTextdrawText("page", string.Format("{0,2}", currentPage));
             }
             else
             {
-                Regex regex = new(@"model\[(\d)\]");
-                if (int.TryParse(regex.Matches(e.TextdrawName).First().Groups[1].Value, out int index))
+                Regex regex = new(@"model\[(\d)*\]");
+                try
                 {
-                    Selected.Invoke(this, new MapObjectSelected(shownObjects[index]));
+                    if (int.TryParse(regex.Matches(e.TextdrawName).First().Groups[1].Value, out int index))
+                    {
+                        Selected.Invoke(this, new MapObjectSelected(shownObjects[index]));
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Logger.WriteLineAndClose("MapObjectSelector.cs - MapObjectSelect.Layer_TextdrawClicked:E: " + ex.Message);
                 }
             }
         }

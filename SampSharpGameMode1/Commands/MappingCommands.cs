@@ -5,19 +5,20 @@ using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
 using SampSharp.GameMode.World;
 using SampSharpGameMode1.Display;
+using SampSharpGameMode1.Map;
 using System;
 using System.Collections.Generic;
 
 namespace SampSharpGameMode1.Commands
 {
-	class MappingCommands
+    class MappingCommands
     {
 
         /* Display a list of all the player's maps */
         [Command("mymaps")]
         private static void MyMapsCommands(Player player)
         {
-            List<string> maps = Map.GetPlayerMapList(player);
+            List<string> maps = Map.Map.GetPlayerMapList(player);
             if (maps.Count == 0)
                 player.SendClientMessage("You don't have any maps");
             else
@@ -79,7 +80,7 @@ namespace SampSharpGameMode1.Commands
         {
             player.SendClientMessage($"Usage: {ColorPalette.Secondary.Main}/mapping [action]");
             player.SendClientMessage($"Global Actions: {ColorPalette.Secondary.Main}help, create, loadc, exit");
-            player.SendClientMessage($"On map editing Actions: {ColorPalette.Secondary.Main}help, save, exit, info, addo, delo, replace, marker, dist, edit");
+            player.SendClientMessage($"On map editing Actions: {ColorPalette.Secondary.Main}help, save, exit, info, object (add, delete, replace, ...), marker, dist, edit");
         }
         [CommandGroup("mapping", "map")]
         class MappingCommandClass
@@ -196,11 +197,11 @@ namespace SampSharpGameMode1.Commands
             [Command("loaded", PermissionChecker = typeof(AdminPermissionChecker))]
             private static void ListLoadedCommand(Player player)
             {
-                List<Map> maps = Map.GetAllLoadedMaps();
+                List<Map.Map> maps = Map.Map.GetAllLoadedMaps();
                 ListDialog dialog = new("List of loaded maps", "Select", "Cancel");
                 if (maps.Count > 0)
                 {
-                    foreach (Map map in maps)
+                    foreach (Map.Map map in maps)
                     {
                         dialog.AddItem(map.Name + " " + map.VirtualWorld);
                     }
@@ -323,7 +324,7 @@ namespace SampSharpGameMode1.Commands
             [Command("info")]
             public static void GetInfo(Player player, int id)
             {
-                Dictionary<string, string> result = Map.GetInfo(id);
+                Dictionary<string, string> result = Map.Map.GetInfo(id);
                 if (result.Count == 0)
                     player.SendClientMessage("No map found !");
                 else

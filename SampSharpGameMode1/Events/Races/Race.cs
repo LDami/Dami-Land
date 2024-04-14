@@ -72,7 +72,7 @@ namespace SampSharpGameMode1.Events.Races
         private int countdown;
         public DateTime startedTime;
         private SampSharp.GameMode.SAMP.Timer stopWatchTimer;
-        private Map map;
+        private Map.Map map;
         //private List<Civilisation.SpectatorGroup> spectatorGroups = new List<Civilisation.SpectatorGroup>();
         private List<Actor> spectators = new List<Actor>();
         private Player winner;
@@ -936,7 +936,7 @@ namespace SampSharpGameMode1.Events.Races
 
             if (this.MapId > -1)
             {
-                this.map = new Map();
+                this.map = new Map.Map();
                 this.map.Loaded += (sender, eventArgs) =>
                 {
 

@@ -15,6 +15,7 @@ using SampSharp.Streamer.World;
 using SampSharpGameMode1.Civilisation;
 using SampSharpGameMode1.Display;
 using SampSharpGameMode1.Events;
+using SampSharpGameMode1.Map;
 using static SampSharpGameMode1.Civilisation.PathExtractor;
 
 namespace SampSharpGameMode1
@@ -136,6 +137,9 @@ namespace SampSharpGameMode1
                 s.ToggleIdleUpdate(this, true);
 
                 Spectators = new List<Player>();
+
+                // Preload shout animation for events spectators
+                this.ApplyAnimation("ON_LOOKERS", "null", 4.1f, false, false, false, false, 0);
 
                 if (this.IsRegistered())
                     ShowLoginForm();

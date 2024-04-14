@@ -53,7 +53,7 @@ namespace SampSharpGameMode1.Events.Derbys
         private SampSharp.GameMode.SAMP.Timer countdownTimer;
         private int countdown;
         public DateTime startedTime;
-        private Map map;
+        private Map.Map map;
 
         #region DerbyEvents
         public event EventHandler<DerbyLoadedEventArgs> Loaded;
@@ -208,7 +208,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
                     if (this.MapId > -1)
                     {
-                        this.map = new Map();
+                        this.map = new Map.Map();
                         this.map.Loaded += (sender, eventArgs) =>
                         {
                             OnLoaded(args);
@@ -490,7 +490,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
             if (this.MapId > -1)
             {
-                this.map = new Map();
+                this.map = new Map.Map();
                 this.map.Loaded += (sender, eventArgs) =>
                 {
                     
