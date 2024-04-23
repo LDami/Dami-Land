@@ -45,6 +45,7 @@ namespace SampSharpGameMode1.Events.Races
         public VehicleModelType? NextVehicle { get; set; }
         public EnableDisableEvent NextNitro { get; set; }
         public EnableDisableEvent NextCollision { get; set; }
+        public bool IsNitroCurrentlyActive { get; set; }
 
         public Checkpoint(int _index, Vector3 _pos, CheckpointType _type, float _size = DefaultSize)
         {
@@ -79,6 +80,8 @@ namespace SampSharpGameMode1.Events.Races
                 veh.Engine = true;
                 veh.Doors = true;
                 veh.Died += player.pEvent.Source.OnPlayerVehicleDied;
+                if (IsNitroCurrentlyActive)
+                    veh.AddComponent(1010);
                 player.PutInVehicle(veh);
 
                 // Using a timer of 100ms because of open.mp issue
