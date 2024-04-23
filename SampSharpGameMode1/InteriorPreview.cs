@@ -44,14 +44,13 @@ namespace SampSharpGameMode1
         public InteriorPreview(Player player)
         {
             this.player = player;
-            hud = new HUD(player);
-            hud.Hide();
-            hud.Clicked += Hud_Clicked;
-            player.CancelClickTextDraw += Player_CancelClickTextDraw;
         }
 
         public void Display(int id = 0)
         {
+            hud = new HUD(player);
+            hud.Clicked += Hud_Clicked;
+            player.CancelClickTextDraw += Player_CancelClickTextDraw;
             if(id > 0 && id < CustomDatas.InteriorData.Interiors.Count - 1)
             {
                 selectedIdx = id;
@@ -69,6 +68,7 @@ namespace SampSharpGameMode1
         public void Hide()
         {
             hud.Hide();
+            player.CancelClickTextDraw -= Player_CancelClickTextDraw;
         }
 
         public CustomDatas.InteriorData GetInterior()
