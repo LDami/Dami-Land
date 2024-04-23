@@ -753,6 +753,7 @@ namespace SampSharpGameMode1.Display
                     return;
                 }
                 layers[layerIndex].CreateBackground(player, name, new Vector2(320.0f, 240.0f), new Vector2(320.0f, 240.0f), Color.White);
+                layers[layerIndex].SelectTextdraw(name);
                 player.SendClientMessage("Background Textdraw created: " + name);
                 Select(name);
             }
@@ -769,6 +770,7 @@ namespace SampSharpGameMode1.Display
                     return;
                 }
                 layers[layerIndex].CreateTextdraw(player, name, TextdrawLayer.TextdrawType.Box);
+                layers[layerIndex].SelectTextdraw(name);
                 player.SendClientMessage("Box Textdraw created: " + name);
                 Select(name);
             }
@@ -784,6 +786,7 @@ namespace SampSharpGameMode1.Display
                     return;
                 }
                 layers[layerIndex].CreateTextdraw(player, name, TextdrawLayer.TextdrawType.Text);
+                layers[layerIndex].SelectTextdraw(name);
                 player.SendClientMessage("Text Textdraw created: " + name);
                 Select(name);
             }
@@ -800,6 +803,7 @@ namespace SampSharpGameMode1.Display
                     return;
                 }
                 layers[layerIndex].CreateTextdraw(player, name, TextdrawLayer.TextdrawType.PreviewModel);
+                layers[layerIndex].SelectTextdraw(name);
                 player.SendClientMessage("PreviewModel Textdraw created: " + name);
                 Select(name);
             }

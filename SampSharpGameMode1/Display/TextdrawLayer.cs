@@ -70,7 +70,7 @@ namespace SampSharpGameMode1.Display
 
 
             textdrawType[name] = TextdrawType.Background;
-            textdrawEditMode[name] = EditingMode.Position;
+            textdrawEditMode[name] = EditingMode.Unselected;
             textdrawOrder.Add(name);
             textdrawList[name].Show();
             return textdrawList[name];
@@ -110,7 +110,7 @@ namespace SampSharpGameMode1.Display
             }
             textdrawType[name] = type;
 
-            textdrawEditMode[name] = EditingMode.Position;
+            textdrawEditMode[name] = EditingMode.Unselected;
             textdrawOrder.Add(name);
 
             textdrawList[name].BackColor = editingColor;
