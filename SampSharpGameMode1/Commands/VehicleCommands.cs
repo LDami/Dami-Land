@@ -81,6 +81,7 @@ namespace SampSharpGameMode1.Commands
 			if (!player.IsInEvent && player.InAnyVehicle)
 			{
 				player.Vehicle.Angle = player.Vehicle.Angle;
+				player.Vehicle.Repair();
 			}
 		}
 		[Command("rep")]
