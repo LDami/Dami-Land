@@ -20,12 +20,6 @@ namespace SampSharpGameMode1.Events.Races
             private string selectedIdx;
             public HUD(Player player) : base(player, "racecreator.json")
             {
-                layer.SetTextdrawText("racenamelabel", "Race Name:");
-                layer.SetTextdrawText("racename", "None");
-                layer.SetTextdrawText("selectedidx", "Selected CP: None");
-                layer.SetTextdrawText("totalcp", "Total CP: 0");
-                layer.SetTextdrawText("editingmode", "Mode: None");
-                layer.UnselectAllTextdraw();
             }
             public void Destroy()
             {
@@ -33,7 +27,15 @@ namespace SampSharpGameMode1.Events.Races
             }
             public void SetRaceName(string name)
             {
-                layer.SetTextdrawText("racename", name ?? "[Untitled]");
+                string _name = "[Untitled]";
+                if (name is not null)
+                {
+                    if (name.Length > 14)
+                        _name = name[..14] + "...";
+                    else
+                        _name = name;
+                }
+                layer.SetTextdrawText("racename", _name);
             }
             public void SetSelectedIdx(string idx, EditingMode editingMode)
             {
@@ -178,13 +180,9 @@ namespace SampSharpGameMode1.Events.Races
 
         public void Unload()
         {
-            if (editingRace != null)
-            {
-                editingRace.Unload();
-            }
+            editingRace?.Unload();
             editingRace = null;
-            if(hud != null)
-                hud.Destroy();
+            hud?.Destroy();
             hud = null;
             if(shownCheckpoint != null)
 			{
