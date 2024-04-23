@@ -60,6 +60,7 @@ namespace SampSharpGameMode1.Civilisation
             public byte vehicleSirenState;
             public byte vehicleGearState;
             public ushort vehicleTrailerID;
+            public uint hydraThrustAngle;
         }
     }
 }
