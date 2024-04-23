@@ -214,9 +214,28 @@ namespace SampSharpGameMode1.Display
             {
                 layer.SetTextdrawText(element, value);
             }
-            catch(TextdrawNameNotFoundException e)
+            catch (TextdrawNameNotFoundException e)
             {
                 Logger.WriteLineAndClose("HUD.cs - HUD:SetText:E: " + e.Message);
+                HasError = true;
+            }
+        }
+
+        /// <summary>
+        /// Set Textdraw's size
+        /// </summary>
+        /// <param name="element">The textdraw name</param>
+        /// <param name="width">The width to set</param>
+        /// <param name="height">The height to set</param>
+        public void SetSize(string element, float width, float height)
+        {
+            try
+            {
+                layer.SetTextdrawSize(element, width, height);
+            }
+            catch (TextdrawNameNotFoundException e)
+            {
+                Logger.WriteLineAndClose("HUD.cs - HUD:SetSize:E: " + e.Message);
                 HasError = true;
             }
         }
@@ -290,7 +309,7 @@ namespace SampSharpGameMode1.Display
             {
                 for (int i = 0; i < itemsPerRow; i++)
                 {
-                    if (i < number)
+                    if (index < number)
                     {
                         string newName = element.Replace("#", $"[{index++}]");
                         Vector2 newPosition = new(
