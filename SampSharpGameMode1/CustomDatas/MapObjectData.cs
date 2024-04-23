@@ -28,8 +28,8 @@ namespace SampSharpGameMode1.CustomDatas
         public static void UpdateMapObject(List<MapObjectData> mapObjects)
         {
             MapObjects = mapObjects;
-            MapObjectCategories = mapObjects.Select(x => x.Group).ToList();
-            MapObjectCategories = MapObjectCategories.GroupBy(x => x.Name).Select(group => group.First()).ToList();
+            MapObjectCategories = mapObjects.Select(x => x.Group).GroupBy(x => x.Name).Select(group => group.First()).ToList();
+            MapObjectCategories.Sort((x, y) => string.Compare(x.Name, y.Name));
         }
         public int Id { get; }
         public string Name { get; }
