@@ -241,7 +241,7 @@ namespace SampSharpGameMode1.Civilisation
                             tmpPathNode.flags.spawnProbability = (tmpFlag & 0xF0000) >> 16;
 
                             //if (index > 40) Logger.WriteLine("Area ID: " + tmpPathNode.areaID + "\tNode ID: " + tmpPathNode.nodeID);
-                            if ((NodeType)tmpPathNode.nodeType == NodeType.Cars)
+                            //if ((NodeType)tmpPathNode.nodeType == NodeType.Cars)
                                 pathNodes[index].Add(tmpPathNode);
                             //Console.WriteLine("== PathNode " + j + " == \r\n" + tmpPathNode.ToString());
                         }
@@ -705,7 +705,7 @@ namespace SampSharpGameMode1.Civilisation
         public static List<PathNode> GetPathNodes()
         {
             List<PathNode> result = new List<PathNode>();
-            for(int i = 0; i < 64; i++)
+            for (int i = 0; i < 64; i++)
             {
                 foreach (PathNode node in pathNodes[i])
                 {
