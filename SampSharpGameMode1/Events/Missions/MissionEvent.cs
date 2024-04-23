@@ -27,12 +27,12 @@ namespace SampSharpGameMode1.Events.Missions
 
         private void LoadingMission_Loaded(object sender, MissionLoadedEventArgs e)
         {
+            this.Type = EventType.Mission;
             if (e.Mission.IsPlayable())
             {
                 loadedMission = e.Mission;
                 this.Name = e.Mission.Name;
                 this.Status = EventStatus.Loaded;
-                this.Type = EventType.Mission;
                 this.Source = loadedMission;
                 this.AvailableSlots = e.availableSlots;
                 OnLoaded(new EventLoadedEventArgs { EventLoaded = this, ErrorMessage = null });

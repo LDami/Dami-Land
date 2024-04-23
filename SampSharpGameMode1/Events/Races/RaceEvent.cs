@@ -28,12 +28,12 @@ namespace SampSharpGameMode1.Events.Races
 
         private void LoadingRace_Loaded(object sender, RaceLoadedEventArgs e)
         {
+            this.Type = EventType.Race;
             if (e.race.IsPlayable())
             {
                 loadedRace = e.race;
                 this.Name = e.race.Name;
                 this.Status = EventStatus.Loaded;
-                this.Type = EventType.Race;
                 this.Source = loadedRace;
                 this.AvailableSlots = e.availableSlots;
                 OnLoaded(new EventLoadedEventArgs { EventLoaded = this, ErrorMessage = null });
@@ -60,11 +60,18 @@ namespace SampSharpGameMode1.Events.Races
         }
         public override void End(EventFinishedReason reason)
         {
-            if(this.Status >= EventStatus.Waiting && this.Status != EventStatus.Running)
+            if (this.Status >= EventStatus.Waiting && this.Status != EventStatus.Running)
                 Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.Red + " The " + this.Type.ToString() + " has been aborted !");
             this.loadedRace.Unload();
             this.Status = EventStatus.Finished;
             this.OnEnded(new EventFinishedEventArgs { Reason = reason });
         }
+        /*
+        public override void Restart()
+        {
+            // TODO: Implement
+            this.Status = EventStatus.Running;
+        }
+        */
     }
 }

@@ -27,12 +27,12 @@ namespace SampSharpGameMode1.Events.Derbys
 
         private void LoadingDerby_Loaded(object sender, DerbyLoadedEventArgs e)
         {
+            this.Type = EventType.Derby;
             if (e.derby.IsPlayable())
             {
                 loadedDerby = e.derby;
                 this.Name = e.derby.Name;
                 this.Status = EventStatus.Loaded;
-                this.Type = EventType.Derby;
                 this.Source = loadedDerby;
                 this.AvailableSlots = e.availableSlots;
                 OnLoaded(new EventLoadedEventArgs { EventLoaded = this, ErrorMessage = null });
