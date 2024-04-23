@@ -55,6 +55,7 @@ namespace SampSharpGameMode1
 
         //Vehicle
         public Speedometer Speedometer;
+        public AirplaneHUD AirplaneHUD;
         private bool nitroEnabled;
         public bool NitroEnabled { get => nitroEnabled; set => nitroEnabled = value; }
 
@@ -127,6 +128,7 @@ namespace SampSharpGameMode1
                 pEvent = null;
 
                 Speedometer = new Speedometer(this);
+                AirplaneHUD = new AirplaneHUD(this);
 
                 pathObjectsTimer = new SampSharp.GameMode.SAMP.Timer(10000, true);
                 //pathObjectsTimer.Tick += PathObjectsTimer_Tick;
@@ -179,6 +181,7 @@ namespace SampSharpGameMode1
                 eventCreator = null;
 
                 Speedometer = null;
+                AirplaneHUD = null;
 
                 pathObjectsTimer.IsRunning = false;
                 pathObjectsTimer.Dispose();
@@ -219,6 +222,8 @@ namespace SampSharpGameMode1
             if(this.InAnyVehicle && Speedometer != null && !this.IsNPC)
             {
                 Speedometer.Update();
+                if (VehicleModelInfo.ForVehicle(this.Vehicle).Category == VehicleCategory.Airplane)
+                    AirplaneHUD.Update();
             }
         }
         public override void OnEnterVehicle(EnterVehicleEventArgs e)
@@ -240,7 +245,9 @@ namespace SampSharpGameMode1
                 if (e.NewState == PlayerState.Driving || e.NewState == PlayerState.Passenger)
                 {
                     Speedometer.Show();
-                    foreach(Player s in this.Spectators)
+                    if (VehicleModelInfo.ForVehicle(this.Vehicle).Category == VehicleCategory.Airplane)
+                        AirplaneHUD.Show();
+                    foreach (Player s in this.Spectators)
                     {
                         s.SpectateVehicle(this.Vehicle);
                     }
@@ -248,6 +255,7 @@ namespace SampSharpGameMode1
                 else
                 {
                     Speedometer.Hide();
+                    AirplaneHUD.Hide();
                     foreach (Player s in this.Spectators)
                     {
                         s.SpectatePlayer(this);

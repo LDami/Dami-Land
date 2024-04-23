@@ -72,8 +72,14 @@ namespace SampSharpGameMode1.Commands
                 p.Speedometer.Hide();
                 p.Speedometer = null;
                 p.Speedometer = new Speedometer(p);
+                p.AirplaneHUD = null;
+                p.AirplaneHUD = new AirplaneHUD(p);
                 if (p.InAnyVehicle)
+                {
                     p.Speedometer.Show();
+                    if (VehicleModelInfo.ForVehicle(p.Vehicle).Category == VehicleCategory.Airplane)
+                        p.AirplaneHUD.Show();
+                }
             }
             player.SendClientMessage("Done.");
         }
