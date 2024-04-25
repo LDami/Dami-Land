@@ -61,6 +61,33 @@ namespace SampSharpGameMode1.Civilisation
             public byte vehicleGearState;
             public ushort vehicleTrailerID;
             public uint hydraThrustAngle;
+            public static VehicleBlock Copy(VehicleBlock v)
+            {
+                return new VehicleBlock()
+                {
+                    // Block
+                    time = v.time,
+                    additionnalKeyCode = v.additionnalKeyCode,
+                    rotQuaternion1 = v.rotQuaternion1,
+                    rotQuaternion2 = v.rotQuaternion2,
+                    rotQuaternion3 = v.rotQuaternion3,
+                    rotQuaternion4 = v.rotQuaternion4,
+                    position = v.position,
+                    // VehicleBlock
+                    vehicleID = v.vehicleID,
+                    lrKeyCode = v.lrKeyCode,
+                    udKeyCode = v.udKeyCode,
+                    velocity = v.velocity,
+                    vehicleHealth = v.vehicleHealth,
+                    driverHealth = v.driverHealth,
+                    driverArmor = v.driverArmor,
+                    driverWeaponID = v.driverWeaponID,
+                    vehicleSirenState = v.vehicleSirenState,
+                    vehicleGearState = v.vehicleGearState,
+                    vehicleTrailerID = v.vehicleTrailerID,
+                    hydraThrustAngle = v.hydraThrustAngle
+                };
+            }
         }
     }
 }

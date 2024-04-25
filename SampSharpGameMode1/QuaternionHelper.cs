@@ -27,6 +27,25 @@ namespace SampSharpGameMode1
 
             return (float)angleDegrees;
         }
+
+        public static Quaternion FromAngle(float angle)
+        {
+            float c1; float c2; float c3;
+            float s1; float s2; float s3;
+            c1 = 1.0f;
+            c2 = (float)Math.Cos(angle / 2);
+            c3 = 1.0f;
+            s1 = 0.0f;
+            s2 = (float)Math.Sin(angle / 2);
+            s3 = 0.0f;
+            return new Quaternion(
+                w: (c1 * c2 * c3) - (s1 * s2 * s3),
+                x: (s1 * s2 * c3) + (c1 * c2 * s3),
+                y: (s1 * c2 * c3) + (c1 * s2 * s3),
+                z: (c1 * s2 * c3) - (s1 * c2 * s3)
+            );
+        }
+
         public static Quaternion FromEuler(float x, float y, float z)
         {
             // Convertir les angles d'Euler en radians

@@ -926,7 +926,7 @@ namespace SampSharpGameMode1
                             //string npcName = VehicleAI.Init(VehicleModelType.Mower, new Vector3(1501.22, 1712.39, 10.54), 0.0f);
                             //VehicleAI.SetMode(1);
 
-                            List<PathNode> allPathNodes = GetPathNodes();
+                            List<PathNode> allPathNodes = PathExtractor.carNodes;
                             List<PathNode> allNearPathNodes = new List<PathNode>();
 
                             PathNode nearestNodeFrom = new PathNode();
@@ -988,18 +988,23 @@ namespace SampSharpGameMode1
                             {
                                 ListDialog listDialog2 = new ListDialog("Chose the way to start", "Start", "Cancel");
                                 listDialog2.AddItems(new List<string>() { "On foot", "Vehicle" });
-                                listDialog2.Response += (obj, evt) =>
+                                listDialog2.Response += (obj, evt2) =>
                                 {
-                                    NPCController.StartAI(botNames[evt.ListItem], evt.ListItem == 0 ? "onfoot" : "vehicle");
+                                    NPCController.StartAI(botNames[evt.ListItem], evt2.ListItem == 0 ? "onfoot" : "vehicle");
                                 };
                                 listDialog2.Show(this);
                             };
                             listDialog.Show(this);
-                            this.SendClientMessage("AI reset in his vehicle");
                             break;
                         case 2: // kick
-                            VehicleAI.Kick();
-                            this.SendClientMessage("AI kicked");
+                            ListDialog listDialogKick = new ListDialog("Chose the NPC to kick", "Start", "Cancel");
+                            List<string> botNamesKick = NPCController.GetConnectedBotNames().ToList();
+                            listDialogKick.AddItems(botNamesKick);
+                            listDialogKick.Response += (obj, evt) =>
+                            {
+                                NPCController.Kick(botNamesKick[evt.ListItem]);
+                            };
+                            listDialogKick.Show(this);
                             break;
                         case 3: // go to next
                             ListDialog listDialog2 = new ListDialog("Chose the NPC you want to update", "Start", "Cancel");
@@ -1012,7 +1017,8 @@ namespace SampSharpGameMode1
                             listDialog2.Show(this);
                             break;
                         case 4: // restart AI
-                            VehicleAI.StartVehicle();
+                            //VehicleAI.StartVehicle();
+                            this.SendClientMessage("Not implemented");
                             break;
                         default:
                             break;
@@ -1137,12 +1143,12 @@ namespace SampSharpGameMode1
         [Command("getangle")]
         private void GetAngleCommand()
         {
+            // Angle: North = 0, West = 90, South = 180, East = 270 (anti-clockwise)
             if(this.InAnyVehicle)
             {
                 this.SendClientMessage("Your vehicle's angle is: " + this.Vehicle.Angle.ToString());
-                float w, x, y, z;
-                this.Vehicle.GetRotationQuat(out w, out x, out y, out z);
-                this.SendClientMessage($"Your vehicle's rotation quat is: ({w}, {x}, {y}, {z})");
+                this.Vehicle.GetRotationQuat(out float w, out float x, out float y, out float z);
+                this.SendClientMessage($"Your vehicle's rotation quat is: (w = {w}, x = {x}, y = {y}, z = {z})");
             }
             else
                 this.SendClientMessage("Your angle is: " + this.Angle.ToString());

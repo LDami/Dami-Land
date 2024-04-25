@@ -16,6 +16,7 @@ namespace SampSharpGameMode1.Civilisation
         public void RegisterEvents(BaseMode gameMode)
         {
             gameMode.PlayerConnected += GameMode_PlayerConnected;
+            gameMode.PlayerDisconnected += GameMode_PlayerDisconnected;
             gameMode.PlayerSpawned += GameMode_PlayerSpawned;
             gameMode.PlayerUpdate += GameMode_PlayerUpdate;
             Console.WriteLine("NPCController.cs - NPCController.Init:I: NPC Controller initialized.");
@@ -35,6 +36,14 @@ namespace SampSharpGameMode1.Civilisation
             {
                 NPC npc = new NPC(sender as BasePlayer);
                 npcPool.Add((sender as BasePlayer).Name, npc);
+            }
+        }
+
+        private void GameMode_PlayerDisconnected(object sender, SampSharp.GameMode.Events.DisconnectEventArgs e)
+        {
+            if ((sender as BasePlayer).IsNPC)
+            {
+                npcPool.Remove((sender as BasePlayer).Name);
             }
         }
 
