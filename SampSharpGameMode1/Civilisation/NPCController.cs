@@ -73,6 +73,17 @@ namespace SampSharpGameMode1.Civilisation
                 return null;
             }
         }
+        public static Vector3? PeekNextPoint(string npcName)
+        {
+            if (paths.ContainsKey(npcName) && paths[npcName].Count > 0)
+            {
+                return paths[npcName].Peek();
+            }
+            else
+            {
+                return null;
+            }
+        }
 
         public static void Kick(string npcName)
         {

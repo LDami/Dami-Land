@@ -62,6 +62,7 @@ namespace SampSharpGameMode1.Civilisation
 
         public void Kick()
         {
+            vehicle?.Dispose();
             destinationCP?.Dispose();
             destinationCP = null;
             npcPlayer.Kick();
@@ -85,8 +86,8 @@ namespace SampSharpGameMode1.Civilisation
         public void Start(NPCType type)
         {
             npcType = type;
-            startingPos = NPCController.GetNextPoint(npcPlayer.Name).GetValueOrDefault(Vector3.Zero);
-            if((destination = NPCController.GetNextPoint(npcPlayer.Name).GetValueOrDefault(Vector3.Zero)) == Vector3.Zero)
+            startingPos = NPCController.GetNextPoint(npcPlayer.Name).GetValueOrDefault(Vector3.Zero) + Vector3.Up;
+            if((destination = NPCController.PeekNextPoint(npcPlayer.Name).GetValueOrDefault(Vector3.Zero)) == Vector3.Zero)
             {
                 Logger.WriteLineAndClose("NPC.cs - NPC.Start:I: NPC " + npcPlayer.Name + " could not start: There is no destination to reach");
             }
