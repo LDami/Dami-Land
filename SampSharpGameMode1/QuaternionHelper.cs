@@ -28,21 +28,23 @@ namespace SampSharpGameMode1
             return (float)angleDegrees;
         }
 
-        public static Quaternion FromAngle(float angle)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="angle">Angle in Radians</param>
+        /// <returns></returns>
+        public static Quaternion FromAngle(Vector3 vec)
         {
-            float c1; float c2; float c3;
-            float s1; float s2; float s3;
-            c1 = 1.0f;
-            c2 = (float)Math.Cos(angle / 2);
-            c3 = 1.0f;
-            s1 = 0.0f;
-            s2 = (float)Math.Sin(angle / 2);
-            s3 = 0.0f;
+            // This function is based on Open.MP implementation:
+            // https://github.com/openmultiplayer/open.mp/blob/833af233c2e297524f1cd4177ee5d9f306403a67/SDK/include/gtaquat.hpp
+            Vector3 c = new(Math.Cos(vec.X * -0.5f), Math.Cos(vec.Y * -0.5f), Math.Cos(vec.Z * -0.5f));
+            Vector3 s = new(Math.Sin(vec.X * -0.5f), Math.Sin(vec.Y * -0.5f), Math.Sin(vec.Z * -0.5f));
+
             return new Quaternion(
-                w: (c1 * c2 * c3) - (s1 * s2 * s3),
-                x: (s1 * s2 * c3) + (c1 * c2 * s3),
-                y: (s1 * c2 * c3) + (c1 * s2 * s3),
-                z: (c1 * s2 * c3) - (s1 * c2 * s3)
+                w: c.X * c.Y * c.Z + s.X * s.Y * s.Z,
+                x: c.X * s.Y * s.Z + s.X * c.Y * c.Z,
+                y: c.X * s.Y * c.Z - s.X * c.Y * s.Z,
+                z: c.X * c.Y * s.Z - s.X * s.Y * c.Z
             );
         }
 
