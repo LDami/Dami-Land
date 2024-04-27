@@ -921,64 +921,7 @@ namespace SampSharpGameMode1
                     switch (e.ListItem)
                     {
                         case 0: // create
-
-                            //VehicleAI.Init(VehicleModelType.Mower, PathTools.GetNeirestPathNode(this.Position).position, 0.0f);
-                            //string npcName = VehicleAI.Init(VehicleModelType.Mower, new Vector3(1501.22, 1712.39, 10.54), 0.0f);
-                            //VehicleAI.SetMode(1);
-
-                            List<PathNode> allPathNodes = PathExtractor.carNodes;
-                            List<PathNode> allNearPathNodes = new List<PathNode>();
-
-                            PathNode nearestNodeFrom = new PathNode();
-                            PathNode nearestNodeTo = new PathNode();
-                            PathNode lastNode = new PathNode();
-
-                            Vector3 from = this.Position;
-                            Vector3 to = new Vector3(2595.62, 1472.35, 10.40);
-
-                            foreach (PathNode node in allPathNodes)
-                            {
-                                if (node.position.DistanceTo(from) < from.DistanceTo(to) || node.position.DistanceTo(to) < from.DistanceTo(to))
-                                {
-                                    allNearPathNodes.Add(node);
-                                }
-                            }
-                            foreach (PathNode node in allNearPathNodes)
-                            {
-                                if (lastNode.position != Vector3.Zero)
-                                {
-                                    if (nearestNodeFrom.position == Vector3.Zero || nearestNodeFrom.position.DistanceTo(from) > lastNode.position.DistanceTo(from))
-                                    {
-                                        nearestNodeFrom = lastNode;
-                                    }
-                                    if (nearestNodeTo.position == Vector3.Zero || nearestNodeTo.position.DistanceTo(to) > lastNode.position.DistanceTo(to))
-                                    {
-                                        nearestNodeTo = lastNode;
-                                    }
-                                }
-                                lastNode = node;
-                            }
-
-                            this.SendClientMessage("Initializing Pathfinding ...");
-                            PathFinder pf = new PathFinder(allNearPathNodes, nearestNodeFrom, nearestNodeTo);
-                            this.SendClientMessage("Done.");
-                            this.SendClientMessage("Pathfinding in progress ...");
-                            pf.Find();
-                            pf.Success += (obj, e) =>
-                            {
-                                /*
-                                PathNode[] pathNodes = new PathNode[2];
-                                pathNodes[0] = new PathNode();
-                                pathNodes[0].position = new Vector3(1501.22, 1712.39, 10.54);
-                                pathNodes[1] = new PathNode();
-                                pathNodes[1].position = new Vector3(1402.59, 1858.7728, 10.54);
-                                VehicleAI.SetPath(pathNodes);*/
-
-                                //VehicleAI.SetPath(e.path);
-                                NPCController.Add("npctest2", new Queue<Vector3>(e.path.Select(x => x.position)));
-                            };
-                            pf.Failure += Pf_Failure;
-                            this.SendClientMessage("AI created");
+                            StartAI();
                             break;
                         case 1: // start
                             ListDialog listDialog = new ListDialog("Chose the NPC to start", "Start", "Cancel");
@@ -986,13 +929,17 @@ namespace SampSharpGameMode1
                             listDialog.AddItems(botNames);
                             listDialog.Response += (obj, evt) =>
                             {
-                                ListDialog listDialog2 = new ListDialog("Chose the way to start", "Start", "Cancel");
-                                listDialog2.AddItems(new List<string>() { "On foot", "Vehicle" });
-                                listDialog2.Response += (obj, evt2) =>
+                                if (evt.DialogButton == DialogButton.Left)
                                 {
-                                    NPCController.StartAI(botNames[evt.ListItem], evt2.ListItem == 0 ? "onfoot" : "vehicle");
-                                };
-                                listDialog2.Show(this);
+                                    ListDialog listDialog2 = new ListDialog("Chose the way to start", "Start", "Cancel");
+                                    listDialog2.AddItems(new List<string>() { "On foot", "Vehicle" });
+                                    listDialog2.Response += (obj, evt2) =>
+                                    {
+                                        if (evt2.DialogButton == DialogButton.Left)
+                                            NPCController.StartAI(botNames[evt.ListItem], evt2.ListItem == 0 ? "onfoot" : "vehicle");
+                                    };
+                                    listDialog2.Show(this);
+                                }
                             };
                             listDialog.Show(this);
                             break;
@@ -1002,7 +949,8 @@ namespace SampSharpGameMode1
                             listDialogKick.AddItems(botNamesKick);
                             listDialogKick.Response += (obj, evt) =>
                             {
-                                NPCController.Kick(botNamesKick[evt.ListItem]);
+                                if(evt.DialogButton == DialogButton.Left)
+                                    NPCController.Kick(botNamesKick[evt.ListItem]);
                             };
                             listDialogKick.Show(this);
                             break;
@@ -1012,13 +960,26 @@ namespace SampSharpGameMode1
                             listDialog2.AddItems(botNames2);
                             listDialog2.Response += (obj, evt) =>
                             {
-                                NPCController.GoToNextPos(botNames2[evt.ListItem]);
+                                if (evt.DialogButton == DialogButton.Left)
+                                    NPCController.GoToNextPos(botNames2[evt.ListItem]);
                             };
                             listDialog2.Show(this);
                             break;
                         case 4: // restart AI
-                            //VehicleAI.StartVehicle();
-                            this.SendClientMessage("Not implemented");
+                            ListDialog listDialogKick2 = new ListDialog("Chose the NPC to restart", "Start", "Cancel");
+                            List<string> botNamesKick2 = NPCController.GetConnectedBotNames().ToList();
+                            listDialogKick2.AddItems(botNamesKick2);
+                            listDialogKick2.Response += (obj, evt) =>
+                            {
+                                if (evt.DialogButton == DialogButton.Left)
+                                {
+                                    NPCController.Kick(botNamesKick2[evt.ListItem]);
+                                    Thread.Sleep(500);
+                                    StartAI();
+                                    NPCController.StartAI(NPCController.GetConnectedBotNames().First(), "vehicle");
+                                }
+                            };
+                            listDialogKick2.Show(this);
                             break;
                         default:
                             break;
@@ -1026,6 +987,73 @@ namespace SampSharpGameMode1
                 }
             };
             dialog.Show(this);
+        }
+        private void StartAI()
+        {
+            List<PathNode> allPathNodes = PathExtractor.carNodes;
+            List<PathNode> allNearPathNodes = new List<PathNode>();
+
+            PathNode nearestNodeFrom = new PathNode();
+            PathNode nearestNodeTo = new PathNode();
+            PathNode lastNode = new PathNode();
+
+            Vector3 from = this.Position;
+            Vector3 to = new Vector3(2595.62, 1472.35, 10.40);
+            to = new Vector3(2520, 1472.35, 10.40);
+
+            foreach (PathNode node in allPathNodes)
+            {
+                if (node.position.DistanceTo(from) < from.DistanceTo(to) || node.position.DistanceTo(to) < from.DistanceTo(to))
+                {
+                    allNearPathNodes.Add(node);
+                }
+            }
+            if(pathObjects != null)
+            {
+                foreach(DynamicObject obj in pathObjects)
+                {
+                    obj?.Dispose();
+                }
+                pathObjects.Clear();
+            }
+            foreach (PathNode node in allNearPathNodes)
+            {
+                if (lastNode.position != Vector3.Zero)
+                {
+                    if (nearestNodeFrom.position == Vector3.Zero || nearestNodeFrom.position.DistanceTo(from) > lastNode.position.DistanceTo(from))
+                    {
+                        nearestNodeFrom = lastNode;
+                    }
+                    if (nearestNodeTo.position == Vector3.Zero || nearestNodeTo.position.DistanceTo(to) > lastNode.position.DistanceTo(to))
+                    {
+                        nearestNodeTo = lastNode;
+                    }
+                }
+                lastNode = node;
+            }
+            this.SendClientMessage("Initializing Pathfinding ...");
+            PathFinder pf = new PathFinder(allNearPathNodes, nearestNodeFrom, nearestNodeTo);
+            this.SendClientMessage("Done.");
+            this.SendClientMessage("Pathfinding in progress ...");
+            pf.Find();
+            pf.Success += (obj, e) =>
+            {
+                this.SendClientMessage(Color.Green, "Pathfinding successul, creating AI ...");
+                CalculateWay(this.Position, lastNode.position);
+                PathNode[] pathNodes = new PathNode[2];
+                pathNodes[0] = new PathNode();
+                pathNodes[0].position = new Vector3(1501.22, 1712.39, 10.54);
+                pathNodes[1] = new PathNode();
+                pathNodes[1].position = new Vector3(1402.59, 1858.7728, 10.54);
+                //pathNodes[1].position = new Vector3(1540.59, 1858.7728, 10.54);
+                //VehicleAI.SetPath(pathNodes);
+
+                //VehicleAI.SetPath(e.path);
+                NPCController.Add("npctest2", new Queue<Vector3>(e.path.Select(x => new Vector3(x.position.X, x.position.Y, FindZFromVector2(x.position.X, x.position.Y)))));
+                //NPCController.Add("npctest2", new Queue<Vector3>(pathNodes.Select(x => x.position)));
+            };
+            pf.Failure += Pf_Failure;
+            this.SendClientMessage("AI created");
         }
         [Command("ai-speed")]
         private void AISpeedCommand(float speed)
