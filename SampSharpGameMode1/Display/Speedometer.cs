@@ -39,10 +39,7 @@ namespace SampSharpGameMode1.Display
 
         public void Hide()
         {
-            if (hud != null)
-            {
-                hud.Hide();
-            }
+            hud?.Hide();
             IsDisplayed = false;
         }
 
@@ -55,7 +52,7 @@ namespace SampSharpGameMode1.Display
                 string model = player.Vehicle.ModelInfo.Name ?? "Unknown model";
                 if (model.Length > 11)
                 {
-                    model = model.Insert(11, "\n");
+                    model = model.Insert(11, "~n~");
                 }
                 hud.SetText("vehiclename", model);
 
