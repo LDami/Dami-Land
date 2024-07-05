@@ -249,7 +249,8 @@ namespace SampSharpGameMode1.Commands
             {
                 if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
                 {
-                    (player.eventCreator as RaceCreator).AddSpectatorGroup(player.Position);
+                    player.SendClientMessage("A spectator group has been added to your virtual world, please not that is for guidance only, SGs will be created for each checkpoint during the race");
+                    (player.eventCreator as RaceCreator).AddSpectatorGroup();
                 }
             }
 

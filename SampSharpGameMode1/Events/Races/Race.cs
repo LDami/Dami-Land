@@ -7,6 +7,7 @@ using SampSharpGameMode1.Civilisation;
 using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using static SampSharpGameMode1.Civilisation.PathExtractor;
 
@@ -315,27 +316,31 @@ namespace SampSharpGameMode1.Events.Races
 
                     List<PathNode> allPathNodes = PathExtractor.pedNodes;
                     List<PathNode> allNearPathNodes = new();
+                    List<PathNode> allAreaPathNodes = new();
+                    int areaId, lastAreaId = -1;
 
                     
                     int cpIdx = 0;
                     foreach(Checkpoint cp in checkpoints.Values)
                     {
-                        Console.WriteLine("Checkpoint " + (++cpIdx) + "/" + checkpoints.Values.Count);
                         Vector3 from = cp.Position;
-                        allNearPathNodes = new();
-                        foreach (PathNode node in allPathNodes)
+                        areaId = PathExtractor.GetArea(from);
+                        Console.WriteLine("Checkpoint " + (++cpIdx) + "/" + checkpoints.Values.Count);
+                        if (lastAreaId != areaId) // Get new pathnode list only if necessary
+                        {
+                            allAreaPathNodes = allPathNodes.Where(x => x.areaID == areaId).ToList();
+                            lastAreaId = areaId;
+                        }
+                        allNearPathNodes.Clear();
+                        foreach (PathNode node in allAreaPathNodes)
                         {
                             if (node.position.DistanceTo(from) < 20)
                             {
                                 allNearPathNodes.Add(node);
                             }
                         }
-                        foreach (PathNode node in allNearPathNodes)
-                        {
-                            //spectatorGroups.Add(new SpectatorGroup(node.position + new Vector3(0, 0, 1.7), cp.Position, this.virtualWorld));
-                        }
                         if(allNearPathNodes.Count > 0)
-                            spectatorGroups.Add(new SpectatorGroup(allNearPathNodes[0].position + new Vector3(0, 0, 1.7), cp.Position, this.virtualWorld));
+                            spectatorGroups.Add(new SpectatorGroup(allNearPathNodes[0].position, cp.Position, this.virtualWorld));
                     }
                     
 

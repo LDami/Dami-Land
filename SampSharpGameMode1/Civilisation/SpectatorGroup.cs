@@ -25,6 +25,7 @@ namespace SampSharpGameMode1.Civilisation
         {
             //Console.WriteLine("Spectator group pos: " + position);
             this.Position = position;
+            position += new Vector3(0, 0, 1.5);
             this.VirtualWord = virtualWord;
 
             barriers = new List<DynamicObject>();
@@ -36,6 +37,8 @@ namespace SampSharpGameMode1.Civilisation
             barriers.Add(barrier);
             barrier = new(BarrierModel, position + Vector3.Right * (Radius / 2), new Vector3(0, 0, 90), virtualWord); // Right
             barriers.Add(barrier);
+
+            position += new Vector3(0, 0, 0.2);
 
             actors = new List<DynamicActor>();
             textLabels = new();

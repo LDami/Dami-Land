@@ -10,6 +10,8 @@ using SampSharpGameMode1.Display;
 using SampSharpGameMode1.Events._Tools;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using static SampSharpGameMode1.Civilisation.PathExtractor;
 
 namespace SampSharpGameMode1.Events.Races
 {
@@ -168,10 +170,11 @@ namespace SampSharpGameMode1.Events.Races
             hud.SetSelectedIdx("S", editingMode);
             hud.SetTotalCP(editingRace.checkpoints.Count - 1);
             player.SendClientMessage("Race Creator loaded, here are the controls:");
-            player.SendClientMessage("    keypad 4:                                Go to previous checkpoint");
-            player.SendClientMessage("    keypad 6:                                Go to next checkpoint");
-            player.SendClientMessage("    submission key (2/é):                    Open Race menu");
+            player.SendClientMessage("    keypad 4:                                Select previous checkpoint");
+            player.SendClientMessage("    keypad 6:                                Select next checkpoint");
+            player.SendClientMessage("    submission key:                          Open Race menu");
             player.SendClientMessage("    /race help                               Show the controls list");
+            player.SendClientMessage("Tip: Enter a checkpoint to open its settings menu");
             player.KeyStateChanged += Player_KeyStateChanged;
             player.EnterCheckpoint += Player_EnterCheckpoint;
             player.EnterRaceCheckpoint += Player_EnterRaceCheckpoint;
@@ -431,23 +434,25 @@ namespace SampSharpGameMode1.Events.Races
             }
             UpdatePlayerCheckpoint();
         }
-        public void AddSpectatorGroup(Vector3 position)
+        public void AddSpectatorGroup()
         {
-            // TODO remove parameter
             List<PathNode> allPathNodes = PathExtractor.pedNodes;
             List<PathNode> allNearPathNodes = new();
+            List<PathNode> allAreaPathNodes = new();
 
             Vector3 from = editingRace.checkpoints[checkpointIndex].Position;
-            foreach (PathNode node in allPathNodes)
+            int areaId = PathExtractor.GetArea(from);
+            allAreaPathNodes = allPathNodes.Where(x => x.areaID == areaId).ToList();
+            foreach (PathNode node in allAreaPathNodes)
             {
-                if (node.position.DistanceTo(from) < 40)
+                if (node.position.DistanceTo(from) < 20)
                 {
                     allNearPathNodes.Add(node);
                 }
             }
             foreach (PathNode node in allNearPathNodes)
             {
-                spectatorGroups.Add(new SpectatorGroup(node.position + new Vector3(0, 0, 1.7), from, player.VirtualWorld));
+                spectatorGroups.Add(new SpectatorGroup(node.position, from, player.VirtualWorld));
             }
         }
         private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
