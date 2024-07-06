@@ -265,17 +265,17 @@ namespace SampSharpGameMode1.Display
         /// <param name="model">The model ID to preview</param>
         public void SetPreviewModel(string element, int model)
         {
-            if(layer.GetTextdrawType(element) == TextdrawLayer.TextdrawType.PreviewModel)
+            try
             {
-                try
+                if (layer.GetTextdrawType(element) == TextdrawLayer.TextdrawType.PreviewModel)
                 {
                     layer.SetTextdrawPreviewModel(element, model);
                 }
-                catch (TextdrawNameNotFoundException e)
-                {
-                    Logger.WriteLineAndClose("HUD.cs - HUD:SetColor:E: " + e.Message);
-                    HasError = true;
-                }
+            }
+            catch (TextdrawNameNotFoundException e)
+            {
+                Logger.WriteLineAndClose("HUD.cs - HUD:SetPreviewModel:E: " + e.Message);
+                HasError = true;
             }
         }
 
