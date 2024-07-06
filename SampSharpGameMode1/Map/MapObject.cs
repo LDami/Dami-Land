@@ -1,10 +1,5 @@
 ﻿using SampSharp.GameMode;
-using SampSharp.GameMode.Definitions;
 using SampSharp.Streamer.World;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Text;
 
 namespace SampSharpGameMode1.Map
 {

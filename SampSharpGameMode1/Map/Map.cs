@@ -1,8 +1,8 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.SAMP;
+using SampSharp.GameMode.World;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 
 namespace SampSharpGameMode1.Map
@@ -19,11 +19,13 @@ namespace SampSharpGameMode1.Map
         public string Name { get; set; }
         public int Creator { get; set; }
         public bool IsLoaded { get; private set; }
-        public List<MapObject> Objects { get; private set; } = new List<MapObject>();
+        public List<MapObject> Objects { get; private set; } = new();
         public Vector3 Spawn { get; set; }
         public int VirtualWorld { get; private set; }
+        public TimeOnly Time { get; set; }
+        public List<MapGroup> Groups { get; set; } = new();
 
-        private static List<Map> pool = new List<Map>();
+        private static List<Map> pool = new();
 
         // Common Events
 
@@ -38,12 +40,13 @@ namespace SampSharpGameMode1.Map
         public Map()
         {
             Id = -1;
+            Time = TimeOnly.Parse("12:00:00");
         }
         public void Load(int id, int virtualworld)
         {
             if (GameMode.mySQLConnector != null)
             {
-                Thread t = new Thread(() =>
+                Thread t = new(() =>
                 {
                     VirtualWorld = virtualworld;
 
@@ -65,6 +68,8 @@ namespace SampSharpGameMode1.Map
                             (float)Convert.ToDouble(row["spawn_pos_y"]),
                             (float)Convert.ToDouble(row["spawn_pos_z"])
                         );
+                        _ = TimeOnly.TryParse(row["map_time"], out TimeOnly _time);
+                        Time = _time;
                     }
                     else
                         errorFlag = true;
@@ -75,13 +80,15 @@ namespace SampSharpGameMode1.Map
                         GameMode.mySQLConnector.OpenReader("SELECT mapobjects.*, groups.group_Color, groups.group_Name FROM mapobjects LEFT JOIN mapobjects_groups AS groups ON (mapobjects.group_id = groups.group_id) WHERE map_id=@id", param);
                         row = GameMode.mySQLConnector.GetNextRow();
                         Objects.Clear();
+                        Groups.Clear();
                         MapGroup objGroup = null;
                         while (row.Count > 0)
                         {
                             if (row["group_id"] != "[null]")
                             {
-                                objGroup = MapGroup.GetOrCreate(Convert.ToInt32(row["group_id"]));
-                                objGroup.ForeColor ??= Utils.GetColorFromString("0x" + row["group_color"]) ?? Color.AliceBlue;
+                                objGroup = new MapGroup(Convert.ToInt32(row["group_id"]), Groups.Count + 1, Utils.GetColorFromString("0x" + row["group_color"]) ?? Color.AliceBlue, row["group_name"]);
+                                if(!Groups.Contains(objGroup))
+                                    Groups.Add(objGroup);
                             }
                             else
                                 objGroup = null;
@@ -167,13 +174,12 @@ namespace SampSharpGameMode1.Map
         public static List<string> GetPlayerMapList(Player player)
         {
             MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>
+            Dictionary<string, object> param = new()
                 {
                     { "@playerid", player.DbId }
                 };
             mySQLConnector.OpenReader("SELECT map_id, map_name FROM maps WHERE map_creator = @playerid", param);
-            List<string> result = new List<string>();
+            List<string> result = new();
             Dictionary<string, string> row = mySQLConnector.GetNextRow();
             while (row.Count > 0)
             {
@@ -186,17 +192,17 @@ namespace SampSharpGameMode1.Map
         }
         public static Dictionary<string, string> GetInfo(int id)
         {
-            // id, name, creator, zone, number of objects, creation date, last update date
-            Dictionary<string, string> results = new Dictionary<string, string>();
+            // id, name, creator, zone, number of objects, creation date, last update date, map time
+            Dictionary<string, string> results = new();
             Dictionary<string, string> row;
 
             MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>
-                {
+            Dictionary<string, object> param = new()
+            {
                     { "@id", id }
                 };
 
-            mySQLConnector.OpenReader("SELECT map_id, map_name, map_creator, map_creationdate, map_lasteditdate FROM maps WHERE map_id = @id", param);
+            mySQLConnector.OpenReader("SELECT map_id, map_name, map_creator, map_creationdate, map_lasteditdate, map_time FROM maps WHERE map_id = @id", param);
 
             row = mySQLConnector.GetNextRow();
             foreach (KeyValuePair<string, string> kvp in row)

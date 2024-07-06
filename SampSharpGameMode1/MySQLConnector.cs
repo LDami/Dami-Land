@@ -220,6 +220,7 @@ namespace SampSharpGameMode1
                 {"map_creator", "Map Creator"},
                 {"map_creationdate", "Map Creation date"},
                 {"map_lasteditdate", "Map Last edit date"},
+                {"map_time", "Map Time"},
             };
             
             public static string GetFieldName(string name)

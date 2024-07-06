@@ -8,13 +8,15 @@ using SampSharpGameMode1.CustomDatas;
 using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Linq;
 
 namespace SampSharpGameMode1.Map
 {
     public class MapCreator
     {
         const int MAX_OBJECTS_PER_MAP = 1000;
+        const int MAX_GROUPS_PER_MAP = 5;
+        const int MAX_ITEMS_PER_GROUP = 6;
         enum Axis
         {
             X, Y, Z
@@ -112,11 +114,14 @@ namespace SampSharpGameMode1.Map
             if (editingMap.Spawn != Vector3.Zero)
                 player.Position = editingMap.Spawn;
 
+            player.SetTime(editingMap.Time.Hour, editingMap.Time.Minute);
+
             hud = new HUD(player, "mapcreator.json");
             hud.SetText("mapname", editingMap.Name);
             hud.SetText("totalobj", "Total: " + editingMap.Objects.Count.ToString() + " objects");
 
-            hud.Hide(@"^group.*$");
+            hud.Hide("^group.*$");
+            UpdateGroupsHUD();
 
             Magnet = true;
             deletedObjects = new List<int>();
@@ -157,8 +162,11 @@ namespace SampSharpGameMode1.Map
         {
             Dictionary<string, object> param = new Dictionary<string, object>();
 
-            string queryUpdate = "UPDATE mapobjects SET obj_model=@model, obj_pos_x=@posx, obj_pos_y=@posy, obj_pos_z=@posz, obj_rot_x=@rotx, obj_rot_y=@roty, obj_rot_z=@rotz, group_id=@grp_id WHERE obj_id=@id;";
-            string queryInsert = "INSERT INTO mapobjects (map_id, obj_model, obj_pos_x, obj_pos_y, obj_pos_z, obj_rot_x, obj_rot_y, obj_rot_z, group_id) VALUES (@mapid, @model, @posx, @posy, @posz, @rotx, @roty, @rotz, @grp_id);";
+            string queryUpdateObj = "UPDATE mapobjects SET obj_model=@model, obj_pos_x=@posx, obj_pos_y=@posy, obj_pos_z=@posz, obj_rot_x=@rotx, obj_rot_y=@roty, obj_rot_z=@rotz, group_id=@grp_id WHERE obj_id=@id;";
+            string queryInsertObj = "INSERT INTO mapobjects (map_id, obj_model, obj_pos_x, obj_pos_y, obj_pos_z, obj_rot_x, obj_rot_y, obj_rot_z, group_id) VALUES (@mapid, @model, @posx, @posy, @posz, @rotx, @roty, @rotz, @grp_id);";
+            string queryUpdateGrp = "UPDATE mapobjects_groups SET group_color=@color, group_name=@name WHERE group_id=@id;";
+            string queryInsertGrp = "INSERT INTO mapobjects_groups (group_id, group_color, group_name) VALUES (@id, @color, @name);";
+            List<int> groupsSaved = new();
             foreach (MapObject obj in editingMap.Objects)
             {
                 if (!obj.IsDisposed)
@@ -171,19 +179,31 @@ namespace SampSharpGameMode1.Map
                     param.Add("rotx", obj.Rotation.X);
                     param.Add("roty", obj.Rotation.Y);
                     param.Add("rotz", obj.Rotation.Z);
-                    param.Add("grp_id", obj.Group.Id);
+                    param.Add("grp_id", obj.Group?.DbId);
                     if (obj.DbId == -1) // Does not exists in database
                     {
                         param.Add("@mapid", editingMap.Id);
-                        obj.DbId = (int)mySQLConnector.Execute(queryInsert, param);
+                        obj.DbId = (int)mySQLConnector.Execute(queryInsertObj, param);
                     }
                     else
                     {
                         if (obj.Modified)
                         {
                             param.Add("@id", obj.DbId);
-                            mySQLConnector.Execute(queryUpdate, param);
+                            mySQLConnector.Execute(queryUpdateObj, param);
                         }
+                    }
+                    if(obj.Group is not null && !groupsSaved.Contains(obj.Group.DbId))
+                    {
+                        param.Clear();
+                        param.Add("id", obj.Group.DbId);
+                        param.Add("color", obj.Group.ForeColor.ToString());
+                        param.Add("name", obj.Group.Name);
+                        if (obj.Group.DbId == -1)
+                            obj.Group.DbId = (int)mySQLConnector.Execute(queryInsertGrp, param);
+                        else
+                            mySQLConnector.Execute(queryUpdateGrp, param);
+                        groupsSaved.Add(obj.Group.DbId);
                     }
                 }
             }
@@ -203,7 +223,8 @@ namespace SampSharpGameMode1.Map
             param.Add("@spawnx", editingMap.Spawn.X);
             param.Add("@spawny", editingMap.Spawn.Y);
             param.Add("@spawnz", editingMap.Spawn.Z);
-            mySQLConnector.Execute("UPDATE maps SET map_name=@name, map_lasteditdate=@lastedit, @spawn_pos_x=@spawnx, @spawn_pos_y=@spawny, @spawn_pos_z=@spawnz WHERE map_id=@id", param);
+            param.Add("@time", editingMap.Time.ToShortTimeString());
+            mySQLConnector.Execute("UPDATE maps SET map_name=@name, map_lasteditdate=@lastedit, spawn_pos_x=@spawnx, spawn_pos_y=@spawny, spawn_pos_z=@spawnz, map_time=@time WHERE map_id=@id", param);
             isNew = false;
             return mySQLConnector.RowsAffected > 0;
         }
@@ -250,6 +271,7 @@ namespace SampSharpGameMode1.Map
                 player.CancelEdit();
                 player.Disconnected -= Player_Disconnected;
                 player.KeyStateChanged -= Player_KeyStateChanged;
+                player.SetTime(12, 0);
             }
         }
 
@@ -374,13 +396,11 @@ namespace SampSharpGameMode1.Map
             return mapObject.Id;
         }
 
-        public void AddObject(int modelid, int groupid)
+        public void AddObject(int modelid, int groupIndex)
         {
             int objId = AddObject(modelid);
-            MapGroup group = MapGroup.GetOrCreate(groupid);
-            editingMap.Objects.Find(obj => obj.Id == objId).Group = group;
-            textLabels[objId].Text = $"Object {objId}\nGroup {group.Name}";
-            textLabels[objId].Color = group.ForeColor.GetValueOrDefault(Color.White);
+
+            SetObjectGroupId(objId, groupIndex);
         }
 
         /// <summary>
@@ -440,6 +460,54 @@ namespace SampSharpGameMode1.Map
         }
 
         /// <summary>
+        /// Change the object's group
+        /// </summary>
+        /// <param name="objectid">Object ID to change</param>
+        /// <param name="groupIndex">Group ID to affect</param>
+        public void SetObjectGroupId(int objectid, int groupIndex)
+        {
+            if (editingMap.Objects.Find(obj => obj.Id == objectid) is MapObject obj)
+            {
+                if(editingMap.Groups.FirstOrDefault(x => x.Index == groupIndex, new MapGroup(-1, editingMap.Groups.Count + 1, Color.White, "Untitled group")) is MapGroup group)
+                {
+                    obj.Group = group;
+                    if (!editingMap.Groups.Contains(group))
+                        editingMap.Groups.Add(group);
+                    textLabels[obj.Id].Text = $"Object #{obj.Id}\nGroup {obj.Group?.Name}";
+                    textLabels[obj.Id].Color = group.ForeColor.GetValueOrDefault(Color.White);
+                    player.SendClientMessage($"Object {obj.Id} has been put in group #{groupIndex} ({obj.Group.Name})");
+                }
+                UpdateGroupsHUD();
+            }
+            else
+                player.SendClientMessage("Unknown object id");
+        }
+
+        private void UpdateGroupsHUD()
+        {
+            foreach(MapGroup mapGroup in editingMap.Groups)
+            {
+                string hudPrefix = "group" + mapGroup.Index;
+                hud.Show(hudPrefix + "_bg");
+                hud.SetText(hudPrefix + "_name", mapGroup.Name);
+                hud.Show(hudPrefix + "_name");
+                hud.Hide("^" + hudPrefix + "_item.*$");
+                int idxObj = 0;
+                foreach(MapObject mapObject in editingMap.Objects.Where(o => o.Group?.DbId == mapGroup.DbId))
+                {
+                    if(mapObject != null)
+                    {
+                        if (++idxObj < MAX_ITEMS_PER_GROUP)
+                        {
+                            hud.SetPreviewModel(hudPrefix + "_item" + idxObj, mapObject.ModelId);
+                            hud.Show(hudPrefix + "_item" + idxObj);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Open the in-game position editor for an object
         /// </summary>
         /// <param name="objectid">Object ID to edit</param>
@@ -479,6 +547,13 @@ namespace SampSharpGameMode1.Map
             {
                 player.SendClientMessage("Distance: " + (markers[0].Position - markers[1].Position).ToString());
             }
+        }
+
+        public void SetTime(TimeOnly _time)
+        {
+            player.mapCreator.editingMap.Time = _time;
+            player.SetTime(_time.Hour, _time.Minute);
+            player.Notificate($"Time set to {_time}");
         }
 
         public static void ShowMapList(Player p, string[] keywords)

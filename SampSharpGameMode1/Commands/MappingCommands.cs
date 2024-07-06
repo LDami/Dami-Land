@@ -80,7 +80,7 @@ namespace SampSharpGameMode1.Commands
         {
             player.SendClientMessage($"Usage: {ColorPalette.Secondary.Main}/mapping [action]");
             player.SendClientMessage($"Global Actions: {ColorPalette.Secondary.Main}help, create, loadc, exit");
-            player.SendClientMessage($"On map editing Actions: {ColorPalette.Secondary.Main}help, save, exit, info, object (add, delete, replace, ...), marker, dist, edit");
+            player.SendClientMessage($"On map editing Actions: {ColorPalette.Secondary.Main}help, save, exit, info, object (add, delete, replace, ...), marker, dist, edit, magnet, settime");
         }
         [CommandGroup("mapping", "map")]
         class MappingCommandClass
@@ -88,17 +88,19 @@ namespace SampSharpGameMode1.Commands
             [Command("help")]
             private static void HelpCommand(Player player)
             {
-                CommandList commandList = new CommandList("Event command list");
+                CommandList commandList = new("Event command list");
                 commandList.Add("/mapping create", "Create a new map");
                 commandList.Add("/mapping loadc [id]", "Load a map");
                 commandList.Add("/mapping save", "Save the map");
                 commandList.Add("/mapping exit", "Close the editor (save your map first !)");
                 commandList.Add("/mapping info [id]", "Display the info of a map");
+                commandList.Add("/mapping group [action]", "Add, duplicate or delete a group");
                 commandList.Add("/mapping object [action]", "Add, replace, delete or list objects");
                 commandList.Add("/mapping marker [1-2]", "Edit the marker position to get distance");
                 commandList.Add("/mapping dist", "Displays the distance between the markers");
                 commandList.Add("/mapping edit [objectid]", "Edit position/rotation of object");
                 commandList.Add("/mapping magnet", "Toggle magnet on objects during");
+                commandList.Add("/mapping settime", "Set the time of this map (ex: \"12 00\", \"12:00\")");
                 commandList.Show(player);
             }
             [Command("create")]
@@ -225,6 +227,64 @@ namespace SampSharpGameMode1.Commands
                     player.SendClientMessage("There is no loaded map");
             }
 
+            [Command("group", "grp")]
+            private static void GroupCommand(Player player)
+            {
+                if (player.mapCreator is not null)
+                {
+                    player.SendClientMessage("Usage: /mapping group [action]");
+                    player.SendClientMessage("Actions: a(dd), del(ete), dupl(icate)");
+                }
+                else
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+            }
+            [CommandGroup("group", "grp")]
+            class MappingGroupCommandClass
+            {
+                [Command("a", "add")]
+                private static void AddGroupCommand(Player player, string name)
+                {
+                    if (player.mapCreator is not null)
+                    {
+                        // TODO: Create a group
+                    }
+                    else
+                        player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+                }
+                [Command("d", "del")]
+                private static void DelGroupCommand(Player player, int groupIndex)
+                {
+                    if (player.mapCreator is not null)
+                    {
+                        MessageDialog dialog = new("Delete all objects ?", "Do you want to delete all the objects from this group ? Press No to delete the group but not the objects", "Yes", "No");
+                        dialog.Show(player);
+                        dialog.Response += (sender, e) =>
+                        {
+                            if (e.DialogButton == DialogButton.Left)
+                            {
+                                // TODO: Delete all objects from group
+                            }
+                            else
+                            {
+                                // TODO: Delete group but not the objects
+                            }
+                        };
+                    }
+                    else
+                        player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+                }
+                [Command("dupl", "duplicate")]
+                private static void DuplicateGroupCommand(Player player, int groupIndex)
+                {
+                    if (player.mapCreator is not null)
+                    {
+                        // TODO: Duplicate group and its objects
+                    }
+                    else
+                        player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+                }
+            }
+
             [Command("object", "obj")]
             private static void ObjectCommand(Player player)
             {
@@ -239,7 +299,7 @@ namespace SampSharpGameMode1.Commands
             [CommandGroup("object", "obj")]
             class MappingObjectCommandClass
             {
-                [Command("a", "add")]
+                [Command("a", "add", UsageMessage = "Usage: /mapping obj(ect) a(dd) [modelid] ([group])")]
                 private static void AddObjectCommand(Player player, int modelid)
                 {
                     if (player.mapCreator is not null)
@@ -247,7 +307,7 @@ namespace SampSharpGameMode1.Commands
                     else
                         player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
                 }
-                [Command("a", "add")]
+                [Command("a", "add", UsageMessage = "Usage: /mapping obj(ect) a(dd) [modelid] ([group])")]
                 private static void AddObjectCommand(Player player, int modelid, int groupid)
                 {
                     if (player.mapCreator is not null)
@@ -276,6 +336,14 @@ namespace SampSharpGameMode1.Commands
                 {
                     if (player.mapCreator is not null)
                         player.mapCreator.DuplicateObject(objectid);
+                    else
+                        player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+                }
+                [Command("setgroup")]
+                private static void SetGroupCommand(Player player, int objectid, int groupid)
+                {
+                    if (player.mapCreator is not null)
+                        player.mapCreator.SetObjectGroupId(objectid, groupid);
                     else
                         player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
                 }
@@ -317,6 +385,21 @@ namespace SampSharpGameMode1.Commands
             {
                 if (player.mapCreator is not null)
                     player.mapCreator.Magnet = !player.mapCreator.Magnet;
+                else
+                    player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
+            }
+            [Command("settime", UsageMessage = "Usage: /mapping settime [hour:minute] (ex: 12:00)")]
+            private static void SetTimeCommand(Player player, string time)
+            {
+                if (player.mapCreator is not null)
+                {
+                    if (TimeOnly.TryParse(time, out TimeOnly _time))
+                    {
+                        player.mapCreator.SetTime(_time);
+                    }
+                    else
+                        player.SendClientMessage(Color.Red, $"Unable to parse time from \"{time}\"");
+                }
                 else
                     player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
             }
