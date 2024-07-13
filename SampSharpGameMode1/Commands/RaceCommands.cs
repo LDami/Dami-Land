@@ -146,7 +146,7 @@ namespace SampSharpGameMode1.Commands
                         if (!(player.eventCreator as RaceCreator).isNew) // Si on édite une course déjà existante
                         {
                             if (player.eventCreator.Save())
-                                player.SendClientMessage(Color.Green, "Race saved");
+                                player.SendClientMessage(Color.Green, $"Race {Color.Wheat}{(player.eventCreator as RaceCreator).editingRace.Name}{Color.Green} saved");
                             else
                                 player.SendClientMessage(Color.Red, "Error saving race");
                         }

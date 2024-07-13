@@ -129,7 +129,7 @@ namespace SampSharpGameMode1.Commands
                         if (!(player.eventCreator as DerbyCreator).isNew) // Si on édite une course déjà existante
                         {
                             if (player.eventCreator.Save())
-                                player.SendClientMessage(Color.Green, "Derby saved");
+                                player.SendClientMessage(Color.Green, $"Derby {Color.Wheat}{(player.eventCreator as DerbyCreator).editingDerby.Name}{Color.Green} saved");
                             else
                                 player.SendClientMessage(Color.Red, "Error saving derby");
                         }
