@@ -17,6 +17,7 @@ namespace SampSharpGameMode1.Display
         public bool AutoUpdate = true;
 
         private Color editingColor = new Color(180, 50, 50);
+        private const bool DEBUG_TEXTDRAW_LAYER = true;
 
         Dictionary<string, Textdraw> textdrawList = new Dictionary<string, Textdraw>();
         Dictionary<string, TextdrawType> textdrawType = new Dictionary<string, TextdrawType>();
@@ -31,6 +32,7 @@ namespace SampSharpGameMode1.Display
         public event EventHandler<TextdrawEventArgs> TextdrawClicked;
         protected virtual void OnTextdrawClicked(TextdrawEventArgs e)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.OnTextdrawClicked:D: Called for {e.TextdrawName}");
             TextdrawClicked?.Invoke(this, e);
         }
 
@@ -55,6 +57,7 @@ namespace SampSharpGameMode1.Display
 
         public Textdraw CreateBackground(BasePlayer owner, string name, Vector2 position, Vector2 size, Color color)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.CreateBackground:D: Creating background '{name}' at pos {position} with size {size}and color {color}");
             //Console.WriteLine($"Creating background '{name}' at pos {position} with size {size} and color {color}");
             textdrawList.Add(name, new Textdraw(owner, name));
 
@@ -77,6 +80,7 @@ namespace SampSharpGameMode1.Display
         }
         public void CreateTextdraw(BasePlayer owner, string name, TextdrawType type, string text = "")
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.CreateTextdraw:D: Creating textdraw '{name}' of type {type}");
             if (textdrawList.ContainsKey(name))
             {
                 Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.CreateTextdraw:E: The textdraw {name} already exists");
@@ -87,6 +91,7 @@ namespace SampSharpGameMode1.Display
 
             if (type == TextdrawType.Box)
             {
+                if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.CreateTextdraw:D: Type = Box");
                 textdrawList[name].UseBox = true;
                 textdrawList[name].text = "_";
                 textdrawList[name].type = "box";
@@ -95,6 +100,7 @@ namespace SampSharpGameMode1.Display
             }
             else if (type == TextdrawType.Text)
             {
+                if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.CreateTextdraw:D: Type = Text");
                 textdrawList[name].text = text;
                 textdrawList[name].type = "text";
                 textdrawList[name].Width = 500;
@@ -102,6 +108,7 @@ namespace SampSharpGameMode1.Display
             }
             else if (type == TextdrawType.PreviewModel)
             {
+                if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.CreateTextdraw:D: Type = PreviewModel");
                 textdrawList[name].font = (int)SampSharp.GameMode.Definitions.TextDrawFont.PreviewModel;
                 textdrawList[name].PreviewModel = 1;
                 textdrawList[name].type = "previewmodel";
@@ -127,10 +134,11 @@ namespace SampSharpGameMode1.Display
         /// <exception cref="TextdrawNameNotFoundException"></exception>
         public void PutInFront(BasePlayer owner, string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.PutInFront:D: Called for {name}");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
 
-            Textdraw tmp = new Textdraw(owner, "tmp")
+            Textdraw tmp = new(owner, "tmp")
             {
                 Position = textdrawList[name].Position,
                 LetterSize = textdrawList[name].LetterSize,
@@ -162,8 +170,10 @@ namespace SampSharpGameMode1.Display
 
         public void Duplicate(BasePlayer owner, string name, string targetName)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.Duplicate:D: Duplicating '{name}' to '{targetName}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
+
             textdrawList.Add(targetName, new Textdraw(owner, targetName));
             textdrawList[targetName].Position = textdrawList[name].Position;
             textdrawList[targetName].LetterSize = textdrawList[name].LetterSize;
@@ -184,6 +194,7 @@ namespace SampSharpGameMode1.Display
 
         public void Delete(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.Delete:D: Deleting '{name}'");
             if (textdrawList.ContainsKey(name))
             {
                 textdrawList[name].Dispose();
@@ -193,6 +204,7 @@ namespace SampSharpGameMode1.Display
 
 		public void Show(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.Show:D: Showing '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].Show();
@@ -204,6 +216,7 @@ namespace SampSharpGameMode1.Display
         }
         public void Hide(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.Hide:D: Hiding '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].Hide();
@@ -222,12 +235,14 @@ namespace SampSharpGameMode1.Display
         }
         public Vector2 GetTextdrawSize(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.GetTextdrawSize:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return new Vector2(textdrawList[name].Width, textdrawList[name].Height);
         }
         public Boolean SetTextdrawSize(string name, float width, float height)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SetTextdrawSize:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].Width = width;
@@ -237,12 +252,14 @@ namespace SampSharpGameMode1.Display
         }
         public Vector2 GetTextdrawLetterSize(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.GetTextdrawLetterSize:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return textdrawList[name].LetterSize;
         }
         public Boolean SetTextdrawLetterSize(string name, float width, float height)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SetTextdrawLetterSize:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].LetterSize = new Vector2(width, height);
@@ -251,6 +268,7 @@ namespace SampSharpGameMode1.Display
 
         public void Move(string name, Vector2 offset)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.Move:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].Position = new Vector2(textdrawList[name].Position.X + offset.X, textdrawList[name].Position.Y + offset.Y);
@@ -258,6 +276,7 @@ namespace SampSharpGameMode1.Display
 
         public void Resize(string name, Vector2 offset)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.Resize:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].Width += offset.X;
@@ -266,12 +285,14 @@ namespace SampSharpGameMode1.Display
         }
         public Vector2 GetTextdrawPosition(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.GetTextdrawPosition:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return textdrawList[name].Position;
         }
         public Boolean SetTextdrawPosition(string name, Vector2 position)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SetTextdrawPosition:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             float newPosX, newPosY;
@@ -283,6 +304,7 @@ namespace SampSharpGameMode1.Display
 
         public void SetTextdrawType(string name, TextdrawType type)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SetTextdrawType:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             if (type == TextdrawType.Background)
@@ -298,6 +320,7 @@ namespace SampSharpGameMode1.Display
         }
         public TextdrawType GetTextdrawType(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.GetTextdrawType:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return textdrawType[name];
@@ -305,6 +328,7 @@ namespace SampSharpGameMode1.Display
 
         public void SetTextdrawText(string name, string text)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SetTextdrawText:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             if (text is null)
@@ -315,6 +339,7 @@ namespace SampSharpGameMode1.Display
         }
         public string GetTextdrawText(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.GetTextdrawText:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return textdrawList[name].text;
@@ -322,6 +347,7 @@ namespace SampSharpGameMode1.Display
 
         public void SetTextdrawFont(string name, int font)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SetTextdrawFont:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             if (Enum.IsDefined(typeof(SampSharp.GameMode.Definitions.TextDrawFont), font))
@@ -332,6 +358,7 @@ namespace SampSharpGameMode1.Display
         }
         public int GetTextdrawFont(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.GetTextdrawFont:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return (int)textdrawList[name].font;
@@ -339,6 +366,7 @@ namespace SampSharpGameMode1.Display
 
         public void SetTextdrawPreviewModel(string name, int model)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SetTextdrawPreviewModel:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].PreviewModel = model;
@@ -346,6 +374,7 @@ namespace SampSharpGameMode1.Display
         }
         public int GetTextdrawPreviewModel(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.GetTextdrawPreviewModel:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return textdrawList[name].PreviewModel;
@@ -353,6 +382,7 @@ namespace SampSharpGameMode1.Display
 
         public void SetTextdrawAlignment(string name, int alignment)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SetTextdrawAlignment:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             if (Enum.IsDefined(typeof(SampSharp.GameMode.Definitions.TextDrawAlignment), alignment))
@@ -363,6 +393,7 @@ namespace SampSharpGameMode1.Display
         }
         public string GetTextdrawAlignment(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.GetTextdrawAlignment:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return textdrawList[name].Alignment.ToString();
@@ -370,6 +401,7 @@ namespace SampSharpGameMode1.Display
 
         public void SetTextdrawColor(string name, Color color)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SetTextdrawColor:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].ForeColor = color;
@@ -377,6 +409,7 @@ namespace SampSharpGameMode1.Display
         }
         public Color GetTextdrawColor(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.GetTextdrawColor:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return textdrawList[name].ForeColor;
@@ -384,6 +417,7 @@ namespace SampSharpGameMode1.Display
 
         public void SetTextdrawBackColor(string name, Color color)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SetTextdrawBackColor:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].BackColor = color;
@@ -392,6 +426,7 @@ namespace SampSharpGameMode1.Display
         }
         public Color GetTextdrawBackColor(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.GetTextdrawBackColor:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return textdrawList[name].BackColor;
@@ -399,6 +434,7 @@ namespace SampSharpGameMode1.Display
 
         public void SetTextdrawBoxColor(string name, Color color)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SetTextdrawBoxColor:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].BoxColor = color;
@@ -407,6 +443,7 @@ namespace SampSharpGameMode1.Display
         }
         public Color GetTextdrawBoxColor(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.GetTextdrawBoxColor:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             return textdrawList[name].BoxColor;
@@ -414,6 +451,7 @@ namespace SampSharpGameMode1.Display
 
         public void UpdateTextdraw(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.UpdateTextdraw:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].Hide();
@@ -447,6 +485,7 @@ namespace SampSharpGameMode1.Display
 
         public void SwitchTextdrawMode(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SwitchTextdrawMode:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             switch (textdrawEditMode[name])
@@ -468,6 +507,7 @@ namespace SampSharpGameMode1.Display
 
         public void ChangeTextdrawMode(string name, EditingMode mode)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.ChangeTextdrawMode:D: Called for '{name}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             switch (mode)
