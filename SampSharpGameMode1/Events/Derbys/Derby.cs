@@ -556,7 +556,7 @@ namespace SampSharpGameMode1.Events.Derbys
                     { "@id", id }
                 };
 
-            mySQLConnector.OpenReader("SELECT derby_id, derby_name, derby_creator, map_name FROM derbys LEFT JOIN maps ON (derby_name = map_id) WHERE derby_id = @id", param);
+            mySQLConnector.OpenReader("SELECT derby_id, derby_name, derby_creator, map_name FROM derbys LEFT JOIN maps ON (derby_map = map_id) WHERE derby_id = @id", param);
 
             row = mySQLConnector.GetNextRow();
             if (row.Count > 0) exists = true;
