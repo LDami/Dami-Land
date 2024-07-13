@@ -10,7 +10,7 @@ namespace SampSharpGameMode1.Commands
         [Command("leavework")]
         private static void LeaveWorkCommand(Player player)
         {
-            player.pWork.StopWork(player);
+            player.pWork?.StopWork(player);
         }
     }
 }

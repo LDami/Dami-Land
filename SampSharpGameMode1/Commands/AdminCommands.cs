@@ -4,14 +4,13 @@ using SampSharp.GameMode.Display;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
 using SampSharp.GameMode.World;
-using SampSharp.Streamer.Controllers;
 using SampSharp.Streamer.World;
-using SampSharpGameMode1.Civilisation;
 using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static SampSharpGameMode1.Civilisation.PathExtractor;
+
+#pragma warning disable IDE0051 // Disable useless private members
 
 namespace SampSharpGameMode1.Commands
 {
@@ -20,10 +19,10 @@ namespace SampSharpGameMode1.Commands
         [Command("promote", PermissionChecker = typeof(AdminPermissionChecker))]
         private static void PromoteCommand(Player player, Player target)
         {
-            AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+            AdminPermissionChecker isAdmin = new();
             if (!isAdmin.Check(target))
             {
-                MessageDialog confirm = new MessageDialog("Do you confirm ?", $"You will promote {target.Name} as administrator, do you confirm ?", "Yes", "Cancel");
+                MessageDialog confirm = new("Do you confirm ?", $"You will promote {target.Name} as administrator, do you confirm ?", "Yes", "Cancel");
                 confirm.Response += (sender, e) =>
                 {
                     if(e.DialogButton == DialogButton.Left)
@@ -43,10 +42,10 @@ namespace SampSharpGameMode1.Commands
         [Command("demote", PermissionChecker = typeof(AdminPermissionChecker))]
         private static void DemoteCommand(Player player, Player target)
         {
-            AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+            AdminPermissionChecker isAdmin = new();
             if (isAdmin.Check(target))
             {
-                MessageDialog confirm = new MessageDialog("Do you confirm ?", $"You will demote {target.Name} as administrator, do you confirm ?", "Yes", "Cancel");
+                MessageDialog confirm = new("Do you confirm ?", $"You will demote {target.Name} as administrator, do you confirm ?", "Yes", "Cancel");
                 confirm.Response += (sender, e) =>
                 {
                     if (e.DialogButton == DialogButton.Left)
@@ -100,6 +99,13 @@ namespace SampSharpGameMode1.Commands
             Works.TramWork.Init();
             player.SendClientMessage("Done.");
         }
+        [Command("reload-objectlist", PermissionChecker = typeof(AdminPermissionChecker))]
+        private static void ReloadObjects(Player player)
+        {
+            player.SendClientMessage("Reloading object list ...");
+            GameMode.ExtractMapObjectList();
+            player.SendClientMessage("Done.");
+        }
         [Command("getmodel")]
         private static void GetModel(Player player, string model)
         {
@@ -118,6 +124,23 @@ namespace SampSharpGameMode1.Commands
             Logger.WriteLineAndClose(player.InteriorPreview.GetInterior().ToString());
         }
 
+        [Command("recordnpc")]
+        private static void RecordNPC(Player player, string name)
+        {
+            player.SendClientMessage(Color.Red, "The function to create NPC is not implemented in Open.MP yet");
+
+            MessageDialog confirm = new("Create NPC", "You are about to start the recording of NPC file, do you want to continue recording ?", "Yes", "No/Cancel");
+            confirm.Response += (sender, args) =>
+            {
+                if (args.DialogButton == DialogButton.Left)
+                {
+                    player.StartRecordingPlayerData(player.InAnyVehicle ? PlayerRecordingType.Driver : PlayerRecordingType.OnFoot, name);
+                    player.SendClientMessage($"NPC Recording ... Write {ColorPalette.Secondary.Main}/stoprecord{Color.White} to stop the record");
+                }
+            };
+            confirm.Show(player);
+        }
+
 #if DEBUG
         [Command("admin")]
         private static void AdminTmp(Player player)
@@ -129,7 +152,7 @@ namespace SampSharpGameMode1.Commands
         [Command("acmds")]
         private static void AdminCommandsListCommand(Player player)
         {
-            CommandList commandList = new CommandList("Admin command list");
+            CommandList commandList = new("Admin command list");
             commandList.Add("/vmenu [vehicleid]", "Open Vehicle menu");
             commandList.Add("/kick [player] [reason]", "Kick a player");
             commandList.Add("/ban [player] [reason]", "Ban a player");
@@ -146,7 +169,9 @@ namespace SampSharpGameMode1.Commands
         }
 
         [Command("clearveh", PermissionChecker = typeof(AdminPermissionChecker))]
+#pragma warning disable IDE0060 // Unused parameter
         private static void ClearVehCommand(Player player)
+#pragma warning restore IDE0060 // Unused parameter
         {
             foreach (BaseVehicle veh in BaseVehicle.All)
             {
@@ -167,7 +192,7 @@ namespace SampSharpGameMode1.Commands
             BaseVehicle vehicle = BaseVehicle.Find(vehicleid);
 
             vMenuDialogVehicle = vehicle;
-            if(!(vehicle is null))
+            if(vehicle is not null)
             {
                 var menu = new ListDialog($"ID: {vehicle.Id} Model: {vehicle.ModelInfo.Name}", "Ok", "Close");
                 menu.AddItem("Eject driver");
@@ -176,6 +201,7 @@ namespace SampSharpGameMode1.Commands
                 menu.AddItem(StoredVehicle.GetVehicleDbId(vehicle.Id) == -1 ? "Park" : "Unpark"); // Save vehicle spawn in database
                 menu.AddItem(vehicle.Doors ? $"Doors: {Color.Red}locked" : $"Doors: {Color.Green}unlocked");
                 menu.AddItem(vehicle.HasTrailer ? "Detach trailer" : "Attach trailer");
+                menu.AddItem("Set been occupied");
 				menu.Response += VehicleMenu_Response;
                 menu.Show(player);
             }
@@ -206,7 +232,7 @@ namespace SampSharpGameMode1.Commands
                     case 3: // Park/Unpark
                         int vDbId = StoredVehicle.GetVehicleDbId(vMenuDialogVehicle.Id);
                         MySQLConnector mySQLConnector = MySQLConnector.Instance();
-                        Dictionary<string, object> param = new Dictionary<string, object>();
+                        Dictionary<string, object> param = new();
                         if (vDbId == -1) // Park
                         {
                             param.Add("@model_id", vMenuDialogVehicle.Model);
@@ -247,7 +273,7 @@ namespace SampSharpGameMode1.Commands
 						}
                         else
 						{
-                            InputDialog trailerIdMenu = new InputDialog("Attach trailer", "Enter trailer ID", false, "Attach", "Cancel");
+                            InputDialog trailerIdMenu = new("Attach trailer", "Enter trailer ID", false, "Attach", "Cancel");
                             trailerIdMenu.Response += (object sender, SampSharp.GameMode.Events.DialogResponseEventArgs e) =>
                             {
                                 if(e.DialogButton == DialogButton.Left)
@@ -272,7 +298,7 @@ namespace SampSharpGameMode1.Commands
                                                 player.SendClientMessage("You cannot attach an occupied vehicle !");
                                         }
                                     }
-                                    catch (Exception ex)
+                                    catch (Exception)
                                     {
                                         trailerIdMenu.Show(player);
                                     }
@@ -321,7 +347,7 @@ namespace SampSharpGameMode1.Commands
         [Command("vw", "virtualworld", DisplayName = "vw")]
         private static void VWCommand(Player player, int virtualworld)
         {
-            AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+            AdminPermissionChecker isAdmin = new();
             if (player.IsInEvent && !isAdmin.Check(player))
             {
                 player.SendClientMessage(Color.Red + "You cannot use this command during events");
@@ -346,7 +372,7 @@ namespace SampSharpGameMode1.Commands
         [Command("vw", "virtualworld", DisplayName = "vw")]
         private static void VWCommand(Player player, VirtualWord virtualworld)
         {
-            AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+            AdminPermissionChecker isAdmin = new();
             if (player.IsInEvent && !isAdmin.Check(player))
             {
                 player.SendClientMessage(Color.Red + "You cannot use this command during events");
@@ -405,7 +431,7 @@ namespace SampSharpGameMode1.Commands
             {
                 if (targetPlayer.VirtualWorld != player.VirtualWorld)
                 {
-                    AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+                    AdminPermissionChecker isAdmin = new();
                     if (isAdmin.Check(player))
                     {
                         player.VirtualWorld = targetPlayer.VirtualWorld;
@@ -429,6 +455,17 @@ namespace SampSharpGameMode1.Commands
         {
             player.SendClientMessage($"Position of {targetPlayer.Name}: {targetPlayer.Position} ; VirtualWorld: {targetPlayer.VirtualWorld} ; Zone: {Zone.GetDetailedZoneName(targetPlayer.Position)}");
         }
+        [Command("whereis")]
+        private static void WhereIsCommand(Player player, float x, float y, float z)
+        {
+            DynamicCheckpoint checkpoint = new(new Vector3(x, y, z), 5f, 0, streamdistance: 3000);
+            checkpoint.ShowForPlayer(player);
+            checkpoint.Enter += (sender, evt) =>
+            {
+                checkpoint.Dispose();
+            };
+            player.SendClientMessage($"A checkpoint has been created on position {new Vector3(x, y, z)}");
+        }
         [Command("pickup", PermissionChecker = typeof(AdminPermissionChecker))]
         private static void PickupCommand(Player player)
         {
@@ -442,7 +479,7 @@ namespace SampSharpGameMode1.Commands
         [Command("pickup", PermissionChecker = typeof(AdminPermissionChecker))]
         private static void PickupCommand(Player player, int id)
         {
-            Events.Derbys.DerbyPickupRandomEvent pickup = new Events.Derbys.DerbyPickupRandomEvent(player, id);
+            _ = new Events.Derbys.DerbyPickupRandomEvent(player, id);
         }
         [Command("ak47", PermissionChecker = typeof(AdminPermissionChecker))]
         private static void AK47Command(Player player)

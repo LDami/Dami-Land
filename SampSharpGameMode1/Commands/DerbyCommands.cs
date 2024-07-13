@@ -6,7 +6,8 @@ using SampSharp.GameMode.SAMP.Commands;
 using SampSharpGameMode1.Events.Derbys;
 using System;
 using System.Collections.Generic;
-using System.Text;
+
+#pragma warning disable IDE0051 // Disable useless private members
 
 namespace SampSharpGameMode1.Commands
 {
@@ -22,13 +23,13 @@ namespace SampSharpGameMode1.Commands
                 player.SendClientMessage("You don't have any derbies");
             else
             {
-                ListDialog list = new ListDialog(player.Name + "'s derbies", "Options", "Close");
+                ListDialog list = new(player.Name + "'s derbies", "Options", "Close");
                 list.AddItems(races);
                 list.Response += (object sender, DialogResponseEventArgs e) =>
                 {
                     if (e.DialogButton == DialogButton.Left)
                     {
-                        ListDialog actionList = new ListDialog("Action", "Select", "Cancel");
+                        ListDialog actionList = new("Action", "Select", "Cancel");
                         actionList.AddItem("Infos ...");
                         actionList.AddItem("Edit");
                         actionList.AddItem("Delete");
@@ -38,7 +39,7 @@ namespace SampSharpGameMode1.Commands
                             {
                                 try
                                 {
-                                    int raceid = Convert.ToInt32(races[e.ListItem].Substring(0, races[e.ListItem].IndexOf('_')));
+                                    int raceid = Convert.ToInt32(races[e.ListItem][..races[e.ListItem].IndexOf('_')]);
                                     switch (ev.ListItem)
                                     {
                                         case 0: // Infos
@@ -79,7 +80,7 @@ namespace SampSharpGameMode1.Commands
             [Command("help")]
             private static void HelpCommand(Player player)
             {
-                Display.CommandList commandList = new Display.CommandList("Derby command list");
+                Display.CommandList commandList = new("Derby command list");
                 commandList.Add("/derby create", "Create a new race");
                 commandList.Add("/derby loadc [id]", "Loading an existing race");
                 commandList.Add("/derby find [name]", "Find an existing race");
@@ -96,7 +97,7 @@ namespace SampSharpGameMode1.Commands
             {
                 if (player.pEvent != null || player.mapCreator != null)
                     return;
-                if (!(player.eventCreator is DerbyCreator))
+                if (player.eventCreator is not DerbyCreator)
                 {
                     player.eventCreator = new DerbyCreator(player);
                 }
@@ -108,7 +109,7 @@ namespace SampSharpGameMode1.Commands
             {
                 if (player.pEvent != null || player.mapCreator != null)
                     return;
-                if (!(player.eventCreator is DerbyCreator))
+                if (player.eventCreator is not DerbyCreator)
                 {
                     player.eventCreator?.Unload();
                     player.eventCreator = new DerbyCreator(player);
@@ -135,7 +136,7 @@ namespace SampSharpGameMode1.Commands
                         }
                         else
                         {
-                            InputDialog derbyName = new InputDialog("Name of the derby", "Please enter the name of the derby", false, "Create", "Cancel");
+                            InputDialog derbyName = new("Name of the derby", "Please enter the name of the derby", false, "Create", "Cancel");
                             derbyName.Show(player);
                             derbyName.Response += DerbyName_Response;
                         }
@@ -161,7 +162,7 @@ namespace SampSharpGameMode1.Commands
                     }
                     else
                     {
-                        InputDialog raceName = new InputDialog("Name of the derby", "Please enter the name of the derby", false, "Create", "Cancel");
+                        InputDialog raceName = new("Name of the derby", "Please enter the name of the derby", false, "Create", "Cancel");
                         raceName.Show(e.Player);
                         raceName.Response += DerbyName_Response;
                     }
@@ -231,14 +232,14 @@ namespace SampSharpGameMode1.Commands
                 else
                 {
                     var infoList = new ListDialog("Derby info", "Ok", "");
-                    string str = "";
+                    string str;
                     foreach (KeyValuePair<string, string> kvp in result)
                     {
                         str = Display.ColorPalette.Primary.Main + kvp.Key + ": " + new Color(255, 255, 255) + kvp.Value;
                         if (str.Length >= 64)
                         {
-                            infoList.AddItem(str.Substring(0, 63));
-                            infoList.AddItem(str.Substring(63));
+                            infoList.AddItem(str[..63]);
+                            infoList.AddItem(str[63..]);
                         }
                         else
                             infoList.AddItem(str);

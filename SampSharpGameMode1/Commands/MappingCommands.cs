@@ -9,6 +9,8 @@ using SampSharpGameMode1.Map;
 using System;
 using System.Collections.Generic;
 
+#pragma warning disable IDE0051 // Disable useless private members
+
 namespace SampSharpGameMode1.Commands
 {
     class MappingCommands
@@ -39,7 +41,7 @@ namespace SampSharpGameMode1.Commands
                             {
                                 try
                                 {
-                                    int mapid = Convert.ToInt32(maps[e.ListItem].Substring(0, maps[e.ListItem].IndexOf('_')));
+                                    int mapid = Convert.ToInt32(maps[e.ListItem][..maps[e.ListItem].IndexOf('_')]);
                                     switch (ev.ListItem)
                                     {
                                         case 0: // Infos
@@ -246,7 +248,7 @@ namespace SampSharpGameMode1.Commands
                 {
                     if (player.mapCreator is not null)
                     {
-                        // TODO: Create a group
+                        player.mapCreator.AddGroup(name);
                     }
                     else
                         player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
@@ -413,7 +415,7 @@ namespace SampSharpGameMode1.Commands
                 else
                 {
                     ListDialog infoList = new("Map info", "Ok", "");
-                    string str = "";
+                    string str;
                     foreach (KeyValuePair<string, string> kvp in result)
                     {
                         str = ColorPalette.Primary.Main + kvp.Key + ": " + new Color(255, 255, 255) + kvp.Value;

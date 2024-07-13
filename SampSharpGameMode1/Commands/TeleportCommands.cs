@@ -7,14 +7,15 @@ using SampSharp.GameMode.World;
 using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
-using System.Text;
+
+#pragma warning disable IDE0051 // Disable useless private members
 
 namespace SampSharpGameMode1.Commands
 {
     class MapHUD : HUD
     {
         protected MySQLConnector mySQLConnector = MySQLConnector.Instance();
-        private Dictionary<int, Vector3R> teleportations = new Dictionary<int, Vector3R>();
+        private readonly Dictionary<int, Vector3R> teleportations = new();
         public MapHUD(Player player) : base(player, "mapteleport.json")
         {
             if (mySQLConnector != null)
@@ -22,7 +23,7 @@ namespace SampSharpGameMode1.Commands
                 float scaleX = 6000 / layer.GetTextdrawSize("mapbox").X;
                 float scaleY = 6000 / layer.GetTextdrawSize("mapbox").Y;
 
-                Dictionary<string, object> param = new Dictionary<string, object>();
+                Dictionary<string, object> param = new();
                 mySQLConnector.OpenReader("SELECT * FROM teleportations WHERE 1=1", param);
                 Dictionary<string, string> row = mySQLConnector.GetNextRow();
                 int tlpID;
@@ -77,7 +78,7 @@ namespace SampSharpGameMode1.Commands
 
         private void OnTextdrawClicked(object sender, TextdrawLayer.TextdrawEventArgs e)
         {
-            if(Int32.TryParse(e.TextdrawName.Substring(5), out int tlpID))
+            if(int.TryParse(e.TextdrawName.AsSpan(5), out int tlpID))
             {
                 (player as Player).Teleport(teleportations[tlpID].Position);
                 player.Angle = teleportations[tlpID].Rotation;
@@ -87,7 +88,7 @@ namespace SampSharpGameMode1.Commands
 
         public void ForceHide()
         {
-            //layer.Hide("mapbox");
+            layer.Hide("mapbox");
         }
     }
     class TeleportCommands
@@ -95,7 +96,7 @@ namespace SampSharpGameMode1.Commands
         [Command("tlps")]
         private static void TlpsCommand(BasePlayer player)
         {
-            MapHUD mapHUD = new MapHUD(player as Player);
+            MapHUD mapHUD = new(player as Player);
             mapHUD.Show();
             mapHUD.ForceHide();
             player.SelectTextDraw(ColorPalette.Primary.Main.GetColor());
@@ -115,19 +116,21 @@ namespace SampSharpGameMode1.Commands
             [Command("add", PermissionChecker = typeof(AdminPermissionChecker))]
             private static void AddCommand(BasePlayer player)
             {
-                InputDialog dialog = new InputDialog("Creating Teleport point", "Type the name of the teleport point", false, "Save", "Cancel");
+                InputDialog dialog = new("Creating Teleport point", "Type the name of the teleport point", false, "Save", "Cancel");
                 dialog.Response += (sender, e) =>
                 {
                     if(e.DialogButton == DialogButton.Left)
                     {
                         MySQLConnector mySQLConnector = MySQLConnector.Instance();
-                        Dictionary<string, object> param = new Dictionary<string, object>();
-                        param.Add("@name", e.InputText);
-                        param.Add("@pos_x", e.Player.Position.X);
-                        param.Add("@pos_y", e.Player.Position.Y);
-                        param.Add("@pos_z", e.Player.Position.Z);
-                        param.Add("@angle", e.Player.Angle);
-                        param.Add("@zone", Zone.GetDetailedZoneName(e.Player.Position));
+                        Dictionary<string, object> param = new()
+                        {
+                            { "@name", e.InputText },
+                            { "@pos_x", e.Player.Position.X },
+                            { "@pos_y", e.Player.Position.Y },
+                            { "@pos_z", e.Player.Position.Z },
+                            { "@angle", e.Player.Angle },
+                            { "@zone", Zone.GetDetailedZoneName(e.Player.Position) }
+                        };
                         mySQLConnector.Execute("INSERT INTO teleportations (teleport_name, teleport_pos_x, teleport_pos_y, teleport_pos_z, teleport_angle, teleport_zone) VALUES" +
                             "(@name, @pos_x, @pos_y, @pos_z, @angle, @zone)", param);
                         if (mySQLConnector.RowsAffected > 0)

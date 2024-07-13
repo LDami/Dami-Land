@@ -3,10 +3,11 @@ using SampSharp.GameMode.Display;
 using SampSharp.GameMode.Events;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
-using SampSharpGameMode1.Events;
 using SampSharpGameMode1.Events.Races;
 using System;
 using System.Collections.Generic;
+
+#pragma warning disable IDE0051 // Disable useless private members
 
 namespace SampSharpGameMode1.Commands
 {
@@ -32,13 +33,13 @@ namespace SampSharpGameMode1.Commands
                 player.SendClientMessage("You don't have any races");
             else
             {
-                ListDialog list = new ListDialog(player.Name + "'s races", "Options", "Close");
+                ListDialog list = new(player.Name + "'s races", "Options", "Close");
                 list.AddItems(races);
 				list.Response += (object sender, DialogResponseEventArgs e) =>
                 {
                     if(e.DialogButton == DialogButton.Left)
                     {
-                        ListDialog actionList = new ListDialog("Action", "Select", "Cancel");
+                        ListDialog actionList = new("Action", "Select", "Cancel");
                         actionList.AddItem("Infos ...");
                         actionList.AddItem("Edit");
                         actionList.AddItem("Delete");
@@ -79,7 +80,7 @@ namespace SampSharpGameMode1.Commands
 
 		[Command("race")]
         private static void RaceCommandUsage(Player player)
-		{
+        {
             player.SendClientMessage("Usage: /race [action]");
             player.SendClientMessage("Actions: create, loadc, save, exit, set current, teleport, addcp, find info");
 		}
@@ -112,7 +113,7 @@ namespace SampSharpGameMode1.Commands
             {
                 if (player.pEvent != null || player.mapCreator != null)
                     return;
-                if (!(player.eventCreator is RaceCreator))
+                if (player.eventCreator is not RaceCreator)
                 {
                     player.eventCreator?.Unload();
                     player.eventCreator = new RaceCreator(player);
@@ -125,7 +126,7 @@ namespace SampSharpGameMode1.Commands
             {
                 if (player.pEvent != null || player.mapCreator != null)
                     return;
-                if (!(player.eventCreator is RaceCreator))
+                if (player.eventCreator is not RaceCreator)
 				{
                     player.eventCreator?.Unload();
                     player.eventCreator = new RaceCreator(player);
@@ -152,7 +153,7 @@ namespace SampSharpGameMode1.Commands
                         }
                         else
                         {
-                            InputDialog raceName = new InputDialog("Name of the race", "Please enter the name of the race", false, "Create", "Cancel");
+                            InputDialog raceName = new("Name of the race", "Please enter the name of the race", false, "Create", "Cancel");
                             raceName.Show(player);
                             raceName.Response += RaceName_Response;
                         }
@@ -178,7 +179,7 @@ namespace SampSharpGameMode1.Commands
                     }
                     else
                     {
-                        InputDialog raceName = new InputDialog("Name of the race", "Please enter the name of the race", false, "Create", "Cancel");
+                        InputDialog raceName = new("Name of the race", "Please enter the name of the race", false, "Create", "Cancel");
                         raceName.Show(e.Player);
                         raceName.Response += RaceName_Response;
                     }
@@ -198,7 +199,7 @@ namespace SampSharpGameMode1.Commands
             [Command("set current")]
             private static void MoveCurrent(Player player)
             {
-                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
+                if (player.eventCreator is RaceCreator && player.eventCreator is not null)
                 {
                     (player.eventCreator as RaceCreator).MoveCurrent(player.Position);
                 }
@@ -206,7 +207,7 @@ namespace SampSharpGameMode1.Commands
             [Command("teleport")]
             private static void TeleportCommand(Player player)
             {
-                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
+                if (player.eventCreator is RaceCreator && player.eventCreator is not null)
                 {
                     (player.eventCreator as RaceCreator).TeleportToCurrent();
                 }
@@ -214,7 +215,7 @@ namespace SampSharpGameMode1.Commands
             [Command("prevcp")]
             private static void PrevCPCommand(Player player)
             {
-                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
+                if (player.eventCreator is RaceCreator && player.eventCreator is not null)
                 {
                     (player.eventCreator as RaceCreator).SelectPreviousCP();
                 }
@@ -222,7 +223,7 @@ namespace SampSharpGameMode1.Commands
             [Command("nextcp")]
             private static void NextCPCommand(Player player)
             {
-                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
+                if (player.eventCreator is RaceCreator && player.eventCreator is not null)
                 {
                     (player.eventCreator as RaceCreator).SelectNextCP();
                 }
@@ -230,7 +231,7 @@ namespace SampSharpGameMode1.Commands
             [Command("selectcp")]
             private static void SelectCPCommand(Player player, int index)
             {
-                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
+                if (player.eventCreator is RaceCreator && player.eventCreator is not null)
                 {
                     (player.eventCreator as RaceCreator).SelectCP(index);
                 }
@@ -238,7 +239,7 @@ namespace SampSharpGameMode1.Commands
             [Command("addcp")]
             private static void AddCP(Player player)
             {
-                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
+                if (player.eventCreator is RaceCreator && player.eventCreator is not null)
                 {
                     (player.eventCreator as RaceCreator).AddCheckpoint(player.Position);
                 }
@@ -247,7 +248,7 @@ namespace SampSharpGameMode1.Commands
             [Command("addsg")]
             private static void AddSG(Player player)
             {
-                if (player.eventCreator is RaceCreator && player.eventCreator is EventCreator)
+                if (player.eventCreator is RaceCreator && player.eventCreator is not null)
                 {
                     player.SendClientMessage("A spectator group has been added to your virtual world, please not that is for guidance only, SGs will be created for each checkpoint during the race");
                     (player.eventCreator as RaceCreator).AddSpectatorGroup();
@@ -278,14 +279,14 @@ namespace SampSharpGameMode1.Commands
                 else
                 {
                     var infoList = new ListDialog("Race info", "Ok", "");
-                    string str = "";
+                    string str;
                     foreach (KeyValuePair<string, string> kvp in result)
                     {
                         str = Display.ColorPalette.Primary.Main + kvp.Key + ": " + new Color(255, 255, 255) + kvp.Value;
                         if (str.Length >= 64)
                         {
-                            infoList.AddItem(str.Substring(0, 63));
-                            infoList.AddItem(str.Substring(63));
+                            infoList.AddItem(str[..63]);
+                            infoList.AddItem(str[63..]);
                         }
                         else
                             infoList.AddItem(str);

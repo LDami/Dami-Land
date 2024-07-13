@@ -7,7 +7,8 @@ using SampSharp.GameMode.World;
 using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
-using System.Text;
+
+#pragma warning disable IDE0051 // Disable useless private members
 
 namespace SampSharpGameMode1.Commands
 {
@@ -112,16 +113,20 @@ namespace SampSharpGameMode1.Commands
         private static void StatsCommand(Player player, string targetName)
         {
             MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>();
-            param.Add("@name", targetName);
+            Dictionary<string, object> param = new()
+            {
+                { "@name", targetName }
+            };
             mySQLConnector.OpenReader("SELECT id FROM users WHERE name=@name", param);
             Dictionary<string, string> results = mySQLConnector.GetNextRow();
             mySQLConnector.CloseReader();
 
             if(results.Count > 0)
             {
-                Player p = new Player();
-                p.DbId = Convert.ToInt32(results["id"]);
+                Player p = new()
+                {
+                    DbId = Convert.ToInt32(results["id"])
+                };
 
                 param.Clear();
                 param.Add("@id", p.DbId);
@@ -145,7 +150,7 @@ namespace SampSharpGameMode1.Commands
 
         private static void ShowPlayerStats(Player player, Player target)
         {
-            ListDialog dialog = new ListDialog($"{target.Name} stats", "Close");
+            ListDialog dialog = new($"{target.Name} stats", "Close");
             dialog.AddItem($"{ColorPalette.Primary.Main}Database ID: {new Color(255, 255, 255)}{ target.DbId}");
             dialog.AddItem($"{ColorPalette.Primary.Main}Last Login: {new Color(255, 255, 255)}{target.LastLoginDate}");
             dialog.AddItem($"{ColorPalette.Primary.Main}Played time: {new Color(255, 255, 255)}{target.PlayedTime}");
@@ -164,6 +169,12 @@ namespace SampSharpGameMode1.Commands
         private static void GetZoneCommand(Player player)
         {
             player.SendClientMessage("Your current zone is: " + Zone.GetDetailedZoneName(player.Position));
+        }
+
+        [Command("stoprecord")]
+        private static void StopRecordCommand(Player player)
+        {
+            player.StopRecordingPlayerData();
         }
     }
 }

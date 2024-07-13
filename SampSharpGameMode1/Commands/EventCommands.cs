@@ -1,8 +1,8 @@
-﻿using System;
-using SampSharp.GameMode.Display;
-using SampSharp.GameMode.SAMP;
+﻿using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
 using SampSharpGameMode1.Display;
+
+#pragma warning disable IDE0051 // Disable useless private members
 
 namespace SampSharpGameMode1.Commands
 {
@@ -20,7 +20,7 @@ namespace SampSharpGameMode1.Commands
             [Command("help")]
             private static void HelpCommand(Player player)
             {
-                Display.CommandList commandList = new Display.CommandList("Event command list");
+                Display.CommandList commandList = new("Event command list");
                 commandList.Add("/event manage", "Open the event manager");
                 commandList.Add("/event purge", "Remove all upcoming events (admin only)");
                 commandList.Add("/event join (shortcut: /join)", "Join the opened event");
@@ -41,7 +41,7 @@ namespace SampSharpGameMode1.Commands
 			[Command("join", Shortcut = "join")]
 			private static void JoinEvent(Player player)
 			{
-                if (!(player.eventCreator is null))
+                if (player.eventCreator is not null)
                 {
                     player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " Close your editor first");
                     return;
@@ -51,7 +51,7 @@ namespace SampSharpGameMode1.Commands
                     player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " There is no opened event !");
                     return;
                 }
-                if (!(player.pEvent is null))
+                if (player.pEvent is not null)
                 {
                     player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " You are already in an event !");
                     return;
@@ -62,8 +62,7 @@ namespace SampSharpGameMode1.Commands
             [Command("leave", Shortcut = "leave")]
             private static void LeaveEvent(Player player)
             {
-                if (player.pEvent != null)
-                    player.pEvent.Leave(player);
+                player.pEvent?.Leave(player);
             }
         }
     }

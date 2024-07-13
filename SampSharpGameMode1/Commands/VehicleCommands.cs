@@ -1,11 +1,10 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
-using SampSharp.GameMode.Display;
-using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
 using SampSharp.GameMode.World;
 using System;
-using System.Collections.Generic;
+
+#pragma warning disable IDE0051 // Disable useless private members
 
 namespace SampSharpGameMode1.Commands
 {
@@ -16,21 +15,21 @@ namespace SampSharpGameMode1.Commands
 		{
 			if(player.pEvent == null)
 			{
-				AdminPermissionChecker isAdmin = new AdminPermissionChecker();
+				AdminPermissionChecker isAdmin = new();
 				if (player.SpawnedVehicles.Count > 5 && !isAdmin.Check(player))
 				{
 					if (!player.SpawnedVehicles[0].IsDisposed)
 						player.SpawnedVehicles[0].Dispose();
 					player.SpawnedVehicles.RemoveAt(0);
 				}
-				Random rndColor = new Random();
+				Random rndColor = new();
 				BaseVehicle v = BaseVehicle.Create(model, new Vector3(player.Position.X + 5.0, player.Position.Y, player.Position.Z), 0.0f, rndColor.Next(0, 255), rndColor.Next(0, 255));
 				v.VirtualWorld = player.VirtualWorld;
 				player.SpawnedVehicles.Add(v);
 				if (!player.DisableForceEnterVehicle)
 				{
 					player.PutInVehicle(v, 0);
-					SampSharp.GameMode.Events.EnterVehicleEventArgs e = new SampSharp.GameMode.Events.EnterVehicleEventArgs(player, v, false);
+					SampSharp.GameMode.Events.EnterVehicleEventArgs e = new(player, v, false);
 					player.OnEnterVehicle(e);
 				}
 			}

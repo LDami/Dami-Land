@@ -2,6 +2,8 @@
 using SampSharp.GameMode.SAMP.Commands;
 using SampSharpGameMode1.Display;
 
+#pragma warning disable IDE0051 // Disable useless private members
+
 namespace SampSharpGameMode1.Commands
 {
 	class TextdrawCreatorCommands
@@ -22,8 +24,7 @@ namespace SampSharpGameMode1.Commands
                 if (player.pEvent != null)
                     return;
 #if DEBUG
-                if (player.textdrawCreator == null)
-                    player.textdrawCreator = new TextdrawCreator(player);
+                player.textdrawCreator ??= new TextdrawCreator(player);
 
                 player.textdrawCreator.Init();
                 player.SendClientMessage("Textdraw Creator initialized");
@@ -44,8 +45,7 @@ namespace SampSharpGameMode1.Commands
                 if (player.pEvent != null)
                     return;
 #if DEBUG
-                if (player.textdrawCreator == null)
-                        player.textdrawCreator = new TextdrawCreator(player);
+                player.textdrawCreator ??= new TextdrawCreator(player);
 
                 if (!player.textdrawCreator.IsEditing)
                     player.textdrawCreator.Load(name);
@@ -56,10 +56,7 @@ namespace SampSharpGameMode1.Commands
             [Command("save", UsageMessage = "Usage: /td save [name (without .json)]")]
             private static void Save(Player player, string name)
             {
-                if (player.textdrawCreator != null)
-                {
-                    player.textdrawCreator.Save(name);
-                }
+                player.textdrawCreator?.Save(name);
             }
             [Command("hudswitch")]
             private static void HUDSwitch(Player player)
