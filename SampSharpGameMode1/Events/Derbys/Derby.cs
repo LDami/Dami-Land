@@ -3,11 +3,10 @@ using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Events;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
-using SampSharp.Streamer.World;
 using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 using System.Threading;
 
 namespace SampSharpGameMode1.Events.Derbys
@@ -39,6 +38,7 @@ namespace SampSharpGameMode1.Events.Derbys
         public bool IsCreatorMode { get; set; }
         public string Creator { get; set; }
         public float MinimumHeight { get; set; }
+        public TimeOnly Time { get; set; }
 
 
         // Launcher only
@@ -46,9 +46,9 @@ namespace SampSharpGameMode1.Events.Derbys
         private bool isPreparing = false;
         public bool isStarted = false;
         public List<Player> players;
-        public Dictionary<Player, DerbyPlayer> playersData = new Dictionary<Player, DerbyPlayer>();
+        public Dictionary<Player, DerbyPlayer> playersData = new();
         public List<Player> spectatingPlayers; // Contains spectating players who looses the derby, and others players who spectate without joining
-        private Dictionary<Player, HUD> playersLiveInfoHUD = new Dictionary<Player, HUD>();
+        private Dictionary<Player, HUD> playersLiveInfoHUD = new();
         private int virtualWorld;
         private SampSharp.GameMode.SAMP.Timer countdownTimer;
         private int countdown;
@@ -87,7 +87,7 @@ namespace SampSharpGameMode1.Events.Derbys
         private void OnPlayerExitVehicle(object sender, PlayerVehicleEventArgs e)
         {
             e.Player.Position = e.Vehicle.Position;
-            SampSharp.GameMode.SAMP.Timer timer = new SampSharp.GameMode.SAMP.Timer(100, false);
+            SampSharp.GameMode.SAMP.Timer timer = new(100, false);
             timer.Tick += (sender, e2) =>
             {
                 if (!e.Vehicle.IsDisposed)
@@ -108,12 +108,12 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             if (GameMode.mySQLConnector != null)
             {
-                Thread t = new Thread(() =>
+                Thread t = new(() =>
                 {
                     IsLoaded = false;
                     bool errorFlag = false;
                     Dictionary<string, string> row;
-                    Dictionary<string, object> param = new Dictionary<string, object>
+                    Dictionary<string, object> param = new()
                     {
                         { "@id", id }
                     };
@@ -201,22 +201,28 @@ namespace SampSharpGameMode1.Events.Derbys
                         GameMode.mySQLConnector.CloseReader();
                     }
 
-                    DerbyLoadedEventArgs args = new DerbyLoadedEventArgs();
-                    args.derby = this;
-                    args.success = !errorFlag;
-                    args.availableSlots = availableSlots;
+                    DerbyLoadedEventArgs args = new()
+                    {
+                        derby = this,
+                        success = !errorFlag,
+                        availableSlots = availableSlots
+                    };
 
                     if (this.MapId > -1)
                     {
                         this.map = new Map.Map();
                         this.map.Loaded += (sender, eventArgs) =>
                         {
+                            this.Time = eventArgs.map.Time;
                             OnLoaded(args);
                         };
                         this.map.Load(this.MapId, virtualWorld);
                     }
                     else
+                    {
+                        this.Time = TimeOnly.Parse("12:00:00");
                         OnLoaded(args);
+                    }
                 });
                 t.Start();
             }
@@ -224,7 +230,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
         public Boolean IsPlayable()
         {
-            return (StartingVehicle != null && SpawnPoints.Count > Derby.MIN_PLAYERS_IN_DERBY) ? true : false;
+            return (StartingVehicle != null && SpawnPoints.Count > Derby.MIN_PLAYERS_IN_DERBY);
         }
 
         public void Prepare(List<EventSlot> slots)
@@ -236,16 +242,15 @@ namespace SampSharpGameMode1.Events.Derbys
                 this.players = new List<Player>();
                 this.spectatingPlayers = new List<Player>();
 
-                Random rdm = new Random();
-                List<int> generatedPos = new List<int>();
-                List<int> remainingPos = new List<int>();
+                Random rdm = new();
+                List<int> generatedPos = new();
+                List<int> remainingPos = new();
                 for (int i = 0; i < slots.Count; i++)
                     remainingPos.Add(i);
                 int pos;
-                int tries = 0;
                 foreach (EventSlot slot in slots)
                 {
-                    DerbyPlayer playerData = new DerbyPlayer();
+                    DerbyPlayer playerData = new();
                     playerData.spectatePlayerIndex = -1;
                     playerData.status = DerbyPlayerStatus.Running;
 
@@ -255,6 +260,7 @@ namespace SampSharpGameMode1.Events.Derbys
                     playersLiveInfoHUD[slot.Player].SetText("remainingplayers", slots.Count.ToString(@"000"));
 
                     slot.Player.VirtualWorld = virtualWorld;
+                    slot.Player.SetTime(this.Time.Hour, this.Time.Minute);
 
                     slot.Player.Update += OnPlayerUpdate;
                     slot.Player.ExitVehicle += OnPlayerExitVehicle;
@@ -279,7 +285,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
                 if (!isAborted)
                 {
-                    SampSharp.GameMode.SAMP.Timer preparationTimer = new SampSharp.GameMode.SAMP.Timer(3000, false);
+                    SampSharp.GameMode.SAMP.Timer preparationTimer = new(3000, false);
                     preparationTimer.Tick += (object sender, EventArgs e) =>
                     {
                         countdown = 3;
@@ -399,12 +405,14 @@ namespace SampSharpGameMode1.Events.Derbys
                 playersLiveInfoHUD[p].SetText("remainingplayers", players.Count.ToString(@"000"));
             if (players.Count == 0) // Si c'est le vainqueur
             {
-                SampSharp.GameMode.SAMP.Timer ejectionTimer = new SampSharp.GameMode.SAMP.Timer(2000, false);
+                SampSharp.GameMode.SAMP.Timer ejectionTimer = new(2000, false);
                 ejectionTimer.Tick += (object sender, EventArgs e) =>
                 {
-                    DerbyFinishedEventArgs args = new DerbyFinishedEventArgs();
-                    args.derby = this;
-                    args.winner = player;
+                    DerbyFinishedEventArgs args = new()
+                    {
+                        derby = this,
+                        winner = player
+                    };
                     OnFinished(args);
                 };
             }
@@ -444,7 +452,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 {
                     BaseVehicle vehicle = player.Vehicle;
                     player.RemoveFromVehicle();
-                    if (vehicle != null) vehicle.Dispose();
+                    vehicle?.Dispose();
                 }
                 player.DisableCheckpoint();
                 player.DisableRaceCheckpoint();
@@ -454,6 +462,7 @@ namespace SampSharpGameMode1.Events.Derbys
                 player.Disconnected -= OnPlayerDisconnect;
                 player.ToggleSpectating(false);
                 player.VirtualWorld = 0;
+                player.SetTime(12, 0);
                 player.pEvent = null;
                 player.Spawn();
             }
@@ -463,14 +472,13 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             if(!IsCreatorMode)
             {
-                foreach (Player p in BasePlayer.All)
+                foreach (Player p in BasePlayer.All.Cast<Player>())
                 {
                     if (p.VirtualWorld == this.virtualWorld)
                         Eject(p);
                 }
             }
-            if (map != null)
-                map.Unload();
+            map?.Unload();
             foreach (BaseVehicle v in BaseVehicle.All)
             {
                 if (v.VirtualWorld == this.virtualWorld)
@@ -482,18 +490,17 @@ namespace SampSharpGameMode1.Events.Derbys
             }
             Logger.WriteLineAndClose($"Derby.cs - Derby.Unload:I: Derby {this.Name} unloaded");
         }
-
-        public void ReloadMap()
+        public void ReloadMap(Action loadedAction)
         {
-            if (this.map != null)
-                this.map.Unload();
+            this.map?.Unload();
 
             if (this.MapId > -1)
             {
                 this.map = new Map.Map();
                 this.map.Loaded += (sender, eventArgs) =>
                 {
-                    
+                    this.Time = eventArgs.map.Time;
+                    loadedAction();
                 };
                 this.map.Load(this.MapId, virtualWorld);
             }
@@ -512,13 +519,12 @@ namespace SampSharpGameMode1.Events.Derbys
         public static List<string> GetPlayerDerbyList(Player player)
         {
             MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>
+            Dictionary<string, object> param = new()
                 {
                     { "@name", player.Name }
                 };
             mySQLConnector.OpenReader("SELECT derby_id, derby_name FROM derbys WHERE derby_creator = @name", param);
-            List<string> result = new List<string>();
+            List<string> result = new();
             Dictionary<string, string> row = mySQLConnector.GetNextRow();
             while (row.Count > 0)
             {
@@ -533,8 +539,7 @@ namespace SampSharpGameMode1.Events.Derbys
         public static Dictionary<string, string> Find(string str)
         {
             MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>
+            Dictionary<string, object> param = new()
                 {
                     { "@name", str }
                 };
@@ -546,12 +551,12 @@ namespace SampSharpGameMode1.Events.Derbys
         public static Dictionary<string, string> GetInfo(int id)
         {
             // id, name, creator, number of spawn points, number of pickups, number of map objects
-            Dictionary<string, string> results = new Dictionary<string, string>();
+            Dictionary<string, string> results = new();
             Dictionary<string, string> row;
             bool exists = false;
 
             MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>
+            Dictionary<string, object> param = new()
                 {
                     { "@id", id }
                 };

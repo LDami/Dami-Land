@@ -44,6 +44,7 @@ namespace SampSharpGameMode1.Events.Races
         public bool IsLoaded { get; private set; }
         public bool IsCreatorMode { get; set; }
         public string Creator { get; set; }
+        public TimeOnly Time { get; set; }
 
         // Common Events
 
@@ -119,7 +120,7 @@ namespace SampSharpGameMode1.Events.Races
         {
             OnPlayerFinished((Player)sender, "Disconnected");
         }
-        private void OnPlayerKeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
+        private void OnPlayerKeyStateChanged(object sender, KeyStateChangedEventArgs e)
         {
             Player spectator = (Player)sender;
             if (spectatingPlayers.Contains(spectator))
@@ -167,14 +168,14 @@ namespace SampSharpGameMode1.Events.Races
         private void OnPlayerExitVehicle(object sender, PlayerVehicleEventArgs e)
         {
             e.Player.Position = e.Vehicle.Position;
-            SampSharp.GameMode.SAMP.Timer timer = new SampSharp.GameMode.SAMP.Timer(100, false);
+            SampSharp.GameMode.SAMP.Timer timer = new(100, false);
             timer.Tick += (sender, e2) =>
             {
                 if (!e.Vehicle.IsDisposed)
                     e.Player.PutInVehicle(e.Vehicle);
             };
         }
-        public void OnPlayerVehicleDied(object sender, SampSharp.GameMode.Events.PlayerEventArgs e)
+        public void OnPlayerVehicleDied(object sender, PlayerEventArgs e)
         {
             OnPlayerFinished((Player)e.Player, "Vehicle destroyed");
         }
@@ -356,12 +357,16 @@ namespace SampSharpGameMode1.Events.Races
                         this.map = new Map.Map();
                         this.map.Loaded += (sender, eventArgs) =>
                         {
+                            this.Time = eventArgs.map.Time;
                             OnLoaded(args);
                         };
                         this.map.Load(this.MapId, virtualWorld);
                     }
                     else
+                    {
+                        this.Time = TimeOnly.Parse("12:00:00");
                         OnLoaded(args);
+                    }
                 });
                 t.Start();
             }
@@ -447,6 +452,7 @@ namespace SampSharpGameMode1.Events.Races
 
 
                     slot.Player.VirtualWorld = virtualWorld;
+                    slot.Player.SetTime(this.Time.Hour, this.Time.Minute);
                     slot.Player.ToggleControllable(true);
                     slot.Player.ResetWeapons();
                     Thread.Sleep(10); // Used to prevent AntiCheat to detect weapon before player enters in vehicle
@@ -481,7 +487,7 @@ namespace SampSharpGameMode1.Events.Races
 
                 if (!isAborted)
                 {
-                    SampSharp.GameMode.SAMP.Timer preparationTimer = new SampSharp.GameMode.SAMP.Timer(3000, false);
+                    SampSharp.GameMode.SAMP.Timer preparationTimer = new(3000, false);
                     preparationTimer.Tick += (object sender, EventArgs e) =>
                     {
                         countdown = 3;
@@ -880,12 +886,14 @@ namespace SampSharpGameMode1.Events.Races
             players.Remove(player);
             if(players.Count == 0) // Si on arrive dernier / si le dernier arrive
             {
-                SampSharp.GameMode.SAMP.Timer ejectionTimer = new SampSharp.GameMode.SAMP.Timer(2000, false);
+                SampSharp.GameMode.SAMP.Timer ejectionTimer = new(2000, false);
                 ejectionTimer.Tick += (object sender, EventArgs e) =>
                 {
-                    RaceFinishedEventArgs args = new RaceFinishedEventArgs();
-                    args.race = this;
-                    args.winner = winner;
+                    RaceFinishedEventArgs args = new()
+                    {
+                        race = this,
+                        winner = winner
+                    };
                     OnFinished(args);
                 };
             }
@@ -897,7 +905,7 @@ namespace SampSharpGameMode1.Events.Races
                     {
                         BaseVehicle vehicle = player.Vehicle;
                         player.RemoveFromVehicle();
-                        if (!(vehicle is null) && !vehicle.IsDisposed) vehicle.Dispose();
+                        if (vehicle is not null && !vehicle.IsDisposed) vehicle.Dispose();
                     }
                     player.ToggleSpectating(true);
                     if (players[0].InAnyVehicle)
@@ -925,7 +933,7 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     BaseVehicle vehicle = player.Vehicle;
                     player.RemoveFromVehicle();
-                    if (vehicle != null) vehicle.Dispose();
+                    vehicle?.Dispose();
                 }
                 player.DisableCheckpoint();
                 player.DisableRaceCheckpoint();
@@ -936,6 +944,7 @@ namespace SampSharpGameMode1.Events.Races
                 player.Disconnected -= OnPlayerDisconnect;
                 player.ToggleSpectating(false);
                 player.VirtualWorld = 0;
+                player.SetTime(12, 0);
                 player.pEvent = null;
                 player.Spawn();
             }
@@ -945,7 +954,7 @@ namespace SampSharpGameMode1.Events.Races
         {
             if (!IsCreatorMode)
             {
-                foreach (Player p in BasePlayer.All)
+                foreach (Player p in BasePlayer.All.Cast<Player>())
                 {
                     if (p.VirtualWorld == this.virtualWorld)
                         Eject(p);
@@ -959,17 +968,17 @@ namespace SampSharpGameMode1.Events.Races
             }
             Logger.WriteLineAndClose($"Race.cs - Race.Unload:I: Race {this.Name} unloaded");
         }
-        public void ReloadMap()
+        public void ReloadMap(Action loadedAction)
         {
-            if (this.map != null)
-                this.map.Unload();
+            this.map?.Unload();
 
             if (this.MapId > -1)
             {
                 this.map = new Map.Map();
                 this.map.Loaded += (sender, eventArgs) =>
                 {
-
+                    this.Time = eventArgs.map.Time;
+                    loadedAction();
                 };
                 this.map.Load(this.MapId, virtualWorld);
             }
@@ -989,13 +998,12 @@ namespace SampSharpGameMode1.Events.Races
         public static List<string> GetPlayerRaceList(Player player)
         {
             MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>
+            Dictionary<string, object> param = new()
                 {
                     { "@name", player.Name }
                 };
             mySQLConnector.OpenReader("SELECT race_id, race_name FROM races WHERE race_creator = @name", param);
-            List<string> result = new List<string>();
+            List<string> result = new();
             Dictionary<string, string> row = mySQLConnector.GetNextRow();
             while (row.Count > 0)
             {
@@ -1010,8 +1018,7 @@ namespace SampSharpGameMode1.Events.Races
         public static Dictionary<string, string> Find(string str)
         {
             MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>
+            Dictionary<string, object> param = new()
                 {
                     { "@name", str }
                 };
@@ -1024,11 +1031,11 @@ namespace SampSharpGameMode1.Events.Races
         public static Dictionary<string, string> GetInfo(int id)
         {
             // id, name, creator, number of checkpoints, zone, number of spawnpoints
-            Dictionary<string, string> results = new Dictionary<string, string>();
+            Dictionary<string, string> results = new();
             Dictionary<string, string> row;
 
             MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>
+            Dictionary<string, object> param = new()
                 {
                     { "@id", id }
                 };
@@ -1045,7 +1052,7 @@ namespace SampSharpGameMode1.Events.Races
                 "FROM race_checkpoints WHERE race_id = @id", param);
             int nbrOfCheckpoints = 0;
             row = mySQLConnector.GetNextRow();
-            Vector3 firstCheckpointPos = new Vector3();
+            Vector3 firstCheckpointPos = new();
             while (row.Count > 0)
             {
                 nbrOfCheckpoints++;

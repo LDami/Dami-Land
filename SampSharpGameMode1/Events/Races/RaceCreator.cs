@@ -166,6 +166,8 @@ namespace SampSharpGameMode1.Events.Races
                 player.Vehicle.Angle = rot;
             }
 
+            player.SetTime(editingRace.Time.Hour, editingRace.Time.Minute);
+
             hud = new HUD(player);
             hud.SetRaceName(editingRace.Name);
             editingMode = EditingMode.Checkpoints;
@@ -200,11 +202,9 @@ namespace SampSharpGameMode1.Events.Races
                 moverObject.Dispose();
             }
             moverObject = null;
-            if (spawnerCreator != null)
-            {
-                spawnerCreator.Unload();
-                spawnerCreator = null;
-            }
+
+            spawnerCreator?.Unload();
+            spawnerCreator = null;
 
             foreach(BaseVehicle veh in BaseVehicle.All)
             {
@@ -222,6 +222,7 @@ namespace SampSharpGameMode1.Events.Races
             if (player != null)
             {
                 player.VirtualWorld = 0;
+                player.SetTime(12, 0);
                 player.CancelEdit();
                 player.DisableCheckpoint();
                 player.DisableRaceCheckpoint();
@@ -235,7 +236,7 @@ namespace SampSharpGameMode1.Events.Races
         {
             if (editingRace != null)
             {
-                Dictionary<string, object> param = new Dictionary<string, object>
+                Dictionary<string, object> param = new()
                 {
                     { "@id", editingRace.Id }
                 };
@@ -302,7 +303,7 @@ namespace SampSharpGameMode1.Events.Races
         {
             if (editingRace != null && name.Length > 0)
             {
-                Dictionary<string, object> param = new Dictionary<string, object>
+                Dictionary<string, object> param = new()
                 {
                     { "@race_name", name },
                     { "@race_creator", player.Name },
@@ -341,7 +342,7 @@ namespace SampSharpGameMode1.Events.Races
                 }
                 else
                 {
-                    Dictionary<int, Checkpoint> tmp = new Dictionary<int, Checkpoint>(editingRace.checkpoints);
+                    Dictionary<int, Checkpoint> tmp = new(editingRace.checkpoints);
                     for (int i = checkpointIndex + 1; i < tmp.Count; i++)
                     {
                         editingRace.checkpoints[i + 1] = tmp[i];
@@ -506,7 +507,7 @@ namespace SampSharpGameMode1.Events.Races
 
         private void ShowRaceDialog()
         {
-            ListDialog raceDialog = new ListDialog("Race options", "Select", "Cancel");
+            ListDialog raceDialog = new("Race options", "Select", "Cancel");
             raceDialog.AddItem("Select starting vehicle [" + editingRace.StartingVehicle + "]");
             raceDialog.AddItem("Edit race name");
 
@@ -533,7 +534,7 @@ namespace SampSharpGameMode1.Events.Races
                     {
                         case 0: // Select starting vehicle
                             {
-                                InputDialog cpStartCarNameDialog = new InputDialog("Vehicle name", "Enter the vehicle name:", false, "Find", "Cancel");
+                                InputDialog cpStartCarNameDialog = new("Vehicle name", "Enter the vehicle name:", false, "Find", "Cancel");
                                 cpStartCarNameDialog.Show(player);
                                 cpStartCarNameDialog.Response += (sender, eventArgs) =>
                                 {
@@ -553,7 +554,7 @@ namespace SampSharpGameMode1.Events.Races
                             }
                         case 1: // Edit race name
                             {
-                                InputDialog cpRaceNameDialog = new InputDialog("Race name", "Enter the race name:", false, "Edit", "Cancel");
+                                InputDialog cpRaceNameDialog = new("Race name", "Enter the race name:", false, "Edit", "Cancel");
                                 cpRaceNameDialog.Show(player);
                                 cpRaceNameDialog.Response += (sender, eventArgs) =>
                                 {
@@ -581,7 +582,7 @@ namespace SampSharpGameMode1.Events.Races
                                     {
                                         checkpointIndex = 0;
                                         UpdatePlayerCheckpoint();
-                                        List<Vector3R> spawns = new List<Vector3R>();
+                                        List<Vector3R> spawns = new();
                                         if (editingRace.SpawnPoints.Count == 0)
                                         {
                                             spawns.Add(new Vector3R(editingRace.checkpoints[0].Position + Vector3.UnitZ));
@@ -629,7 +630,7 @@ namespace SampSharpGameMode1.Events.Races
                             }
                         case 3: // Laps
                             {
-                                InputDialog cpRaceLapsDialog = new InputDialog("Race laps", "Enter the number of laps the race have:", false, "Set", "Cancel");
+                                InputDialog cpRaceLapsDialog = new("Race laps", "Enter the number of laps for this race:", false, "Set", "Cancel");
                                 cpRaceLapsDialog.Show(player);
                                 cpRaceLapsDialog.Response += (sender, eventArgs) =>
                                 {
@@ -640,7 +641,7 @@ namespace SampSharpGameMode1.Events.Races
                                             editingRace.Laps = Convert.ToInt32(eventArgs.InputText);
                                             player.Notificate("Updated");
                                         }
-                                        catch(Exception e)
+                                        catch(Exception)
                                         {
                                             player.SendClientMessage(Color.Red, "There was an error trying to set this value.");
                                             player.Notificate("Error");
@@ -662,7 +663,7 @@ namespace SampSharpGameMode1.Events.Races
                             }
                         case 5: // Load a map ...
                             {
-                                InputDialog findMapDialog = new InputDialog("Find a map", "Type the name of the map you want to load, or empty for full list", false, "Search", "Cancel");
+                                InputDialog findMapDialog = new("Find a map", "Type the name of the map you want to load, or empty for full list", false, "Search", "Cancel");
                                 findMapDialog.Show(player);
                                 findMapDialog.Response += (sender, eventArgs) =>
                                 {
@@ -694,8 +695,8 @@ namespace SampSharpGameMode1.Events.Races
             }
             else
             {
-                List<int> mapList = new List<int>();
-                ListDialog mapListDialog = new ListDialog(maps.Count + " maps found", "Load", "Cancel");
+                List<int> mapList = new();
+                ListDialog mapListDialog = new(maps.Count + " maps found", "Load", "Cancel");
                 foreach(var map in maps)
                 {
                     mapList.Add(Convert.ToInt32(map.Key));
@@ -707,7 +708,11 @@ namespace SampSharpGameMode1.Events.Races
                     if (eventArgs.DialogButton == DialogButton.Left)
                     {
                         editingRace.MapId = mapList[eventArgs.ListItem];
-                        editingRace.ReloadMap();
+                        editingRace.ReloadMap(() =>
+                        {
+                            player.SetTime(editingRace.Time.Hour, editingRace.Time.Minute);
+                            player.Notificate("Map loaded");
+                        });
                     }
                     else
                     {
@@ -734,7 +739,7 @@ namespace SampSharpGameMode1.Events.Races
         private void ShowCheckpointDialog()
         {
             Checkpoint cp = editingRace.checkpoints[checkpointIndex];
-            ListDialog cpDialog = new ListDialog("Checkpoint options", "Select", "Cancel");
+            ListDialog cpDialog = new("Checkpoint options", "Select", "Cancel");
             cpDialog.AddItem("Edit checkpoint position");
             cpDialog.AddItem("Edit checkpoint size [" + cp.Size.ToString() + "]");
 
@@ -784,7 +789,7 @@ namespace SampSharpGameMode1.Events.Races
                             }
                         case 1: // Edit checkpoint size
                             {
-                                InputDialog cpSizeDialog = new InputDialog("Checkpoint size", "Current size: " + cp.Size.ToString(), false, "Set", "Cancel");
+                                InputDialog cpSizeDialog = new("Checkpoint size", "Current size: " + cp.Size.ToString(), false, "Set", "Cancel");
                                 cpSizeDialog.Show(player);
                                 cpSizeDialog.Response += CpSizeDialog_Response;
                                 break;
@@ -838,7 +843,7 @@ namespace SampSharpGameMode1.Events.Races
                             UpdatePlayerCheckpoint();
                             player.Notificate("Updated");
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
                             player.SendClientMessage(Color.Red, "There was an error trying to set this value.");
                             player.Notificate("Error");
@@ -855,7 +860,7 @@ namespace SampSharpGameMode1.Events.Races
 
         private void ShowCheckpointEventDialog()
         {
-            ListDialog cpEventDialog = new ListDialog("Checkpoint events", "Select", "Cancel");
+            ListDialog cpEventDialog = new("Checkpoint events", "Select", "Cancel");
             if (editingRace.checkpoints[checkpointIndex].NextVehicle == null)
                 cpEventDialog.AddItem("Vehicle change [Unchanged]");
             else
@@ -877,7 +882,7 @@ namespace SampSharpGameMode1.Events.Races
                     {
                         case 0: // Vehicle event
                             {
-                                InputDialog cpEventCarNameDialog = new InputDialog("Vehicle name", "Enter the vehicle name or leave blank to remove:", false, "Find", "Cancel");
+                                InputDialog cpEventCarNameDialog = new("Vehicle name", "Enter the vehicle name or leave blank to remove:", false, "Find", "Cancel");
                                 cpEventCarNameDialog.Show(player);
                                 cpEventCarNameDialog.Response += (sender, eventArgs) =>
                                 {
@@ -900,7 +905,7 @@ namespace SampSharpGameMode1.Events.Races
                             }
                         case 1: // Nitro event
                             {
-                                ListDialog cpNitroEventDialog = new ListDialog("Nitro event", "Update", "Cancel");
+                                ListDialog cpNitroEventDialog = new("Nitro event", "Update", "Cancel");
                                 cpNitroEventDialog.AddItem(((cp.NextNitro == Checkpoint.EnableDisableEvent.None) ? "> " : "") + "[Unchanged]");
                                 cpNitroEventDialog.AddItem(((cp.NextNitro == Checkpoint.EnableDisableEvent.Enable) ? "> " : "") + "[Enable]");
                                 cpNitroEventDialog.AddItem(((cp.NextNitro == Checkpoint.EnableDisableEvent.Disable) ? "> " : "") + "[Disable]");
@@ -923,7 +928,7 @@ namespace SampSharpGameMode1.Events.Races
                             }
                         case 2: // Collision event
                             {
-                                ListDialog cpNitroEventDialog = new ListDialog("Collision event", "Update", "Cancel");
+                                ListDialog cpNitroEventDialog = new("Collision event", "Update", "Cancel");
                                 cpNitroEventDialog.AddItem(((cp.NextCollision == Checkpoint.EnableDisableEvent.None) ? "> " : "") + "[Unchanged]");
                                 cpNitroEventDialog.AddItem(((cp.NextCollision == Checkpoint.EnableDisableEvent.Enable) ? "> " : "") + "[Enable]");
                                 cpNitroEventDialog.AddItem(((cp.NextCollision == Checkpoint.EnableDisableEvent.Disable) ? "> " : "") + "[Disable]");
@@ -955,12 +960,12 @@ namespace SampSharpGameMode1.Events.Races
 
         public void DeleteCurrentCheckpoint()
 		{
-            MessageDialog confirm = new MessageDialog("Confirmation", "You are about to delete the current checkpoint, are you sure ?", "Delete", "Cancel");
+            MessageDialog confirm = new("Confirmation", "You are about to delete the current checkpoint, are you sure ?", "Delete", "Cancel");
             confirm.Response += (object sender, SampSharp.GameMode.Events.DialogResponseEventArgs e) =>
             {
                 if(e.DialogButton == DialogButton.Left)
 				{
-                    Dictionary<int, Checkpoint> tmp = new Dictionary<int, Checkpoint>();
+                    Dictionary<int, Checkpoint> tmp = new();
                     int index = 0;
                     for (int i = 0; i <= editingRace.checkpoints.Count -1; i++)
                     {
@@ -1003,7 +1008,7 @@ namespace SampSharpGameMode1.Events.Races
                     shownCheckpoint.Size = cp.Size;
                 }
                 shownCheckpoint.ShowForPlayer(player);
-                Streamer st = new Streamer();
+                Streamer st = new();
                 st.Update(player);
                 if (moverObject == null)
                 {

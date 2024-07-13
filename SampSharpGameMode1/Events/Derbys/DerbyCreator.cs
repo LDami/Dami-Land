@@ -1,19 +1,14 @@
-﻿using Newtonsoft.Json;
-using SampSharp.Core;
+﻿using SampSharp.Core;
 using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
 using SampSharp.GameMode.Events;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
-using SampSharp.Streamer;
 using SampSharp.Streamer.World;
-using SampSharpGameMode1.Display;
 using SampSharpGameMode1.Events._Tools;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace SampSharpGameMode1.Events.Derbys
 {
@@ -60,7 +55,6 @@ namespace SampSharpGameMode1.Events.Derbys
 
         SpawnerCreator spawnerCreator;
 
-        private int lastSelectedObjectId;
         private DerbyPickup? lastPickedUpPickup;
         private Dictionary<int, PlayerTextLabel> pickupLabels;
 
@@ -102,7 +96,6 @@ namespace SampSharpGameMode1.Events.Derbys
             editingDerby.Pickups = new List<DerbyPickup>();
             editingDerby.MapId = -1;
             isNew = true;
-            lastSelectedObjectId = -1;
             lastPickedUpPickup = null;
             pickupLabels = new Dictionary<int, PlayerTextLabel>();
             this.SetPlayerInEditor();
@@ -111,7 +104,7 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             if (id > 0)
             {
-                Derby loadingDerby = new Derby();
+                Derby loadingDerby = new();
                 loadingDerby.IsCreatorMode = true;
                 loadingDerby.Loaded += LoadingDerby_Loaded;
                 loadingDerby.Load(id, (int)VirtualWord.EventCreators + player.Id);
@@ -125,7 +118,6 @@ namespace SampSharpGameMode1.Events.Derbys
             if (e.success)
             {
                 isNew = false;
-                lastSelectedObjectId = -1;
                 lastPickedUpPickup = null;
                 pickupLabels = new Dictionary<int, PlayerTextLabel>();
                 editingDerby = e.derby;
@@ -175,6 +167,8 @@ namespace SampSharpGameMode1.Events.Derbys
                 player.Vehicle.Angle = rot;
             }
 
+            player.SetTime(editingDerby.Time.Hour, editingDerby.Time.Minute);
+
             hud = new HUD(player);
             hud.SetDerbyName(editingDerby.Name ?? "Untitled");
             editingMode = EditingMode.None;
@@ -183,10 +177,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
 		public void Unload()
         {
-            if(editingDerby != null)
-            {
-                editingDerby.Unload();
-            }
+            editingDerby?.Unload();
             editingDerby = null;
             if(pickupLabels != null)
 			{
@@ -194,8 +185,7 @@ namespace SampSharpGameMode1.Events.Derbys
                     label.Dispose();
 			}
             pickupLabels = null;
-            if (hud != null)
-                hud.Destroy();
+            hud?.Destroy();
             hud = null;
             if (moverObject != null)
             {
@@ -204,11 +194,8 @@ namespace SampSharpGameMode1.Events.Derbys
             }
             moverObject = null;
 
-            if (spawnerCreator != null)
-            {
-                spawnerCreator.Unload();
-                spawnerCreator = null;
-            }
+            spawnerCreator?.Unload();
+            spawnerCreator = null;
 
             foreach (BaseVehicle veh in BaseVehicle.All)
             {
@@ -219,6 +206,7 @@ namespace SampSharpGameMode1.Events.Derbys
             if (player != null)
             {
                 player.VirtualWorld = 0;
+                player.SetTime(12, 0);
                 player.CancelEdit();
                 player.KeyStateChanged -= OnPlayerKeyStateChanged;
             }
@@ -228,7 +216,7 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             if (editingDerby != null)
             {
-                Dictionary<string, object> param = new Dictionary<string, object>
+                Dictionary<string, object> param = new()
                 {
                     { "@id", editingDerby.Id }
                 };
@@ -291,7 +279,7 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             if (editingDerby != null && name.Length > 0)
             {
-                Dictionary<string, object> param = new Dictionary<string, object>
+                Dictionary<string, object> param = new()
                 {
                     { "@derby_name", name },
                     { "@derby_creator", player.Name },
@@ -314,9 +302,9 @@ namespace SampSharpGameMode1.Events.Derbys
 
         public void AddPickup(int modelid)
 		{
-            DerbyPickup pickup = new DerbyPickup(modelid, Utils.GetPositionFrontOfPlayer(player), player.VirtualWorld, DerbyPickup.PickupEvent.None);
+            DerbyPickup pickup = new(modelid, Utils.GetPositionFrontOfPlayer(player), player.VirtualWorld, DerbyPickup.PickupEvent.None);
             editingDerby.Pickups.Add(pickup);
-            PlayerTextLabel label = new PlayerTextLabel(player, $"Pickup #{pickup.pickup.Id}", Color.White, pickup.Position + Vector3.UnitZ, 50.0f);
+            PlayerTextLabel label = new(player, $"Pickup #{pickup.pickup.Id}", Color.White, pickup.Position + Vector3.UnitZ, 50.0f);
             pickupLabels.Add(pickup.pickup.Id, label);
 		}
 
@@ -339,7 +327,7 @@ namespace SampSharpGameMode1.Events.Derbys
             DerbyPickup pickup = editingDerby.Pickups.Find(x => x.pickup.Id == pickupid);
             if (pickup != null)
             {
-                ListDialog dialog = new ListDialog($"Edit pickup #{pickup}", "Select", "Cancel");
+                ListDialog dialog = new($"Edit pickup #{pickup}", "Select", "Cancel");
                 dialog.AddItem("Change model");
                 dialog.AddItem("Edit event [" + Enum.GetNames(typeof(DerbyPickup.PickupEvent))[(int)pickup.Event] + "]");
                 dialog.AddItem(Color.Red + "Delete");
@@ -354,7 +342,7 @@ namespace SampSharpGameMode1.Events.Derbys
                                 EditPickup(pickupid);
                                 break;
                             case 1:
-                                ListDialog eventDialog = new ListDialog("Event dialog", "Select", "Cancel");
+                                ListDialog eventDialog = new("Event dialog", "Select", "Cancel");
                                 foreach (string evt in Enum.GetNames(typeof(DerbyPickup.PickupEvent)))
                                 {
                                     if(evt == Enum.GetNames(typeof(DerbyPickup.PickupEvent))[(int)pickup.Event])
@@ -388,7 +376,7 @@ namespace SampSharpGameMode1.Events.Derbys
         #region Dialogs
         private void ShowDerbyDialog()
         {
-            ListDialog derbyDialog = new ListDialog("Derby options", "Select", "Cancel");
+            ListDialog derbyDialog = new("Derby options", "Select", "Cancel");
             derbyDialog.AddItem("Select starting vehicle [" + editingDerby.StartingVehicle + "]");
             derbyDialog.AddItem("Edit derby name");
             derbyDialog.AddItem("Start Spawn creator");
@@ -409,7 +397,7 @@ namespace SampSharpGameMode1.Events.Derbys
                     {
                         case 0: // Select starting vehicle
                             {
-                                InputDialog startCarNameDialog = new InputDialog("Vehicle name", "Enter the vehicle name:", false, "Find", "Cancel");
+                                InputDialog startCarNameDialog = new("Vehicle name", "Enter the vehicle name:", false, "Find", "Cancel");
                                 startCarNameDialog.Show(player);
                                 startCarNameDialog.Response += (sender, eventArgs) =>
                                 {
@@ -429,7 +417,7 @@ namespace SampSharpGameMode1.Events.Derbys
                             }
                         case 1: // Edit derby name
                             {
-                                InputDialog raceNameDialog = new InputDialog("Derby's name", "Enter the derby's name:", false, "Edit", "Cancel");
+                                InputDialog raceNameDialog = new("Derby's name", "Enter the derby's name:", false, "Edit", "Cancel");
                                 raceNameDialog.Show(player);
                                 raceNameDialog.Response += (sender, eventArgs) =>
                                 {
@@ -459,7 +447,7 @@ namespace SampSharpGameMode1.Events.Derbys
                                 }
                                 else
                                 {
-                                    List<Vector3R> spawns = new List<Vector3R>();
+                                    List<Vector3R> spawns = new();
                                     if (editingDerby.SpawnPoints.Count == 0)
                                     {
                                         spawns.Add(new Vector3R(player.Position + Vector3.UnitX));
@@ -483,7 +471,7 @@ namespace SampSharpGameMode1.Events.Derbys
                             }
                         case 3: // Load a map
                             {
-                                InputDialog findMapDialog = new InputDialog("Find a map", "Type the name of the map you want to load, or empty for full list", false, "Search", "Cancel");
+                                InputDialog findMapDialog = new("Find a map", "Type the name of the map you want to load, or empty for full list", false, "Search", "Cancel");
                                 findMapDialog.Show(player);
                                 findMapDialog.Response += (sender, eventArgs) =>
                                 {
@@ -501,7 +489,7 @@ namespace SampSharpGameMode1.Events.Derbys
                             }
                         case 4: // Set minimum height
                             {
-                                MessageDialog minHeightDialog = new MessageDialog("Setting minimum height", "This setting is used to determinate when player fall from the map. Place yourself on the lowest part of your derby, when you are ready press \"SET\"", "SET", "Cancel");
+                                MessageDialog minHeightDialog = new("Setting minimum height", "This setting is used to determinate when player fall from the map. Place yourself on the lowest part of your derby, when you are ready press \"SET\"", "SET", "Cancel");
                                 minHeightDialog.Response += (sender, eventArgs) =>
                                 {
                                     if (eventArgs.DialogButton == DialogButton.Left)
@@ -533,8 +521,8 @@ namespace SampSharpGameMode1.Events.Derbys
             }
             else
             {
-                List<int> mapList = new List<int>();
-                ListDialog mapListDialog = new ListDialog(maps.Count + " maps found", "Load", "Cancel");
+                List<int> mapList = new();
+                ListDialog mapListDialog = new(maps.Count + " maps found", "Load", "Cancel");
                 foreach (var map in maps)
                 {
                     mapList.Add(Convert.ToInt32(map.Key));
@@ -546,7 +534,11 @@ namespace SampSharpGameMode1.Events.Derbys
                     if (eventArgs.DialogButton == DialogButton.Left)
                     {
                         editingDerby.MapId = mapList[eventArgs.ListItem];
-                        editingDerby.ReloadMap();
+                        editingDerby.ReloadMap(() =>
+                        {
+                            player.SetTime(editingDerby.Time.Hour, editingDerby.Time.Minute);
+                            player.Notificate("Map loaded");
+                        });
                     }
                     else
                     {
@@ -559,7 +551,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
         private void ShowPickupDialog(DerbyPickup pickup)
 		{
-            ListDialog pickupDialog = new ListDialog("Pickup options", "Select", "Cancel");
+            ListDialog pickupDialog = new("Pickup options", "Select", "Cancel");
             pickupDialog.AddItem("Edit pickup position");
             pickupDialog.AddItem("Edit pickup model [" + pickup.ModelId + "]");
             pickupDialog.AddItem("Edit event");
