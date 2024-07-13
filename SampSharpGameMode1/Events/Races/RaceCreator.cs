@@ -1,4 +1,5 @@
-﻿using SampSharp.GameMode;
+﻿using SampSharp.Core;
+using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
 using SampSharp.GameMode.SAMP;
@@ -115,9 +116,10 @@ namespace SampSharpGameMode1.Events.Races
             else player.SendClientMessage(Color.Red, "Error loading race #" + id + " (invalid ID)");
         }
 
-        private void LoadingRace_Loaded(object sender, RaceLoadedEventArgs e)
+        private async void LoadingRace_Loaded(object sender, RaceLoadedEventArgs e)
         {
-            if(e.success)
+            await TaskHelper.SwitchToMainThread();
+            if (e.success)
             {
                 if(e.race.Creator == player.Name)
                 {

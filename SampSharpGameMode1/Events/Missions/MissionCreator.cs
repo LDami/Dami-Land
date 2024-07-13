@@ -1,4 +1,5 @@
-﻿using SampSharp.GameMode.Definitions;
+﻿using SampSharp.Core;
+using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
@@ -51,8 +52,9 @@ namespace SampSharpGameMode1.Events.Missions
             else player.SendClientMessage(Color.Red, "Error loading mission #" + id + " (invalid ID)");
         }
 
-        private void LoadingRace_Loaded(object sender, MissionLoadedEventArgs e)
+        private async void LoadingRace_Loaded(object sender, MissionLoadedEventArgs e)
         {
+            await TaskHelper.SwitchToMainThread();
             if (e.success)
             {
                 if (e.Mission.Creator == player.Name)

@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using SampSharp.Core;
 using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
@@ -118,8 +119,9 @@ namespace SampSharpGameMode1.Events.Derbys
             else player.SendClientMessage(Color.Red, "Error loading Derby #" + id + " (invalid ID)");
         }
 
-        private void LoadingDerby_Loaded(object sender, DerbyLoadedEventArgs e)
+        private async void LoadingDerby_Loaded(object sender, DerbyLoadedEventArgs e)
         {
+            await TaskHelper.SwitchToMainThread();
             if (e.success)
             {
                 isNew = false;

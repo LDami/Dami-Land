@@ -1,4 +1,5 @@
-﻿using SampSharp.GameMode;
+﻿using SampSharp.Core;
+using SampSharp.GameMode;
 using SampSharp.GameMode.Display;
 using SampSharp.GameMode.Events;
 using SampSharp.GameMode.SAMP;
@@ -83,8 +84,9 @@ namespace SampSharpGameMode1.Map
             else player.SendClientMessage(Color.Red, "Error loading Map #" + id + " (invalid ID)");
         }
 
-        private void LoadingMap_Loaded(object sender, MapLoadedEventArgs e)
+        private async void LoadingMap_Loaded(object sender, MapLoadedEventArgs e)
         {
+            await TaskHelper.SwitchToMainThread();
             if (e.success)
             {
                 if (e.map.Creator == player.DbId)
