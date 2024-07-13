@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Text;
 using System.Threading;
 using MySqlConnector;
 
@@ -25,7 +24,6 @@ namespace SampSharpGameMode1
         private MySqlConnection mySqlConnection = null;
 
         private MySqlDataReader reader = null;
-        private int readRows;
         private int rowsAffected;
         public int RowsAffected { get => rowsAffected; private set => rowsAffected = value; }
 
@@ -133,7 +131,6 @@ namespace SampSharpGameMode1
             ReconnectIfNeeded();
             if (query.StartsWith("SELECT"))
             {
-                readRows = 0;
                 /*
                 Console.WriteLine("MySQLConnector.cs - MySQLConnector.OpenReader:I: Fetching query: {0}", query);
                 Console.WriteLine("With params:");
@@ -175,12 +172,11 @@ namespace SampSharpGameMode1
         /// <returns>Dictionary(column-name: string, value: string) of the row</returns>
         public Dictionary<string, string> GetNextRow()
         {
-            Dictionary<string, string> result = new Dictionary<string, string>();
+            Dictionary<string, string> result = new();
             if (reader != null)
             {
                 if (reader.Read())
                 {
-                    readRows++;
                     string value;
                     for (int i = 0; i < reader.FieldCount; i++)
                     {
@@ -192,7 +188,7 @@ namespace SampSharpGameMode1
                         {
                             result.Add(reader.GetName(i), value);
                         }
-                        catch(ArgumentException e)
+                        catch(ArgumentException)
                         {
                             Console.WriteLine($"Unable to add the key {reader.GetName(i)}, you may have this column twice in the result of the SQL query.");
                         }
@@ -204,7 +200,7 @@ namespace SampSharpGameMode1
 
         public class Field
         {
-            private static Dictionary<string, string> field = new Dictionary<string, string>()
+            private static readonly Dictionary<string, string> fields = new()
             {
                 /* Race */
                 {"race_id", "Race ID"},
@@ -225,8 +221,8 @@ namespace SampSharpGameMode1
             
             public static string GetFieldName(string name)
             {
-                if (field.ContainsKey(name))
-                    return field[name];
+                if (fields.ContainsKey(name))
+                    return fields[name];
                 else
                 {
                     Logger.WriteLineAndClose("MySQLConnector.cs - MySQLConnector.Field.GetFieldName:W: No field name for " + name);
