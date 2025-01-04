@@ -187,6 +187,7 @@ namespace SampSharpGameMode1
             logger.Write("GameMode.cs - GameMode.OnInitialized:I: Loading parked vehicles ... ");
             try
             {
+                Random rdm = new();
                 mySQLConnector.OpenReader("SELECT * FROM parked_vehicles", new Dictionary<string, object>());
                 Dictionary<string, string> row = mySQLConnector.GetNextRow();
                 while (row.Count > 0)
@@ -194,7 +195,11 @@ namespace SampSharpGameMode1
                     BaseVehicle v = StoredVehicle.CreateStatic((VehicleModelType)Convert.ToInt32(row["model_id"]), new Vector3(
                         (float)Convert.ToDouble(row["spawn_pos_x"]),
                         (float)Convert.ToDouble(row["spawn_pos_y"]),
-                        (float)Convert.ToDouble(row["spawn_pos_z"])), (float)Convert.ToDouble(row["spawn_rot"]), 0, 0);
+                        (float)Convert.ToDouble(row["spawn_pos_z"])), (float)Convert.ToDouble(row["spawn_rot"]),
+                        row["color1"] != "[null]" ? Convert.ToInt16(row["color1"]) : rdm.Next(255),
+                        row["color2"] != "[null]" ? Convert.ToInt16(row["color2"]) : rdm.Next(255)
+                    );
+                    v.GetColor(out int c1, out int c2);
                     StoredVehicle.AddDbPool(v.Id, Convert.ToInt32(row["vehicle_id"]));
                     row = mySQLConnector.GetNextRow();
                 }
@@ -204,7 +209,7 @@ namespace SampSharpGameMode1
             }
             catch(Exception ex)
             {
-                logger.Write("Error !");
+                logger.WriteLine("Error !");
                 logger.WriteLine("GameMode.cs - GameMode.OnInitialized:E: Error trying to load vehicles: " + ex.Message);
             }
 

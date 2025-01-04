@@ -240,8 +240,9 @@ namespace SampSharpGameMode1.Commands
                             param.Add("@posy", vMenuDialogVehicle.Position.Y);
                             param.Add("@posz", vMenuDialogVehicle.Position.Z);
                             param.Add("@rot", vMenuDialogVehicle.Angle);
-                            param.Add("@color1", null);
-                            param.Add("@color2", null);
+                            vMenuDialogVehicle.GetColor(out int color1, out int color2);
+                            param.Add("@color1", color1);
+                            param.Add("@color2", color2);
                             int id = (int)mySQLConnector.Execute("INSERT INTO parked_vehicles (model_id, spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot, color1, color2) VALUES (@model_id, @posx, @posy, @posz, @rot, @color1, @color2)", param);
                             StoredVehicle.AddDbPool(vMenuDialogVehicle.Id, id);
                             player.Notificate("Vehicle parked");

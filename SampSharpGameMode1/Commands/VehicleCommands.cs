@@ -82,15 +82,43 @@ namespace SampSharpGameMode1.Commands
 				player.Vehicle.Angle = player.Vehicle.Angle;
 				player.Vehicle.Repair();
 			}
-		}
-		[Command("rep")]
-		private static void RepCommand(Player player)
-		{
-			if (!player.IsInEvent && player.InAnyVehicle)
-			{
-				player.Vehicle.Repair();
-				player.Notificate("Vehicle repaired");
-			}
-		}
-	}
+        }
+        [Command("rep")]
+        private static void RepCommand(Player player)
+        {
+            if (!player.IsInEvent && player.InAnyVehicle)
+            {
+                player.Vehicle.Repair();
+                player.Notificate("Vehicle repaired");
+            }
+        }
+        [Command("randomcolor")]
+        private static void RandomColorCommand(Player player)
+        {
+            if (player.InAnyVehicle)
+            {
+                Random rdm = new();
+                player.Vehicle.ChangeColor(rdm.Next(255), rdm.Next(255));
+            }
+        }
+        [Command("getcolor")]
+        private static void GetVehicleColorCommand(Player player)
+        {
+            if (player.InAnyVehicle)
+            {
+                player.Vehicle.GetColor(out int c1, out int c2);
+                player.SendClientMessage("" + c1);
+                player.SendClientMessage("" + c2);
+            }
+        }
+        [Command("color")]
+        private static void VehicleColorCommand(Player player, int color1, int color2)
+        {
+            if (player.InAnyVehicle)
+            {
+                Random rdm = new();
+                player.Vehicle.ChangeColor(color1, color2);
+            }
+        }
+    }
 }
