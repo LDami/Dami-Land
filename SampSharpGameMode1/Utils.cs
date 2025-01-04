@@ -97,9 +97,15 @@ namespace SampSharpGameMode1
             return (float)((angle / 360.0) - Math.Floor(angle / 360.0)) * 360.0f;
         }
 
+        /// <summary>
+        /// Returns the angle in degrees for the game
+        /// </summary>
+        /// <param name="origin">The point you are starting from</param>
+        /// <param name="target">The point you want to reach</param>
+        /// <returns>Angle in degrees</returns>
         public static float GetAngleToPoint(Vector2 origin, Vector2 target)
         {
-            return GetAbsoluteAngle((float)(Math.Atan2(target.Y - origin.Y, target.X - origin.X) * 180 / Math.PI));
+            return GetAbsoluteAngle((float)(Math.Atan2(target.Y - origin.Y, target.X - origin.X) * 180 / Math.PI) - 90);
         }
 
         /// <summary>
