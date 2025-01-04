@@ -3,6 +3,7 @@ using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using System;
 using System.Collections.Generic;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using static SampSharpGameMode1.Civilisation.PathExtractor;
@@ -56,8 +57,6 @@ namespace SampSharpGameMode1.Civilisation
 
         List<Node> openList = new List<Node>();
         List<Node> closedList = new List<Node>();
-        List<PathNode> finalPath = new List<PathNode>();
-        List<Node> cameFrom = new List<Node>();
 
         Node start;
         Node end;
@@ -76,6 +75,10 @@ namespace SampSharpGameMode1.Civilisation
             this.end = node;
 
             openList.Add(this.start);
+
+            // Websocket
+            SendPathNodeToWebSocket(start, "start");
+            SendPathNodeToWebSocket(end, "end");
         }
 
         public List<Node> GetNeighbors(Node node)
@@ -111,7 +114,6 @@ namespace SampSharpGameMode1.Civilisation
                 Node current;
                 bool success = false;
                 closedList = new List<Node>();
-                finalPath = new List<PathNode>();
                 while (openList.Count > 0)
                 {
                     if(openList.Count > 1)
@@ -123,6 +125,19 @@ namespace SampSharpGameMode1.Civilisation
                             else return 0;
                         });
                     }
+
+                    // Websocket
+                    /*
+                    openList.ForEach(n =>
+                    {
+                        SendPathNodeToWebSocket(n.pathNode, "open");
+                    });
+                    closedList.ForEach(n =>
+                    {
+                        SendPathNodeToWebSocket(n.pathNode, "closed");
+                    });
+                    */
+
                     current = openList[0];
                     openList.Remove(current);
                     if (current.pathNode.id == end.pathNode.id)
@@ -132,8 +147,8 @@ namespace SampSharpGameMode1.Civilisation
                         success = true;
                         break;
                     }
-                    Console.WriteLine("Current = " + current.pathNode.id);
-                    Console.WriteLine("Current F = " + current.f);
+                    //Console.WriteLine("Current = " + current.pathNode.id);
+                    //Console.WriteLine("Current F = " + current.f);
                     openList.Remove(current);
                     closedList.Add(current);
                     List<Node> neighbors = GetNeighbors(current);
@@ -141,7 +156,7 @@ namespace SampSharpGameMode1.Civilisation
 
                     //gm.socket.Write("{\"id\": \"" + current.pathNode.id + "\", \"status\": \"current\"}");
 
-                    Console.WriteLine("Neighbors = ");
+                    //Console.WriteLine("Neighbors = ");
                     for(int i = 0; i <= neighbors.Count-1; i++)
                     {
                         Console.WriteLine(neighbors[i].ToString());
@@ -171,15 +186,41 @@ namespace SampSharpGameMode1.Civilisation
                         }
                     }
                     closedList.Add(current);
-                    int v;
-                    //while((v = Console.Read()) != 0x61)
-                    //{ }
-                    //gm.socket.Write("{\"id\": \"" + current.pathNode.id + "\", \"status\": \"closed\"}");
                 }
                 if (!success)
                     OnFailure(new EventArgs());
             }));
             t.Start();
+        }
+
+        private static void SendPathNodeToWebSocket(PathNode node, string status)
+        {
+            GameMode gm = (GameMode)BaseMode.Instance;
+            bool isSocketAlive = false;
+            MySocketIO socket = gm.socket;
+            if (socket.GetStatus() == MySocketIO.SocketStatus.CONNECTED)
+            {
+                isSocketAlive = true;
+            }
+
+            string data = "{ \"id\": \"" + node.id + "\", \"posX\": " + node.position.X + ", \"posY\": " + node.position.Y + ", \"links\": [";
+            int idx = 1;
+            foreach (LinkInfo link in node.links)
+            {
+                data += "\"" + link.targetNode.id + "\"";
+                if (idx < node.links.Count)
+                    data += ",";
+                idx++;
+            }
+            data += "], \"status\": \"" + status + "\" }";
+            if (socket.GetStatus() == MySocketIO.SocketStatus.CONNECTED)
+            {
+                isSocketAlive = true;
+            }
+            if (isSocketAlive)
+            {
+                if (socket.Write(data) == -1) isSocketAlive = false;
+            }
         }
 
         public void ReconstructPath(Node current)

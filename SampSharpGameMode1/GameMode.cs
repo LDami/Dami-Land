@@ -114,74 +114,7 @@ namespace SampSharpGameMode1
             
             logger.Write("GameMode.cs - GameMode.OnInitialized:I: Initializing ColAndreas ... ");
             Physics.ColAndreas.Init();
-            logger.WriteLine("Done !");
-
-            logger.Write($"GameMode.cs - GameMode.OnInitialized:I: Loading Record file ...");
-            sw.Restart();
-            Record record = RecordConverter.Parse(@"C:\stayinvehicle.rec");
-            sw.Stop();
-            logger.WriteLine($"Done in {sw.ElapsedMilliseconds} ms");
-
-            for (int i = 0; i < record.VehicleBlocks.Count; i++)
-            {
-                RecordInfo.VehicleBlock block = record.VehicleBlocks[i];
-                block.velocity = Vector3.Forward;
-                block.position = new Vector3(block.position.X, block.position.Y - (10 * i), block.position.Z);
-                record.VehicleBlocks[i] = block;
-            }
-
-            logger.Write($"GameMode.cs - GameMode.OnInitialized:I: Recreating Record file ...");
-            sw.Restart();
-            RecordCreator.Save(record, @"recreated.rec");
-            sw.Stop();
-            logger.WriteLine($"Done in {sw.ElapsedMilliseconds} ms");
-            RecordConverter.Parse(@"C:\Serveur OpenMP\npcmodes\recordings\recreated.rec");
-            /*
-            
-
-            VehicleAI.Init(VehicleModelType.Mower, PathTools.GetNeirestPathNode(new Vector3(2486.78, 1531.6, 10.81)).position, 0);
-
-            List<PathNode> allPathNodes = GetPathNodes();
-            List<PathNode> allNearPathNodes = new List<PathNode>();
-
-            PathNode nearestNodeFrom = new PathNode();
-            PathNode nearestNodeTo = new PathNode();
-            PathNode lastNode = new PathNode();
-
-            Vector3 from = new Vector3(2486.78, 1531.6, 10.81);
-            Vector3 to = new Vector3(2595.62, 1472.35, 10.40);
-
-            foreach (PathNode node in allPathNodes)
-            {
-                if (node.position.DistanceTo(from) < from.DistanceTo(to) || node.position.DistanceTo(to) < from.DistanceTo(to))
-                {
-                    allNearPathNodes.Add(node);
-                }
-            }
-            foreach (PathNode node in allNearPathNodes)
-            {
-                if (lastNode.position != Vector3.Zero)
-                {
-                    if (nearestNodeFrom.position == Vector3.Zero || nearestNodeFrom.position.DistanceTo(from) > lastNode.position.DistanceTo(from))
-                    {
-                        nearestNodeFrom = lastNode;
-                    }
-                    if (nearestNodeTo.position == Vector3.Zero || nearestNodeTo.position.DistanceTo(to) > lastNode.position.DistanceTo(to))
-                    {
-                        nearestNodeTo = lastNode;
-                    }
-                }
-                lastNode = node;
-            }
-
-            PathFinder pf = new PathFinder(allNearPathNodes, nearestNodeFrom, nearestNodeTo);
-            pf.Find();
-            pf.Success += (obj, e) =>
-            {
-                VehicleAI.SetPath(e.path);
-            };
-
-            */
+            logger.WriteLine("Done !");            
 
             /* Loading parked vehicles */
             logger.Write("GameMode.cs - GameMode.OnInitialized:I: Loading parked vehicles ... ");
@@ -246,17 +179,9 @@ namespace SampSharpGameMode1
 
             /*
             Console.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Connecting to socket ... ");
-            socket = new MySocketIO("127.0.0.1", 5555);
+            socket = new MySocketIO("192.168.1.38", 5555);
             socket.Connect();
             */
-            Vector3 start = new Vector3(-2615.5942, 2307.6628, 7.7573);
-            //Vector3 start = new Vector3(-1574.7374, 2671.0313, 55.6593); // pos1
-            //Vector3 end = new Vector3(-2672.7515, 2461.6265, 41.8708); // Long
-            //Vector3 end = new Vector3(-2520.9419, 2409.3198, 17.1795); // Short
-            //Vector3 end = new Vector3(-1574.7374, 2671.0313, 55.6593); // pos1
-            Vector3 end = new Vector3(-1646.4111, 2490.5620, 86.0364); // chemin
-            //Vector3 end = new Vector3(-1714.8938, 2524.8657, 102.2524); // offroad
-            //this.CalculateWay(start, end);
         }
 
         protected override void OnExited(EventArgs e)
