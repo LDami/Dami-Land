@@ -26,7 +26,9 @@ namespace SampSharpGameMode1.Display
                 hud.Show();
                 if (player.Vehicle.Model == SampSharp.GameMode.Definitions.VehicleModelType.Hydra)
                 {
-                    hud.SetText("hydra_reactor_angle", "Reactor angle: " + player.Vehicle.HydraReactorAngle);
+                    float hydraReactorAngle = player.Vehicle.HydraReactorAngle;
+                    hydraReactorAngle = (hydraReactorAngle - 0) / (327685000 - 0) * (90 - 0);
+                    hud.SetText("hydra_reactor_angle", "Reactor angle: " + hydraReactorAngle.ToString("F0"));
                 }
                 else
                 {
@@ -54,7 +56,9 @@ namespace SampSharpGameMode1.Display
 
                 if (player.Vehicle.Model == SampSharp.GameMode.Definitions.VehicleModelType.Hydra)
                 {
-                    hud.SetText("hydra_reactor_angle", "Reactor angle: " + player.Vehicle.HydraReactorAngle);
+                    float hydraReactorAngle = player.Vehicle.HydraReactorAngle;
+                    hydraReactorAngle = (hydraReactorAngle - 0) / (327685000 - 0) * (90 - 0);
+                    hud.SetText("hydra_reactor_angle", "Reactor angle: " + hydraReactorAngle.ToString("F0"));
                 }
 
             }
