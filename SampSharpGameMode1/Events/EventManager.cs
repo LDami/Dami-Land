@@ -128,6 +128,7 @@ namespace SampSharpGameMode1.Events
                 managerOptionDialog.AddItem("Open event to players");
             else if (evt.Status == EventStatus.Waiting)
                 managerOptionDialog.AddItem("Start event");
+            managerOptionDialog.AddItem(Color.Yellow + "Restart event");
             managerOptionDialog.AddItem(Color.Red + "Abort event");
 
             managerOptionDialog.Show(player);
@@ -157,10 +158,16 @@ namespace SampSharpGameMode1.Events
                                 else player.SendClientMessage(Color.Red + "The event cannot be started (there are maybe no player)");
                             }
                         }
-                        else if (eventArgs.ListItem == 1) // Abort
+                        else if (eventArgs.ListItem == 1) // Restart
+                        {
+                            evt.End(EventFinishedReason.Terminated);
+                            evt.Start(evt.Slots);
+                            player.Notificate("Event restarted");
+                        }
+                        else if (eventArgs.ListItem == 2) // Abort
                         {
                             eventList.Remove(evt);
-                            if(openedEvent == evt)
+                            if (openedEvent == evt)
                                 openedEvent = null;
                             evt.End(EventFinishedReason.Aborted);
                             player.Notificate("Event cancelled");
