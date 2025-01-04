@@ -85,11 +85,6 @@ namespace SampSharpGameMode1.Commands
                 player.CancelSelectTextDraw();
             }
         }
-
-        public void ForceHide()
-        {
-            layer.Hide("mapbox");
-        }
     }
     class TeleportCommands
     {
@@ -98,7 +93,6 @@ namespace SampSharpGameMode1.Commands
         {
             MapHUD mapHUD = new(player as Player);
             mapHUD.Show();
-            mapHUD.ForceHide();
             player.SelectTextDraw(ColorPalette.Primary.Main.GetColor());
             player.CancelClickTextDraw += (sender, e) =>
             {
