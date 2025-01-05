@@ -41,9 +41,9 @@ namespace SampSharpGameMode1.Events.Missions
         private bool isPreparing = false;
         public bool isStarted = false;
         public List<Player> players;
-        private Dictionary<Player, MissionPlayerData> playersData = new Dictionary<Player, MissionPlayerData>();
+        private Dictionary<Player, MissionPlayerData> playersData = new();
         public List<Player> spectatingPlayers; // Contains spectating players who looses the mission, and others players who spectates without joining
-        private Dictionary<Player, HUD> playersLiveInfoHUD = new Dictionary<Player, HUD>();
+        private Dictionary<Player, HUD> playersLiveInfoHUD = new();
         private int virtualWorld;
         private SampSharp.GameMode.SAMP.Timer countdownTimer;
         private int countdown;
@@ -100,7 +100,7 @@ namespace SampSharpGameMode1.Events.Missions
                     this.Name = "Mission #1";
 
                     Steps = new List<MissionStep>();
-                    Stage s = new Stage();
+                    Stage s = new();
                     s.Load(id, virtualworld);
                     s.Complete += Mission_Complete;
                     Steps.Add(s);

@@ -77,7 +77,7 @@ namespace SampSharpGameMode1.Events.Derbys
 				switch (Event)
 				{
 					case PickupEvent.Random:
-						DerbyPickupRandomEvent randomEvent = new DerbyPickupRandomEvent((Player)e.Player);
+						DerbyPickupRandomEvent randomEvent = new(e.Player as Player);
 						break;
 					case PickupEvent.ChangeVehicle:
 						Vector3 pos = Vector3.Zero;
@@ -90,9 +90,9 @@ namespace SampSharpGameMode1.Events.Derbys
 							e.Player.RemoveFromVehicle();
 							veh.Dispose();
 						}
-						Random rdm = new Random();
+						Random rdm = new();
 						// Prevent system to load an unusable / cheated vehicle in Derby
-						List<VehicleCategory> notAuthorizedVehicle = new List<VehicleCategory>()
+						List<VehicleCategory> notAuthorizedVehicle = new()
 						{
 							VehicleCategory.Airplane,
 							VehicleCategory.Boat,

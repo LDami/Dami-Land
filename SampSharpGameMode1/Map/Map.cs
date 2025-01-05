@@ -52,7 +52,7 @@ namespace SampSharpGameMode1.Map
 
                     bool errorFlag = false;
                     Dictionary<string, string> row;
-                    Dictionary<string, object> param = new Dictionary<string, object>
+                    Dictionary<string, object> param = new()
                     {
                         { "@id", id }
                     };
@@ -113,10 +113,12 @@ namespace SampSharpGameMode1.Map
                         GameMode.mySQLConnector.CloseReader();
                     }
 
-                    MapLoadedEventArgs args = new MapLoadedEventArgs();
-                    args.success = !errorFlag;
-                    args.map = this;
-                    args.loadedObjects = Objects.Count;
+                    MapLoadedEventArgs args = new()
+                    {
+                        success = !errorFlag,
+                        map = this,
+                        loadedObjects = Objects.Count
+                    };
                     OnLoaded(args);
                     AddPool(this);
                 });
@@ -155,7 +157,7 @@ namespace SampSharpGameMode1.Map
             Dictionary<int, string> results = new Dictionary<int, string>();
 
             MySQLConnector mySQLConnector = MySQLConnector.Instance();
-            Dictionary<string, object> param = new Dictionary<string, object>
+            Dictionary<string, object> param = new()
                 {
                     { "@name", str },
                     { "@playerid", owner.DbId }
