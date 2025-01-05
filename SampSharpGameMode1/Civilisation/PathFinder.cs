@@ -198,6 +198,8 @@ namespace SampSharpGameMode1.Civilisation
             GameMode gm = (GameMode)BaseMode.Instance;
             bool isSocketAlive = false;
             MySocketIO socket = gm.socket;
+            if (socket is null)
+                return;
             if (socket.GetStatus() == MySocketIO.SocketStatus.CONNECTED)
             {
                 isSocketAlive = true;
