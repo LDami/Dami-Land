@@ -34,12 +34,20 @@ namespace SampSharpGameMode1
 			{
 				if (this.player.IsInEvent)
 				{
-					if (this.player.Weapon != Weapon.None && this.player.pEvent.Status == Events.EventStatus.Running)
-					{
-						// BasePlayer.Weapon returns only the weapon held by the player before he enter in a vehicle
-						// So the AntiCheat system will only detect the weapon if player leave the vehicle
-						// See: https://open.mp/fr/docs/scripting/functions/GetPlayerWeapon
-						OnSuspiciousBehavior(SuspiciousBehavior.UnauthorizedWeaponInEvent);
+					if (this.player.pEvent.Status == Events.EventStatus.Running)
+                    {
+						bool hasAnyWeapon = false;
+						for(int i = 0; i <= 12; i++)
+						{
+							player.GetWeaponData(i, out Weapon weapon, out int _);
+							if(weapon is not Weapon.None)
+							{
+								hasAnyWeapon = true;
+								break;
+							}
+						}
+						if(hasAnyWeapon)
+	                        OnSuspiciousBehavior(SuspiciousBehavior.UnauthorizedWeaponInEvent);
 					}
 				}
 			}
