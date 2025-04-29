@@ -76,11 +76,13 @@ namespace SampSharpGameMode1.Display
             const int gapBetweenItems = 20;
 
             private BasePlayer player;
+            private TextdrawCreator tdCreatorInstance;
             private string lastItemNameClicked = "";
-            public TextdrawMenuHUD(BasePlayer player, List<TextdrawLayer> layers) : base(player, "tdcreator-layers.json")
+            private Dictionary<int, string> nameIndex = new();
+            public TextdrawMenuHUD(BasePlayer player, List<TextdrawLayer> layers, TextdrawCreator tdCreatorInstance) : base(player, "tdcreator-layers.json")
             {
-                this.player = player;
-                for(int i = 0; i < layers.Count; i++)
+                this.tdCreatorInstance = tdCreatorInstance;
+                for (int i = 0; i < layers.Count; i++)
                 {
                     layer.Duplicate(player, "layer#bg", $"layer{i}bg");
                     layer.SetTextdrawPosition($"layer{i}bg", layer.GetTextdrawPosition("layer#bg") + new Vector2(0, i * gapBetweenLayers));
@@ -104,6 +106,7 @@ namespace SampSharpGameMode1.Display
                         layer.Duplicate(player, "item#name", $"item{j}name");
                         layer.SetTextdrawPosition($"item{j}name", layer.GetTextdrawPosition("item#name") + new Vector2(0, j * gapBetweenItems));
                         layer.SetTextdrawText($"item{j}name", tdList[j].name);
+                        nameIndex.Add(j, tdList[j].name);
                         //layer.SetTextdrawText($"item{j}name", $"item{j}name");
                     }
                 }
@@ -111,6 +114,7 @@ namespace SampSharpGameMode1.Display
                 layer.SetClickable("menu-duplicate");
                 layer.SetClickable("menu-delete");
                 
+                layer.PutInFront(player, "menubg");
                 layer.PutInFront(player, "menu-select");
                 layer.PutInFront(player, "menu-duplicate");
                 layer.PutInFront(player, "menu-delete");
@@ -132,7 +136,26 @@ namespace SampSharpGameMode1.Display
                 }
                 else if(e.TextdrawName.StartsWith("menu"))
                 {
-                    CloseMenu();
+                    if(e.TextdrawName == "menu-select")
+                    {
+                        if(lastItemNameClicked.StartsWith("item"))
+                        {
+                            string pattern = @"item(\d).*";
+                            foreach(Match match in Regex.Matches(lastItemNameClicked, pattern))
+                            {
+                                try
+                                {
+                                    int idx = Convert.ToInt32(match.Groups[1].Value);
+                                    tdCreatorInstance.Select(nameIndex[idx]);
+                                    CloseMenu();
+                                }
+                                catch(Exception _)
+                                {
+
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -317,7 +340,6 @@ namespace SampSharpGameMode1.Display
                     File.Delete(filename);
                 using (FileStream fs = File.Open(filename, FileMode.CreateNew, FileAccess.Write))
                 {
-                    
                     byte[] data = new UTF8Encoding(true).GetBytes(output);
                     foreach (byte databyte in data)
                         fs.WriteByte(databyte);
@@ -365,7 +387,7 @@ namespace SampSharpGameMode1.Display
             {
                 case Keys.Crouch:
                     {
-                        tdMenuHUD = new TextdrawMenuHUD(player, layers);
+                        tdMenuHUD = new TextdrawMenuHUD(player, layers, this);
                         player.SelectTextDraw(ColorPalette.Primary.Main.GetColor());
                         tdMenuHUD.Refresh(@"^item\d.*$");
                         player.CancelClickTextDraw += (sender, e) =>

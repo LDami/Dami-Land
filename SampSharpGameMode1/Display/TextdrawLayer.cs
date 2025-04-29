@@ -17,7 +17,7 @@ namespace SampSharpGameMode1.Display
         public bool AutoUpdate = true;
 
         private Color editingColor = new Color(180, 50, 50);
-        private const bool DEBUG_TEXTDRAW_LAYER = true;
+        private const bool DEBUG_TEXTDRAW_LAYER = false;
 
         Dictionary<string, Textdraw> textdrawList = new Dictionary<string, Textdraw>();
         Dictionary<string, TextdrawType> textdrawType = new Dictionary<string, TextdrawType>();
