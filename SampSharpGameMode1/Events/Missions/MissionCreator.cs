@@ -8,15 +8,51 @@ using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using static SampSharpGameMode1.Display.TextdrawLayer;
 
 namespace SampSharpGameMode1.Events.Missions
 {
     public class MissionCreator : EventCreator
     {
+        class HUD : Display.HUD
+        {
+            private string selectedIdx;
+            public HUD(Player player) : base(player, "missioncreator.json")
+            {
+            }
+            public void Destroy()
+            {
+                layer.HideAll();
+            }
+            public void SetMissionName(string name)
+            {
+                string _name = "[Untitled]";
+                if (name is not null)
+                {
+                    if (name.Length > 14)
+                        _name = name[..14] + "...";
+                    else
+                        _name = name;
+                }
+                layer.SetTextdrawText("missionname", _name);
+            }
+            public void SetSelectedStage(string idx)
+            {
+                selectedIdx = idx;
+                layer.SetTextdrawText("selectedidx", "Stage: " + idx);
+            }
+            public void SetTotalStages(int totalStages)
+            {
+                layer.SetTextdrawText("totalcp", "Total stages: " + totalStages);
+            }
+        }
 
         protected MySQLConnector mySQLConnector = MySQLConnector.Instance();
 
         Player player;
+
+        HUD hud;
+
         public int EventId { get => editingMission.Id; }
         public Mission editingMission = null;
         public bool isNew;
@@ -30,7 +66,7 @@ namespace SampSharpGameMode1.Events.Missions
 
         public void Create()
         {
-            editingMission = new Mission();
+            editingMission = new();
             editingMission.IsCreatorMode = true;
             editingMission.Name = "[Untitled]";
             editingMission.MapId = -1;
@@ -44,15 +80,15 @@ namespace SampSharpGameMode1.Events.Missions
         {
             if (id > 0)
             {
-                Mission editingMission = new Mission();
+                Mission editingMission = new();
                 editingMission.IsCreatorMode = true;
-                editingMission.Loaded += LoadingRace_Loaded;
+                editingMission.Loaded += EditingMission_Loaded;
                 editingMission.Load(id);
             }
             else player.SendClientMessage(Color.Red, "Error loading mission #" + id + " (invalid ID)");
         }
 
-        private async void LoadingRace_Loaded(object sender, MissionLoadedEventArgs e)
+        private async void EditingMission_Loaded(object sender, MissionLoadedEventArgs e)
         {
             await TaskHelper.SwitchToMainThread();
             if (e.success)
@@ -81,17 +117,16 @@ namespace SampSharpGameMode1.Events.Missions
             {
                 player.Teleport(editingMission.Steps[0].SpawnPoint.Position);
             }
-            /*
+            
             hud = new HUD(player);
-            hud.SetRaceName(editingRace.Name);
-            editingMode = EditingMode.Checkpoints;
-            hud.SetSelectedIdx("S", editingMode);
-            hud.SetTotalCP(editingRace.checkpoints.Count - 1);
-            */
+            hud.SetMissionName(editingMission.Name);
+            hud.SetTotalStages(editingMission.Steps.Count - 1);
+            
             player.SendClientMessage("Mission Creator loaded, here are the controls:");
             player.SendClientMessage($"    {ColorPalette.Secondary.Main}/mission help                               {Color.White}Show the controls list");
             player.SendClientMessage($"    {ColorPalette.Secondary.Main}/mission create [stage/actor/npc]           {Color.White}Show the controls list");
             player.SendClientMessage($"    {ColorPalette.Secondary.Main}/mission help                               {Color.White}Show the controls list");
+            player.SendClientMessage($"{ColorPalette.Error.Main}Warning: the mission creator is not fully developped yet, and the save/load function has been disabled.");
             //player.KeyStateChanged += Player_KeyStateChanged;
         }
 
@@ -211,7 +246,7 @@ namespace SampSharpGameMode1.Events.Missions
                 return (mySQLConnector.RowsAffected > 0);
             }
             */
-            return true;
+            return false;
         }
 
         public Boolean Save(string name) // Only if the race does not already exist
@@ -236,21 +271,17 @@ namespace SampSharpGameMode1.Events.Missions
                 else return false;
             }
             */
-            return true;
+            return false;
         }
 
-    public void Unload()
-    {
-        if (editingMission != null)
+        public void Unload()
         {
-            editingMission.Unload();
-        }
-        editingMission = null;
-        /*
-        if (hud != null)
-            hud.Destroy();
-        hud = null;
-        */
+            editingMission?.Unload();
+            editingMission = null;
+        
+            hud?.Destroy();
+            hud = null;
+        
             foreach (BaseVehicle veh in BaseVehicle.All)
             {
                 if (veh.VirtualWorld == (int)VirtualWord.EventCreators + player.Id)
