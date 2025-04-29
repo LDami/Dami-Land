@@ -8,6 +8,67 @@ using System.Linq;
 
 namespace SampSharpGameMode1.Events
 {
+
+
+    class SpectatingHUD : HUD
+    {
+        List<Player> players;
+
+        public SpectatingHUD(Player player, List<Player> players) : base(player, "eventspectating.json")
+        {
+            player.KeyStateChanged += Player_KeyStateChanged;
+            this.DynamicDuplicateLayer("playername#", players.Count, "playerlistbg");
+
+            SetPlayersList(players);
+
+            layer.SetClickable("leavebutton");
+            int idx = 0;
+            foreach (Player p in players)
+            {
+                layer.SetClickable("playername" + idx++);
+            }
+            layer.TextdrawClicked += Layer_TextdrawClicked;
+        }
+
+        private void Layer_TextdrawClicked(object sender, TextdrawLayer.TextdrawEventArgs e)
+        {
+            if(e.TextdrawName == "leavebutton")
+            {
+                (sender as Player).pEvent.Leave(sender as Player);
+            }
+            else if(e.TextdrawName.StartsWith("playername"))
+            {
+                int idx = Convert.ToInt16(e.TextdrawName.Substring("playername".Length, e.TextdrawName.Length - "playername".Length));
+                player.SpectateVehicle((sender as Player).pEvent.Source.GetPlayers()[idx].Vehicle);
+            }
+            player.CancelSelectTextDraw();
+        }
+
+        public void Dispose()
+        {
+            player.KeyStateChanged -= Player_KeyStateChanged;
+            this.Dispose();
+        }
+
+        private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
+        {
+            if(e.NewKeys == SampSharp.GameMode.Definitions.Keys.Crouch)
+            {
+                player.SelectTextDraw(ColorPalette.Primary.Main.GetColor());
+            }
+        }
+
+        public void SetPlayersList(List<Player> players)
+        {
+            this.players = players;
+            int idx = 0;
+            foreach(Player p in players)
+            {
+                layer.SetTextdrawText("playername" + idx++, p.Name);
+            }
+        }
+    }
+
     public enum EventStatus
     {
         NotLoaded,
@@ -50,6 +111,8 @@ namespace SampSharpGameMode1.Events
         public List<EventSlot> Slots { get; set; }
         public int AvailableSlots { get; set; }
         public BasePlayer Winner { get; set; }
+
+        private Dictionary<Player, SpectatingHUD> spectatingPlayersHUD = new();
 
         public event EventHandler<EventLoadedEventArgs> Loaded;
         protected virtual void OnLoaded(EventLoadedEventArgs e)
@@ -123,6 +186,25 @@ namespace SampSharpGameMode1.Events
         {
             foreach (Player p in evt.Source.GetPlayers())
                 p.SendClientMessage(Color.Wheat, "[Event] " + Color.White + msg);
+        }
+
+        public void SetPlayerInSpectator(Player player)
+        {
+            if (!this.Source.IsPlayerSpectating(player) && this.Status == EventStatus.Running)
+            {
+                spectatingPlayersHUD[player] = new SpectatingHUD(player, this.Source.GetPlayers());
+                player.ToggleSpectating(true);
+                player.SpectateVehicle(this.Source.GetPlayers()[0].Vehicle);
+            }
+        }
+
+        public void RemoveFromSpectating(Player player)
+        {
+            if (this.Source.IsPlayerSpectating(player))
+            {
+                spectatingPlayersHUD[player].Dispose();
+                player.ToggleSpectating(false);
+            }
         }
     }
 }
