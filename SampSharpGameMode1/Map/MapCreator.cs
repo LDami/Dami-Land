@@ -303,6 +303,59 @@ namespace SampSharpGameMode1.Map
             listDialog.Show(player);
         }
 
+        public void AddGroup(string name)
+        {
+            int highestIndex = this.editingMap.Groups.Select(g => g.Index).OrderBy(idx => idx).LastOrDefault(0);
+            this.editingMap.Groups.Add(new MapGroup(-1, highestIndex + 1, Color.White, name));
+            UpdateGroupsHUD();
+        }
+
+        public void DeleteGroup(int index)
+        {
+            MapGroup groupToDelete = this.editingMap.Groups.Where(g => g.Index == index).First();
+            if (groupToDelete is null)
+                player.SendClientMessage("There is not group with index " + index);
+            else
+            {
+                MessageDialog dialog = new("Delete group", $"You are about to delete the group {groupToDelete.Name}, do you want to dissolve it or delete all the objects ?", "Dissolve", "Delete all objects");
+                MessageDialog confirmDialog = new("Do you confirm ?", "", "Yes", "Cancel");
+                int action = 0; // 0 = cancel, 1 = dissolve, 2 = delete all objects
+                dialog.Response += (sender, evt) =>
+                {
+                    // TODO: check for ESCAPE key
+                    if(evt.DialogButton == SampSharp.GameMode.Definitions.DialogButton.Left)
+                    {
+                        // Dissolve
+                        action = 1;
+                        confirmDialog.Show(player);
+                    }
+                    else
+                    {
+                        // Delete contained objects
+                        action = 2;
+                        confirmDialog.Show(player);
+                    }
+                };
+                confirmDialog.Response += (sender, evt) =>
+                {
+                    if (evt.DialogButton == SampSharp.GameMode.Definitions.DialogButton.Left)
+                    {
+                        if (action == 1)
+                        {
+                            // Dissolve
+                        }
+                        else if (action == 2)
+                        {
+                            // Delete contained objects
+                        }
+                    }
+                };
+                dialog.Show(player);
+                this.editingMap.Groups.RemoveAll(g => g.Index == index);
+                UpdateGroupsHUD();
+            }
+        }
+
         /// <summary>
         /// Creates a new object and returns its ID
         /// </summary>
