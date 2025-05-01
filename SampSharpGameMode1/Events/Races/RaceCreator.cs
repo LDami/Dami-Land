@@ -1008,7 +1008,7 @@ namespace SampSharpGameMode1.Events.Races
                     shownCheckpoint.Size = cp.Size;
                 }
                 shownCheckpoint.ShowForPlayer(player);
-                Streamer st = new();
+                IStreamer st = GameMode.Instance.Services.GetService<IStreamer>();
                 st.Update(player);
                 if (moverObject == null)
                 {

@@ -3,6 +3,7 @@ using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
+using SampSharp.Streamer;
 using SampSharp.Streamer.World;
 using SampSharpGameMode1.Display;
 using System;
@@ -143,14 +144,15 @@ namespace SampSharpGameMode1.Events.Missions
             {
                 if(currentMissionStepIndex >= 0 && currentMissionStepIndex < editingMission.Steps.Count)
                 {
-                    DynamicActor actor = new DynamicActor(modelid, pos.Position, pos.Rotation, invulnerable: false, worldid: (int)VirtualWord.EventCreators + player.Id);
+                    DynamicActor actor = new DynamicActor(modelid, pos.Position, pos.Rotation, invulnerable: false, streamdistance: 50, worldid: (int)VirtualWord.EventCreators + player.Id);
                     Logger.WriteLineAndClose($"MissionCreator.cs - MissionCreator.CreateActor:I: actor is invulnerable: {actor.IsInvulnerable}"); // ": False"
-                    actor.PlayerGiveDamage += (sender, args) =>
+                    IStreamer st = GameMode.Instance.Services.GetService<IStreamer>();
+                    st.PlayerGiveDamageDynamicActor += (sender, args) =>
                     {
-                        Logger.WriteLineAndClose($"MissionCreator.cs - MissionCreator.CreateActor:I: {args.Player} has made {args.Amount} damage to {(sender as BasePlayer).Name}");
+                        Logger.WriteLineAndClose($"MissionCreator.cs - MissionCreator.CreateActor:I: {args.Player} has made {args.Amount} damage to {(sender as DynamicActor).Id}");
                     };
                     editingMission.Steps[currentMissionStepIndex].Actors.Add(actor);
-                    player.SendClientMessage("Actor created");
+                    player.SendClientMessage("Actor created: " + actor.Id);
                 }
             }
             else
