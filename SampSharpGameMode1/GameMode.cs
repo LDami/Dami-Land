@@ -3,17 +3,13 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Threading;
-using SampSharp.Core.Natives;
 using SampSharp.GameMode;
-using SampSharp.GameMode.Controllers;
 using SampSharp.GameMode.Definitions;
-using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using SampSharpGameMode1.Civilisation;
 using SampSharpGameMode1.CustomDatas;
+using SampSharpGameMode1.Display;
 using SampSharpGameMode1.Events;
-using static SampSharp.GameMode.SAMP.Server;
-using static SampSharpGameMode1.Civilisation.PathExtractor;
 
 namespace SampSharpGameMode1
 {
@@ -23,13 +19,6 @@ namespace SampSharpGameMode1
         public static EventManager eventManager = null;
         public MySocketIO socket = null;
         #region Overrides of BaseMode
-        protected override void LoadControllers(ControllerCollection controllers)
-        {
-            // Load the default controllers first
-            base.LoadControllers(controllers);
-
-            controllers.Add(new NPCController());
-        }
 
         protected override void OnInitialized(EventArgs e)
         {
@@ -74,13 +63,13 @@ namespace SampSharpGameMode1
             eventManager = EventManager.Instance();
 
             
-            Stopwatch sw = new Stopwatch();
+            Stopwatch sw = new();
+            
             sw.Start();
             Civilisation.PathExtractor.Load();
             sw.Stop();
             Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: PathExtractor.Load => {sw.ElapsedMilliseconds} ms");
             sw.Restart();
-            //Civilisation.PathExtractor.Extract("E:\\Jeux\\GTA San Andreas\\data\\Paths", 54);
             for (int i = 0; i < 64; i++)
             {
                 Civilisation.PathExtractor.Extract(ConfigurationManager.AppSettings["gta_basefolder"] + "/data/Paths", i);
@@ -108,6 +97,11 @@ namespace SampSharpGameMode1
             Civilisation.PathExtractor.ValidateNaviLink();
             sw.Stop();
             Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: PathExtractor.ValidateNaviLink => {sw.ElapsedMilliseconds} ms");
+
+            //PathExtractor.ExportPathNodesToJSONFile(@"C:\Users\ldami\Documents\export.json");
+            //PathExtractor.ExportPathNodesToSQL();
+            //PathExtractor.UpdatePathNodeFlags();
+            
 
             Logger logger = new Logger();
             logger.WriteLine($"GameMode.cs - GameMode.OnInitialized:I: Total path points: {PathExtractor.pathPoints.Count}");
@@ -172,7 +166,7 @@ namespace SampSharpGameMode1
                 Random rdm = new();
                 BasePlayer.SendClientMessageToAll(ColorPalette.Primary.Main + "Tip: " + randomMessageList[rdm.Next(randomMessageList.Length)]);
             };
-            ExtractMapObjects();
+            ExtractMapObjectList();
             logger.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Gamemode ready !");
 
             logger.Close();
@@ -191,29 +185,25 @@ namespace SampSharpGameMode1
 
 #endregion
 
-        public static void ExtractMapObjects()
+        public static void ExtractMapObjectList()
         {
-            // Chemin vers votre fichier contenant les données
+            // File containing map object's data
             string filePath = "C:\\Serveur OpenMP\\scriptfiles\\mapobjects.txt";
 
-            // Liste pour stocker les objets de la carte
             List<MapObjectData> mapObjects = new();
 
-            // Lire les lignes du fichier
             string[] lines = System.IO.File.ReadAllLines(filePath);
-
-            // Variable temporaire pour stocker la catégorie en cours de traitement
             MapObjectGroupData currentCategory = new("A51 Replacement Land Bit", "");
             string comment = "";
 
             foreach (string line in lines)
             {
-                // Vérifier si la ligne est vide ou si elle commence par "###" pour identifier une nouvelle catégorie
+                // Check if line is empty or starts with ### (which means it's a new category)
                 if (!string.IsNullOrWhiteSpace(line))
                 {
                     if (line.StartsWith("###"))
                     {
-                        // Si c'est une nouvelle catégorie, mettez à jour la variable de catégorie
+                        // Update current category
                         currentCategory = new(line.Replace("###", "").Replace("*", "").Trim(), comment);
                         comment = "";
                     }
@@ -223,7 +213,6 @@ namespace SampSharpGameMode1
                         if (int.TryParse(parts[0], out int id))
                         {
                             string name = parts[1];
-                            // Ajouter l'objet de la carte à la liste
                             mapObjects.Add(new MapObjectData(id, name, currentCategory));
                         }
                         else
@@ -231,7 +220,7 @@ namespace SampSharpGameMode1
                     }
                 }
             }
-            Console.WriteLine("GameMode.ExtractMapObjects:I: Got " + mapObjects.Count + " map objects");
+            Console.WriteLine("GameMode.cs - GameMode.ExtractMapObjects:I: Got " + mapObjects.Count + " map objects");
             MapObjectData.UpdateMapObject(mapObjects);
         }
     }
