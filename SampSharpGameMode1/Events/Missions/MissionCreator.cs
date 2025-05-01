@@ -43,7 +43,7 @@ namespace SampSharpGameMode1.Events.Missions
             }
             public void SetTotalStages(int totalStages)
             {
-                layer.SetTextdrawText("totalcp", "Total stages: " + totalStages);
+                layer.SetTextdrawText("totalstage", "Total stages: " + totalStages);
             }
         }
 
