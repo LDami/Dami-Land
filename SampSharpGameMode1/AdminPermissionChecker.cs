@@ -26,7 +26,7 @@ namespace SampSharpGameMode1
         public bool Check(BasePlayer player)
         {
             Player p = (Player)player;
-            return p.Adminlevel >= 1;
+            return p.Adminlevel >= 1 || p.IsAdmin;
         }
         #endregion
     }
