@@ -242,12 +242,12 @@ namespace SampSharpGameMode1.Events
                 {
                     { "@name", str }
                 };
-            GameMode.mySQLConnector.OpenReader(query, param);
-            row = GameMode.mySQLConnector.GetNextRow();
+            GameMode.MySQLConnector.OpenReader(query, param);
+            row = GameMode.MySQLConnector.GetNextRow();
             if(row.Count == 0)
             {
                 player.Notificate("No results");
-                GameMode.mySQLConnector.CloseReader();
+                GameMode.MySQLConnector.CloseReader();
                 ShowCreateEventNameDialog(player, eventType);
             }
             else
@@ -274,9 +274,9 @@ namespace SampSharpGameMode1.Events
                         foundEvents.Add(Convert.ToInt32(row[key_id]));
                         eventSearchDialog.AddItem(row[key_id] + "_" + ColorPalette.Primary.Main + row[key_name] + ColorPalette.Primary.Lighten + " by " + ColorPalette.Primary.Main + row[key_creator]);
                     }
-                    row = GameMode.mySQLConnector.GetNextRow();
+                    row = GameMode.MySQLConnector.GetNextRow();
                 }
-                GameMode.mySQLConnector.CloseReader();
+                GameMode.MySQLConnector.CloseReader();
                 if(foundEvents.Count == 0)
                 {
                     player.Notificate("No results");

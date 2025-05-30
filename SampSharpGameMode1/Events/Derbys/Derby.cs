@@ -106,7 +106,7 @@ namespace SampSharpGameMode1.Events.Derbys
         #endregion
         public void Load(int id, int virtualworld = -1)
         {
-            if (GameMode.mySQLConnector != null)
+            if (GameMode.MySQLConnector != null)
             {
                 Thread t = new(() =>
                 {
@@ -117,8 +117,8 @@ namespace SampSharpGameMode1.Events.Derbys
                     {
                         { "@id", id }
                     };
-                    GameMode.mySQLConnector.OpenReader("SELECT * FROM derbys WHERE derby_id=@id", param);
-                    row = GameMode.mySQLConnector.GetNextRow();
+                    GameMode.MySQLConnector.OpenReader("SELECT * FROM derbys WHERE derby_id=@id", param);
+                    row = GameMode.MySQLConnector.GetNextRow();
                     if (row.Count > 0)
                     {
                         this.Id = Convert.ToInt32(row["derby_id"]);
@@ -141,15 +141,15 @@ namespace SampSharpGameMode1.Events.Derbys
                         Logger.WriteLineAndClose($"Derby.cs - Derby.Load:E: Trying to load derby #{id} but it does not exists");
                         errorFlag = true;
                     }
-                    GameMode.mySQLConnector.CloseReader();
+                    GameMode.MySQLConnector.CloseReader();
 
                     int availableSlots = 0;
                     if (!errorFlag)
                     {
-                        GameMode.mySQLConnector.OpenReader("SELECT spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot " +
+                        GameMode.MySQLConnector.OpenReader("SELECT spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot " +
                             "FROM derby_spawn " +
                             "WHERE derby_id=@id", param);
-                        row = GameMode.mySQLConnector.GetNextRow();
+                        row = GameMode.MySQLConnector.GetNextRow();
 
                         this.SpawnPoints = new List<Vector3R>();
 
@@ -168,18 +168,18 @@ namespace SampSharpGameMode1.Events.Derbys
                                 this.SpawnPoints.Add(pos);
                                 availableSlots++;
                             }
-                            row = GameMode.mySQLConnector.GetNextRow();
+                            row = GameMode.MySQLConnector.GetNextRow();
                         }
-                        GameMode.mySQLConnector.CloseReader();
+                        GameMode.MySQLConnector.CloseReader();
                     }
 
                     if (!errorFlag)
                     {
-                        GameMode.mySQLConnector.OpenReader(
+                        GameMode.MySQLConnector.OpenReader(
                             "SELECT pickup_id, pickup_event, pickup_model, pickup_pos_x, pickup_pos_y, pickup_pos_z " +
                             "FROM derby_pickups " +
                             "WHERE derby_id=@id", param);
-                        row = GameMode.mySQLConnector.GetNextRow();
+                        row = GameMode.MySQLConnector.GetNextRow();
 
                         this.Pickups = new List<DerbyPickup>();
 
@@ -196,9 +196,9 @@ namespace SampSharpGameMode1.Events.Derbys
                                         (float)Convert.ToDouble(row["pickup_pos_z"])
                                 );
                             this.Pickups.Add(new DerbyPickup(modelid, pos, virtualworld, (DerbyPickup.PickupEvent)type));
-                            row = GameMode.mySQLConnector.GetNextRow();
+                            row = GameMode.MySQLConnector.GetNextRow();
                         }
-                        GameMode.mySQLConnector.CloseReader();
+                        GameMode.MySQLConnector.CloseReader();
                     }
 
                     DerbyLoadedEventArgs args = new()
@@ -418,25 +418,30 @@ namespace SampSharpGameMode1.Events.Derbys
             }
             else
             {
+                /*
                 if (players.Count == 1) // Si il ne reste plus qu'un seul joueur, on l'exclu pour terminer le derby
                     OnPlayerFinished(players.FindLast(player => player.Id >= 0), "Finished");
                 else
                 {
-                    if (player.InAnyVehicle)
+                */
+                    if (!reason.Equals("Disconnected"))
                     {
-                        BaseVehicle vehicle = player.Vehicle;
-                        player.RemoveFromVehicle();
-                        vehicle.Dispose();
+                        if (player.InAnyVehicle)
+                        {
+                            BaseVehicle vehicle = player.Vehicle;
+                            player.RemoveFromVehicle();
+                            if (vehicle is not null && !vehicle.IsDisposed) vehicle.Dispose();
+                        }
+                        player.ToggleSpectating(true);
+                        if (players[0].InAnyVehicle)
+                            player.SpectateVehicle(players[0].Vehicle);
+                        else
+                            player.SpectatePlayer(players[0]);
+                        spectatingPlayers.Add(player);
+                        playersData[player].status = DerbyPlayerStatus.Spectating;
+                        playersData[player].spectatePlayerIndex = 0;
                     }
-                    player.ToggleSpectating(true);
-                    if (players[0].InAnyVehicle)
-                        player.SpectateVehicle(players[0].Vehicle);
-                    else
-                        player.SpectatePlayer(players[0]);
-                    spectatingPlayers.Add(player);
-                    playersData[player].status = DerbyPlayerStatus.Spectating;
-                    playersData[player].spectatePlayerIndex = 0;
-                }
+                //}
             }
         }
         public void Eject(Player player)

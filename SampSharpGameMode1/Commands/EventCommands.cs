@@ -30,12 +30,12 @@ namespace SampSharpGameMode1.Commands
             [Command("manage", PermissionChecker = typeof(AdminPermissionChecker))]
             private static void CreateEvent(Player player)
             {
-                GameMode.eventManager.ShowManagerDialog(player);
+                GameMode.EventManager.ShowManagerDialog(player);
             }
             [Command("purge", PermissionChecker = typeof(AdminPermissionChecker))]
             private static void PurgeEvent(Player player)
             {
-                GameMode.eventManager.PurgeEvents(player);
+                GameMode.EventManager.PurgeEvents(player);
             }
 
 			[Command("join", Shortcut = "join")]
@@ -46,7 +46,7 @@ namespace SampSharpGameMode1.Commands
                     player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " Close your editor first");
                     return;
                 }
-                if (GameMode.eventManager.openedEvent is null)
+                if (GameMode.EventManager.openedEvent is null)
                 {
                     player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " There is no opened event !");
                     return;
@@ -56,7 +56,7 @@ namespace SampSharpGameMode1.Commands
                     player.SendClientMessage(Color.Wheat, "[Event]" + ColorPalette.Error.Main + " You are already in an event !");
                     return;
                 }
-                GameMode.eventManager.openedEvent.Join(player);
+                GameMode.EventManager.openedEvent.Join(player);
 			}
 
             [Command("leave", Shortcut = "leave")]

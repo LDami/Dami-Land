@@ -714,7 +714,7 @@ namespace SampSharpGameMode1.Civilisation
                         { "@index", pathNode.nodeID },
                         { "@flags", flagInt },
                     };
-                    GameMode.mySQLConnector.Execute("UPDATE map_pathnodes " +
+                    GameMode.MySQLConnector.Execute("UPDATE map_pathnodes " +
                         "SET node_flags = @flags " +
                         "WHERE node_area_id = @area_id AND node_index = @index", param);
                 }

@@ -90,7 +90,7 @@ namespace SampSharpGameMode1.Events.Missions
 
         public void Load(int id, int virtualworld = -1)
         {
-            if (GameMode.mySQLConnector != null)
+            if (GameMode.MySQLConnector != null)
             {
                 Thread t = new Thread(() =>
                 {

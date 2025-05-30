@@ -79,7 +79,7 @@ namespace SampSharpGameMode1
                     byte[] data = new UTF8Encoding(true).GetBytes(text);
                     foreach (byte databyte in data)
                         fs.WriteByte(databyte);
-                    fs.FlushAsync();
+                    //fs.FlushAsync();
                     fs.Close();
                 }
             }

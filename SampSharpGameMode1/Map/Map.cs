@@ -44,7 +44,7 @@ namespace SampSharpGameMode1.Map
         }
         public void Load(int id, int virtualworld)
         {
-            if (GameMode.mySQLConnector != null)
+            if (GameMode.MySQLConnector != null)
             {
                 Thread t = new(() =>
                 {
@@ -56,8 +56,8 @@ namespace SampSharpGameMode1.Map
                     {
                         { "@id", id }
                     };
-                    GameMode.mySQLConnector.OpenReader("SELECT * FROM maps WHERE map_id=@id", param);
-                    row = GameMode.mySQLConnector.GetNextRow();
+                    GameMode.MySQLConnector.OpenReader("SELECT * FROM maps WHERE map_id=@id", param);
+                    row = GameMode.MySQLConnector.GetNextRow();
                     if (row.Count > 0)
                     {
                         Id = Convert.ToInt32(row["map_id"]);
@@ -73,12 +73,12 @@ namespace SampSharpGameMode1.Map
                     }
                     else
                         errorFlag = true;
-                    GameMode.mySQLConnector.CloseReader();
+                    GameMode.MySQLConnector.CloseReader();
 
                     if (!errorFlag)
                     {
-                        GameMode.mySQLConnector.OpenReader("SELECT mapobjects.*, groups.group_Color, groups.group_Name FROM mapobjects LEFT JOIN mapobjects_groups AS groups ON (mapobjects.group_id = groups.group_id) WHERE map_id=@id", param);
-                        row = GameMode.mySQLConnector.GetNextRow();
+                        GameMode.MySQLConnector.OpenReader("SELECT mapobjects.*, groups.group_Color, groups.group_Name FROM mapobjects LEFT JOIN mapobjects_groups AS groups ON (mapobjects.group_id = groups.group_id) WHERE map_id=@id", param);
+                        row = GameMode.MySQLConnector.GetNextRow();
                         Objects.Clear();
                         Groups.Clear();
                         MapGroup objGroup = null;
@@ -108,9 +108,9 @@ namespace SampSharpGameMode1.Map
                                 ),
                                 objGroup,
                                 virtualworld));
-                            row = GameMode.mySQLConnector.GetNextRow();
+                            row = GameMode.MySQLConnector.GetNextRow();
                         }
-                        GameMode.mySQLConnector.CloseReader();
+                        GameMode.MySQLConnector.CloseReader();
                     }
 
                     MapLoadedEventArgs args = new()

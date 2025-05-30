@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
-using System.Xml.Linq;
 using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
@@ -106,10 +104,9 @@ namespace SampSharpGameMode1
 
             BasePlayer.SendClientMessageToAll($"{ColorPalette.Secondary.Main}{this.Name}{ColorPalette.Primary.Main} joined the server");
             this.SendClientMessage("Welcome to " + ColorPalette.Secondary.Main + "Dami's Land");
-            this.SendClientMessage(ColorPalette.Primary.Main + "This server is still in beta, type /beta to see what is coming soon !");
-            this.SendClientMessage(ColorPalette.Primary.Main + "Please read /event-infos to create events !");
+            this.SendClientMessage($"Type {ColorPalette.Secondary.Main}/help{Color.White} for help.");
+            this.SendClientMessage($"{ColorPalette.Primary.Main}Please read {ColorPalette.Secondary.Main}/event-infos{ColorPalette.Primary.Main} to create events !");
 
-            Console.WriteLine("New BasePlayer Connected");
             if (!this.IsNPC)
             {
 #if DEBUG

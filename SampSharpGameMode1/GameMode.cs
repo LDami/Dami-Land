@@ -15,8 +15,9 @@ namespace SampSharpGameMode1
 {
     public class GameMode : BaseMode
     {
-        public static MySQLConnector mySQLConnector = null;
-        public static EventManager eventManager = null;
+        public static MySQLConnector MySQLConnector { get; private set; }
+        public static EventManager EventManager { get; private set; }
+
         public MySocketIO socket = null;
         #region Overrides of BaseMode
 
@@ -50,51 +51,48 @@ namespace SampSharpGameMode1
             Logger.Init();
 
             Logger.WriteLineAndClose("GameMode.cs - GameMode.OnInitialized:I: Connecting to MySQL Server ... ");
-            mySQLConnector = MySQLConnector.Instance();
+            MySQLConnector = MySQLConnector.Instance();
             Boolean isConnected = false;
             while (!isConnected)
             {
                 Thread.Sleep(1000);
-                if (mySQLConnector.Connect())
+                if (MySQLConnector.Connect())
                 {
                     isConnected = true;
                 }
             }
-            eventManager = EventManager.Instance();
+            EventManager = EventManager.Instance();
 
             
             Stopwatch sw = new();
             
             sw.Start();
-            Civilisation.PathExtractor.Load();
+            PathExtractor.Load();
             sw.Stop();
             Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: PathExtractor.Load => {sw.ElapsedMilliseconds} ms");
             sw.Restart();
             for (int i = 0; i < 64; i++)
             {
-                Civilisation.PathExtractor.Extract(ConfigurationManager.AppSettings["gta_basefolder"] + "/data/Paths", i);
+                PathExtractor.Extract(ConfigurationManager.AppSettings["gta_basefolder"] + "/data/Paths", i);
             }
             sw.Stop();
             Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: PathExtractor.Extract => {sw.ElapsedMilliseconds} ms");
             sw.Restart();
             for (int i = 0; i < 64; i++)
             {
-                Civilisation.PathExtractor.CheckLinks(i);
+                PathExtractor.CheckLinks(i);
             }
             sw.Stop();
             Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: PathExtractor.CheckLinks => {sw.ElapsedMilliseconds} ms");
             sw.Restart();
             for (int i = 0; i < 64; i++)
             {
-                Civilisation.PathExtractor.SeparateNodes(i);
+                PathExtractor.SeparateNodes(i);
             }
             sw.Stop();
             Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: PathExtractor.SeparateNodes => {sw.ElapsedMilliseconds} ms");
             sw.Restart();
-            //Civilisation.PathExtractor.SeparateNodes(16);
-            //Civilisation.PathExtractor.SeparateNodes(54);
-            //Civilisation.PathExtractor.CheckLinks(54);
-            Civilisation.PathExtractor.ValidateNaviLink();
+            PathExtractor.ValidateNaviLink();
             sw.Stop();
             Logger.WriteLineAndClose($"GameMode.cs - GameMode.OnInitialized:I: PathExtractor.ValidateNaviLink => {sw.ElapsedMilliseconds} ms");
 
@@ -115,8 +113,8 @@ namespace SampSharpGameMode1
             try
             {
                 Random rdm = new();
-                mySQLConnector.OpenReader("SELECT * FROM parked_vehicles", new Dictionary<string, object>());
-                Dictionary<string, string> row = mySQLConnector.GetNextRow();
+                MySQLConnector.OpenReader("SELECT * FROM parked_vehicles", new Dictionary<string, object>());
+                Dictionary<string, string> row = MySQLConnector.GetNextRow();
                 while (row.Count > 0)
                 {
                     BaseVehicle v = StoredVehicle.CreateStatic((VehicleModelType)Convert.ToInt32(row["model_id"]), new Vector3(
@@ -128,9 +126,9 @@ namespace SampSharpGameMode1
                     );
                     v.GetColor(out int c1, out int c2);
                     StoredVehicle.AddDbPool(v.Id, Convert.ToInt32(row["vehicle_id"]));
-                    row = mySQLConnector.GetNextRow();
+                    row = MySQLConnector.GetNextRow();
                 }
-                mySQLConnector.CloseReader();
+                MySQLConnector.CloseReader();
                 logger.WriteLine("Done !");
                 logger.WriteLine($"GameMode.cs - GameMode.OnInitialized:I: {StoredVehicle.GetPoolSize()} vehicles loaded.");
             }
@@ -164,7 +162,7 @@ namespace SampSharpGameMode1
             t.Tick += (sender, e) =>
             {
                 Random rdm = new();
-                BasePlayer.SendClientMessageToAll(ColorPalette.Primary.Main + "Tip: " + randomMessageList[rdm.Next(randomMessageList.Length)]);
+                BasePlayer.SendClientMessageToAll(ColorPalette.Primary.Main + "Tip: " + randomMessageList[rdm.Next(randomMessageList.Length - 1)]);
             };
             ExtractMapObjectList();
             logger.WriteLine("GameMode.cs - GameMode.OnInitialized:I: Gamemode ready !");

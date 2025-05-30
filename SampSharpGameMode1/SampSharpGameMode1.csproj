@@ -9,16 +9,24 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SampSharp.Core" Version="0.10.1" />
-    <PackageReference Include="SampSharp.GameMode" Version="0.10.1" />
+    <Compile Remove="MapObjectList.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="MySqlConnector" Version="2.2.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="SampSharp.Core">
+      <HintPath>..\..\SampSharp\bin\SampSharp.GameMode\Debug\net6.0\SampSharp.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="SampSharp.GameMode">
+      <HintPath>..\..\SampSharp\bin\SampSharp.GameMode\Debug\net6.0\SampSharp.GameMode.dll</HintPath>
+    </Reference>
     <Reference Include="SampSharp.Streamer">
-      <HintPath>..\..\..\..\Documents\Dev\SampSharp.Streamer.dll</HintPath>
+      <HintPath>..\..\SampSharp-streamer\bin\Debug\netstandard2.1\SampSharp.Streamer.dll</HintPath>
     </Reference>
   </ItemGroup>
 

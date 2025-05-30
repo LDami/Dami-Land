@@ -188,7 +188,7 @@ namespace SampSharpGameMode1.Events.Races
 
         public void Load(int id, int virtualworld = -1)
         {
-            if (GameMode.mySQLConnector != null)
+            if (GameMode.MySQLConnector != null)
             {
                 Thread t = new(() =>
                 {
@@ -198,8 +198,8 @@ namespace SampSharpGameMode1.Events.Races
                     {
                         { "@id", id }
                     };
-                    GameMode.mySQLConnector.OpenReader("SELECT * FROM races WHERE race_id=@id", param);
-                    row = GameMode.mySQLConnector.GetNextRow();
+                    GameMode.MySQLConnector.OpenReader("SELECT * FROM races WHERE race_id=@id", param);
+                    row = GameMode.MySQLConnector.GetNextRow();
                     if (row.Count > 0)
                     {
                         this.Id = Convert.ToInt32(row["race_id"]);
@@ -219,14 +219,14 @@ namespace SampSharpGameMode1.Events.Races
                     }
                     else
                         errorFlag = true;
-                    GameMode.mySQLConnector.CloseReader();
+                    GameMode.MySQLConnector.CloseReader();
 
                     if(!errorFlag)
                     {
-                        GameMode.mySQLConnector.OpenReader("SELECT * " +
+                        GameMode.MySQLConnector.OpenReader("SELECT * " +
                             "FROM race_checkpoints " +
                             "WHERE race_id=@id ORDER BY checkpoint_number", param);
-                        row = GameMode.mySQLConnector.GetNextRow();
+                        row = GameMode.MySQLConnector.GetNextRow();
                         if (row.Count == 0) errorFlag = true;
 
                         this.checkpoints.Clear();
@@ -265,18 +265,18 @@ namespace SampSharpGameMode1.Events.Races
 
                             checkpoint.PlayerVehicleChanged += Checkpoint_PlayerVehicleChanged;
                             this.checkpoints.Add(idx++, checkpoint);
-                            row = GameMode.mySQLConnector.GetNextRow();
+                            row = GameMode.MySQLConnector.GetNextRow();
                         }
-                        GameMode.mySQLConnector.CloseReader();
+                        GameMode.MySQLConnector.CloseReader();
                     }
 
                     int availableSlots = 0;
                     if (!errorFlag)
                     {
-                        GameMode.mySQLConnector.OpenReader("SELECT spawn_index, spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot " +
+                        GameMode.MySQLConnector.OpenReader("SELECT spawn_index, spawn_pos_x, spawn_pos_y, spawn_pos_z, spawn_rot " +
                             "FROM race_spawn " +
                             "WHERE race_id=@id ORDER BY spawn_index", param);
-                        row = GameMode.mySQLConnector.GetNextRow();
+                        row = GameMode.MySQLConnector.GetNextRow();
 
                         this.SpawnPoints = new List<Vector3R>();
                         Vector3R pos;
@@ -294,24 +294,24 @@ namespace SampSharpGameMode1.Events.Races
                                 this.SpawnPoints.Add(pos);
                                 availableSlots++;
                             }
-                            row = GameMode.mySQLConnector.GetNextRow();
+                            row = GameMode.MySQLConnector.GetNextRow();
                         }
-                        GameMode.mySQLConnector.CloseReader();
+                        GameMode.MySQLConnector.CloseReader();
                     }
 
                     if(!errorFlag)
                     {
-                        GameMode.mySQLConnector.OpenReader("SELECT player_id, record_duration, name " +
+                        GameMode.MySQLConnector.OpenReader("SELECT player_id, record_duration, name " +
                             "FROM race_records INNER JOIN users ON race_records.player_id = users.id " +
                             "WHERE race_id=@id ORDER BY record_duration LIMIT 5", param);
-                        row = GameMode.mySQLConnector.GetNextRow();
+                        row = GameMode.MySQLConnector.GetNextRow();
 
                         while (row.Count > 0)
                         {
                             records[row["name"]] = TimeSpan.Parse(row["record_duration"]);
-                            row = GameMode.mySQLConnector.GetNextRow();
+                            row = GameMode.MySQLConnector.GetNextRow();
                         }
-                        GameMode.mySQLConnector.CloseReader();
+                        GameMode.MySQLConnector.CloseReader();
                     }
 
 
@@ -414,16 +414,16 @@ namespace SampSharpGameMode1.Events.Races
                         { "@race_id", this.Id },
                         { "@player_id", slot.Player.DbId}
                     };
-                    GameMode.mySQLConnector.OpenReader("SELECT record_duration " +
+                    GameMode.MySQLConnector.OpenReader("SELECT record_duration " +
                         "FROM race_records WHERE race_id=@race_id AND player_id=@player_id", param);
-                    row = GameMode.mySQLConnector.GetNextRow();
+                    row = GameMode.MySQLConnector.GetNextRow();
 
                     if (row.Count > 0)
                         playerData.record = TimeSpan.Parse(row["record_duration"]);
                     else
                         playerData.record = TimeSpan.Zero;
 
-                    GameMode.mySQLConnector.CloseReader();
+                    GameMode.MySQLConnector.CloseReader();
 
                     playersLiveInfoHUD[slot.Player] = new HUD(slot.Player, "racelive.json");
                     playersLiveInfoHUD[slot.Player].SetText("racename", this.Name);
@@ -852,14 +852,14 @@ namespace SampSharpGameMode1.Events.Races
                         { "@race_id", this.Id },
                         { "@player_id", player.DbId }
                     };
-                    GameMode.mySQLConnector.Execute("DELETE FROM race_records WHERE race_id = @race_id AND player_id = @player_id", param);
+                    GameMode.MySQLConnector.Execute("DELETE FROM race_records WHERE race_id = @race_id AND player_id = @player_id", param);
                     param = new Dictionary<string, object>
                     {
                         { "@race_id", this.Id },
                         { "@player_id", player.DbId },
                         { "@record_duration", duration.ToString(@"hh\:mm\:ss\.ffffff") }
                     };
-                    GameMode.mySQLConnector.Execute("INSERT INTO race_records (race_id, player_id, record_duration) VALUES (@race_id, @player_id, @record_duration)", param);
+                    GameMode.MySQLConnector.Execute("INSERT INTO race_records (race_id, player_id, record_duration) VALUES (@race_id, @player_id, @record_duration)", param);
                 }
             }
             else if(reason.Equals("Leave"))
@@ -886,6 +886,7 @@ namespace SampSharpGameMode1.Events.Races
             players.Remove(player);
             if(players.Count == 0) // Si on arrive dernier / si le dernier arrive
             {
+                /*
                 SampSharp.GameMode.SAMP.Timer ejectionTimer = new(2000, false);
                 ejectionTimer.Tick += (object sender, EventArgs e) =>
                 {
@@ -896,6 +897,7 @@ namespace SampSharpGameMode1.Events.Races
                     };
                     OnFinished(args);
                 };
+                */
             }
             else
             {
@@ -907,14 +909,14 @@ namespace SampSharpGameMode1.Events.Races
                         player.RemoveFromVehicle();
                         if (vehicle is not null && !vehicle.IsDisposed) vehicle.Dispose();
                     }
-                    player.ToggleSpectating(true);
-                    if (players[0].InAnyVehicle)
-                        player.SpectateVehicle(players[0].Vehicle);
-                    else
-                        player.SpectatePlayer(players[0]);
+                    player.pEvent.SetPlayerInSpectator(player);
                     spectatingPlayers.Add(player);
                     playersData[player].status = RacePlayerStatus.Spectating;
                     playersData[player].spectatePlayerIndex = 0;
+                }
+                else
+                {
+                    //TODO vérifier tous les véhicules et supprimer ceux qui n'ont pas de conducteurs
                 }
             }
         }

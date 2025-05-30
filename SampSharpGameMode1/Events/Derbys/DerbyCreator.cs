@@ -516,7 +516,7 @@ namespace SampSharpGameMode1.Events.Derbys
             if (maps.Count == 0)
             {
                 player.Notificate("No results");
-                GameMode.mySQLConnector.CloseReader();
+                GameMode.MySQLConnector.CloseReader();
                 ShowDerbyDialog();
             }
             else
