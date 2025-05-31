@@ -33,8 +33,11 @@ namespace SampSharpGameMode1.Civilisation
         {
             if ((sender as BasePlayer).IsNPC)
             {
-                NPC npc = new NPC(sender as BasePlayer);
-                npcPool.Add((sender as BasePlayer).Name, npc);
+                BasePlayer npcBase = sender as BasePlayer;
+                if (npcPool.ContainsKey(npcBase.Name))
+                    npcPool.Remove(npcBase.Name);
+                NPC npc = new NPC(npcBase);
+                npcPool.Add(npcBase.Name, npc);
             }
         }
 
@@ -70,6 +73,7 @@ namespace SampSharpGameMode1.Civilisation
             if(npcPool.TryGetValue(npcName, out var npc))
             {
                 npc.Kick();
+                npcPool.Remove(npcName);
             }
         }
 
