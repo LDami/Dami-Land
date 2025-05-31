@@ -959,7 +959,7 @@ namespace SampSharpGameMode1
                                     Thread.Sleep(2000);
                                     StartAI();
                                     Thread.Sleep(2000);
-                                    NPCController.StartAI(NPCController.GetConnectedBotNames().First(), "vehicle");
+                                    NPCController.StartAI(botNamesKick2[evt.ListItem], "vehicle");
                                 }
                             };
                             listDialogKick2.Show(this);
