@@ -1,14 +1,27 @@
-﻿using SampSharp.GameMode.SAMP;
+﻿using Microsoft.VisualBasic;
+using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using SampSharpGameMode1.Display;
-using SampSharpGameMode1.Events.Races;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace SampSharpGameMode1.Events
 {
-
+    public class AnnounceHUD : HUD
+    {
+        public AnnounceHUD(Player player) : base(player, "event-announce.json") // TODO: Improve to use Global Textdraws instead of Player Textdraws
+        {
+            this.Hide();
+        }
+        public void Open(Event evt)
+        {
+            layer.SetTextdrawText("eventtype", $"A {evt.Type} is starting soon");
+            layer.SetTextdrawText("eventname", evt.Name);
+            layer.SetTextdrawText("joincommand", $"/join to join the {evt.Type}");
+            this.Show();
+        }
+    }
 
     class SpectatingHUD : HUD
     {
@@ -47,7 +60,7 @@ namespace SampSharpGameMode1.Events
         public void Dispose()
         {
             player.KeyStateChanged -= Player_KeyStateChanged;
-            this.Dispose();
+            this.Unload();
         }
 
         private void Player_KeyStateChanged(object sender, SampSharp.GameMode.Events.KeyStateChangedEventArgs e)
@@ -124,6 +137,10 @@ namespace SampSharpGameMode1.Events
         protected virtual void OnStarted(EventArgs e)
         {
             Started?.Invoke(this, e);
+            foreach (Player player in Player.All.Cast<Player>())
+            {
+                player.AnnounceHUD.Hide();
+            }
         }
 
         public event EventHandler<EventFinishedEventArgs> Ended;
@@ -139,8 +156,19 @@ namespace SampSharpGameMode1.Events
             Slots = new List<EventSlot>();
             Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " " + ColorPalette.Secondary.Main + this.Name + Color.White + " will start soon, join it with " + ColorPalette.Primary.Main + "/event join");
             this.Status = EventStatus.Waiting;
+            foreach(Player player in Player.All.Cast<Player>())
+            {
+                player.AnnounceHUD.Open(this);
+            }
         }
-        public abstract bool Start(List<EventSlot> slots);
+        public virtual bool Start(List<EventSlot> slots)
+        {
+            foreach (Player player in Player.All.Cast<Player>())
+            {
+                player.AnnounceHUD.Hide();
+            }
+            return true;
+        }
 
         public void Join(Player player)
         {
@@ -149,6 +177,7 @@ namespace SampSharpGameMode1.Events
                 Slots.Add(new EventSlot(player, Vector3R.Zero));
                 player.pEvent = this;
                 player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You joined the " + this.Type.ToString() + ", good luck !");
+                player.AnnounceHUD.Hide("joinCommand");
                 if (Slots.Count == Player.All.Count() || !this.HasAvailableSlots() || Player.All.OfType<Player>().Where(x => x.pEvent is null).Count() == 0)
                 {
                     this.Start(Slots);
@@ -175,7 +204,16 @@ namespace SampSharpGameMode1.Events
             return (Slots.Count < AvailableSlots);
 		}
 
-        public abstract void End(EventFinishedReason reason);
+        public virtual void End(EventFinishedReason reason)
+        {
+            if(reason == EventFinishedReason.Aborted)
+            {
+                foreach (Player player in Player.All.Cast<Player>())
+                {
+                    player.AnnounceHUD.Hide();
+                }
+            }
+        }
 
 
         public static void SendEventMessageToPlayer(BasePlayer player, string msg)

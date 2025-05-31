@@ -436,6 +436,7 @@ namespace SampSharpGameMode1.Events.Races
                     }
                     else
                         playersLiveInfoHUD[slot.Player].Hide("laps");
+                    playersLiveInfoHUD[slot.Player].SetText("checkpoints", $"CP: 0/{this.checkpoints.Count -1}");
                     playersLiveInfoHUD[slot.Player].Hide("nitro");
 
                     playersRecordsHUD[slot.Player] = new HUD(slot.Player, "racerecords.json");
@@ -596,11 +597,6 @@ namespace SampSharpGameMode1.Events.Races
                             }
                         }
 					}
-                    if(gap < TimeSpan.MaxValue)
-                    {
-                        playersLiveInfoHUD[player].SetText("checkpointdelta", "~R~+ " + gap.ToString(@"mm\:ss\.fff"));
-                        playersLiveInfoHUD[player].Show("checkpointdelta");
-                    }
 
                     int cpidx = playersData[player].nextCheckpoint.Idx;
                     player.Notificate("CP: " + cpidx + "/" + (this.checkpoints.Count - 1).ToString());
@@ -618,6 +614,14 @@ namespace SampSharpGameMode1.Events.Races
                     if (this.checkpoints[cpidx].NextNitro == Checkpoint.EnableDisableEvent.Disable)
                         playersLiveInfoHUD[player].Hide("nitro");
                 }
+                playersLiveInfoHUD[player].SetText("checkpoints", $"~y~~h~CP: {playersData[player].nextCheckpoint.Idx - 1}/{this.checkpoints.Count - 1}");
+                SampSharp.GameMode.SAMP.Timer.RunOnce(1500, () =>
+                {
+                    if (!player.IsDisposed) // Can be disconnected during race
+                    {
+                        playersLiveInfoHUD[player].SetText("checkpoints", $"CP: {playersData[player].nextCheckpoint.Idx - 1}/{this.checkpoints.Count - 1}");
+                    }
+                });
             }
         }
 
@@ -886,7 +890,6 @@ namespace SampSharpGameMode1.Events.Races
             players.Remove(player);
             if(players.Count == 0) // Si on arrive dernier / si le dernier arrive
             {
-                /*
                 SampSharp.GameMode.SAMP.Timer ejectionTimer = new(2000, false);
                 ejectionTimer.Tick += (object sender, EventArgs e) =>
                 {
@@ -897,7 +900,6 @@ namespace SampSharpGameMode1.Events.Races
                     };
                     OnFinished(args);
                 };
-                */
             }
             else
             {

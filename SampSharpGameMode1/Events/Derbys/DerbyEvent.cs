@@ -44,6 +44,7 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             if (loadedDerby != null && slots.Count > Derby.MIN_PLAYERS_IN_DERBY)
             {
+                base.Start(slots);
                 loadedDerby.Prepare(slots);
                 Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " is starting, you cannot longer join it !");
                 this.Status = EventStatus.Running;
@@ -59,6 +60,7 @@ namespace SampSharpGameMode1.Events.Derbys
         }
         public override void End(EventFinishedReason reason)
         {
+            base.End(reason);
             if (reason == EventFinishedReason.Aborted)
                 Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.Red + " The " + this.Type.ToString() + " has been aborted !");
             this.loadedDerby.Unload();

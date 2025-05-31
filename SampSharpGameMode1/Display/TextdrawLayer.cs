@@ -15,9 +15,11 @@ namespace SampSharpGameMode1.Display
         }
 
         public bool AutoUpdate = true;
+        public bool IsDisposed = false;
 
         private Color editingColor = new Color(180, 50, 50);
         private const bool DEBUG_TEXTDRAW_LAYER = false;
+        private bool isTextdrawCreator = false;
 
         Dictionary<string, Textdraw> textdrawList = new Dictionary<string, Textdraw>();
         Dictionary<string, TextdrawType> textdrawType = new Dictionary<string, TextdrawType>();
@@ -48,11 +50,16 @@ namespace SampSharpGameMode1.Display
 
         public void Dispose()
         {
-            foreach(Textdraw td in textdrawList.Values)
+            IsDisposed = true;
+            foreach (Textdraw td in textdrawList.Values)
             {
                 if (!td.IsDisposed)
                     td.Dispose();
             }
+        }
+        public void EnableCreationMode()
+        {
+            isTextdrawCreator = true;
         }
 
         public Textdraw CreateBackground(BasePlayer owner, string name, Vector2 position, Vector2 size, Color color)

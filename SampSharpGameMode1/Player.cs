@@ -71,6 +71,7 @@ namespace SampSharpGameMode1
         public CameraController cameraController;
 
         //Event
+        public AnnounceHUD AnnounceHUD;
         public Event pEvent;
         public bool IsInEvent { get => !(pEvent is null); }
 
@@ -127,6 +128,7 @@ namespace SampSharpGameMode1
 
                 Speedometer = new Speedometer(this);
                 AirplaneHUD = new AirplaneHUD(this);
+                AnnounceHUD = new AnnounceHUD(this);
 
                 pathObjectsTimer = new SampSharp.GameMode.SAMP.Timer(10000, true);
                 //pathObjectsTimer.Tick += PathObjectsTimer_Tick;

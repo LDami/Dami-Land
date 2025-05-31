@@ -45,6 +45,7 @@ namespace SampSharpGameMode1.Events.Races
         {
             if (loadedRace != null && slots.Count > Race.MIN_PLAYERS_IN_RACE)
             {
+                base.Start(slots);
                 loadedRace.Prepare(slots);
                 Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " is starting, you cannot longer join it !");
                 this.Status = EventStatus.Running;
@@ -60,6 +61,7 @@ namespace SampSharpGameMode1.Events.Races
         }
         public override void End(EventFinishedReason reason)
         {
+            base.End(reason);
             if (this.Status >= EventStatus.Waiting && this.Status != EventStatus.Running)
                 Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.Red + " The " + this.Type.ToString() + " has been aborted !");
             this.loadedRace.Unload();

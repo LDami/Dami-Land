@@ -6,6 +6,7 @@ using SampSharp.GameMode.SAMP.Commands;
 using SampSharp.GameMode.World;
 using SampSharp.Streamer.World;
 using SampSharpGameMode1.Display;
+using SampSharpGameMode1.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -78,6 +79,13 @@ namespace SampSharpGameMode1.Commands
                     p.Speedometer.Show();
                     if (VehicleModelInfo.ForVehicle(p.Vehicle).Category == VehicleCategory.Airplane)
                         p.AirplaneHUD.Show();
+                }
+                p.AnnounceHUD.Unload();
+                p.AnnounceHUD = null;
+                p.AnnounceHUD = new AnnounceHUD(p);
+                if(EventManager.Instance().openedEvent != null)
+                {
+                    p.AnnounceHUD.Open(EventManager.Instance().openedEvent);
                 }
             }
             player.SendClientMessage("Done.");

@@ -418,12 +418,10 @@ namespace SampSharpGameMode1.Events.Derbys
             }
             else
             {
-                /*
                 if (players.Count == 1) // Si il ne reste plus qu'un seul joueur, on l'exclu pour terminer le derby
                     OnPlayerFinished(players.FindLast(player => player.Id >= 0), "Finished");
                 else
                 {
-                */
                     if (!reason.Equals("Disconnected"))
                     {
                         if (player.InAnyVehicle)
@@ -441,7 +439,7 @@ namespace SampSharpGameMode1.Events.Derbys
                         playersData[player].status = DerbyPlayerStatus.Spectating;
                         playersData[player].spectatePlayerIndex = 0;
                     }
-                //}
+                }
             }
         }
         public void Eject(Player player)
