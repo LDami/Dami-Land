@@ -276,7 +276,7 @@ namespace SampSharpGameMode1
         public override void OnSpawned(SpawnEventArgs e)
         {
             base.OnSpawned(e);
-            if(!LastPositionBeforeSpectate.IsZero())
+            if (!LastPositionBeforeSpectate.IsZero())
             {
                 this.Position = LastPositionBeforeSpectate.Position;
                 this.Angle = LastPositionBeforeSpectate.Rotation;
@@ -424,6 +424,8 @@ namespace SampSharpGameMode1
                         PlayedRaces = 0;
                         PlayedDerbies = 0;
                         loginDateTime = DateTime.Now;
+                        if (EventManager.Instance().openedEvent != null)
+                            AnnounceHUD.Open(EventManager.Instance().openedEvent);
                     }
                 }
             }
@@ -467,6 +469,8 @@ namespace SampSharpGameMode1
                             Adminlevel = Convert.ToInt32(results["adminlvl"]);
                             this.Money = Convert.ToInt32(results["money"] == "[null]" ? "0" : results["money"]);
                             loginDateTime = DateTime.Now;
+                            if (EventManager.Instance().openedEvent != null)
+                                AnnounceHUD.Open(EventManager.Instance().openedEvent);
 
                             // Check if user exists in user_stats (compatiblity for version < 1.0)
                             param.Clear();

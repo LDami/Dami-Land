@@ -6,12 +6,125 @@ using SampSharpGameMode1.Events.Derbys;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using SampSharpGameMode1.Display;
 using SampSharpGameMode1.Events.Missions;
+using SampSharp.GameMode.World;
+using System.Text.RegularExpressions;
+using System.Numerics;
+using System.Threading;
 
 namespace SampSharpGameMode1.Events
 {
+    public struct EventListObject
+    {
+        public int Id;
+        public string Name;
+        public string Author;
+    }
+    public class EventSelected : EventArgs
+    {
+        public int Id { get; set; }
+        public EventSelected(int id)
+        {
+            Id = id;
+        }
+    }
+    public class EventListHUD : HUD
+    {
+        public event EventHandler<EventSelected> Selected;
+        List<EventListObject> eventList;
+        List<int> shownObjects;
+        int currentPage;
+        int nbrOfPages;
+        int nbrOfItems;
+        public EventListHUD(BasePlayer _player, EventType _eventType, List<EventListObject> _eventList) : base(_player, "eventlist.json")
+        {
+            if (_eventList.Count == 0)
+            {
+                Logger.WriteLineAndClose("EventManager.cs : EventListHUD:_:W: No items in the list.");
+                this.Hide();
+                return;
+            }
+            layer.SetTextdrawText("title", $"Select a {_eventType}");
+            nbrOfItems = DynamicDuplicateLayer("racename#", _eventList.Count, "bg");
+            if (nbrOfItems == 0)
+            {
+                Logger.WriteLineAndClose("EventManager.cs : EventListHUD:_:E: The number of items that can be displayed is 0.");
+                this.Hide();
+                return;
+            }
+            currentPage = 1;
+            nbrOfPages = _eventList.Count / nbrOfItems;
+            layer.SetTextdrawText("page", string.Format("{0,2}", currentPage) + "/" + string.Format("{0,2}", nbrOfPages));
+
+            eventList = _eventList;
+            shownObjects = new();
+            for (int i = 0; i < nbrOfItems; i++)
+            {
+                layer.SetTextdrawText($"racename[{i}]", $"{eventList[i].Name} ~r~by ~b~~h~~h~{eventList[i].Author}");
+                layer.SetClickable($"racename[{i}]");
+                shownObjects.Add(eventList[i].Id);
+            }
+            layer.SetClickable("prevPage");
+            layer.SetClickable("nextPage");
+            layer.SetClickable("gotolastpage");
+            layer.TextdrawClicked += Layer_TextdrawClicked;
+
+        }
+
+        private void Layer_TextdrawClicked(object sender, TextdrawLayer.TextdrawEventArgs e)
+        {
+            Logger.WriteLineAndClose("EventManager.cs : EventListHUD:Layer_TextdrawClicked:I: You clicked " + e.TextdrawName);
+            if (e.TextdrawName == "prevPage")
+            {
+                currentPage = Math.Clamp(--currentPage, 1, nbrOfPages);
+                UpdatePage();
+            }
+            else if (e.TextdrawName == "nextPage")
+            {
+                currentPage = Math.Clamp(++currentPage, 1, nbrOfPages);
+                UpdatePage();
+            }
+            else if (e.TextdrawName == "gotolastpage")
+            {
+                currentPage = nbrOfPages;
+                UpdatePage();
+            }
+            else
+            {
+                Regex regex = new(@"racename\[(\d)*\]");
+                try
+                {
+                    if (int.TryParse(regex.Matches(e.TextdrawName).First().Groups[1].Value, out int index))
+                    {
+                        Selected.Invoke(this, new EventSelected(shownObjects[index]));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.WriteLineAndClose("EventManager.cs - EventManager.Layer_TextdrawClicked:E: " + ex.Message);
+                }
+            }
+        }
+
+        private void UpdatePage()
+        {
+            layer.SetTextdrawText("page", string.Format("{0,2}", currentPage) + "/" + string.Format("{0,2}", nbrOfPages));
+            shownObjects = new();
+            for (int i = 0; i < nbrOfItems - 1; i++)
+            {
+                if ((nbrOfItems * currentPage) - 1 + i >= eventList.Count)
+                    layer.Hide($"racename[{i}]");
+                else
+                {
+                    EventListObject evt = eventList[(nbrOfItems * currentPage) - 1 + i];
+                    layer.SetTextdrawText($"racename[{i}]", $"{evt.Name} by ~r~{evt.Author}");
+                    layer.SetClickable($"racename[{i}]");
+                    shownObjects.Add(evt.Id);
+                }
+            }
+        }
+    }
     public class EventManager
     {
         private static EventManager _instance = null;
@@ -160,8 +273,10 @@ namespace SampSharpGameMode1.Events
                         }
                         else if (eventArgs.ListItem == 1) // Restart
                         {
-                            evt.End(EventFinishedReason.Terminated);
-                            evt.Start(evt.Slots);
+                            evt.End(EventFinishedReason.Aborted);
+                            openedEvent = null;
+                            Thread.Sleep(2000);
+                            CreateEvent(player, evt.Type, evt.Id);
                             player.Notificate("Event restarted");
                         }
                         else if (eventArgs.ListItem == 2) // Abort
@@ -253,7 +368,7 @@ namespace SampSharpGameMode1.Events
             else
             {
                 // Check if someone is editing a race or a derby
-                List<int> editingEvents = new List<int>();
+                List<int> editingEvents = new();
                 foreach(Player p in Player.All)
                 {
                     if(p.eventCreator != null)
@@ -265,39 +380,53 @@ namespace SampSharpGameMode1.Events
                     }
                 }
 
-                List<int> foundEvents = new List<int>();
-                ListDialog eventSearchDialog = new ListDialog("Found " + eventType.ToString() + "s", "Launch", "Cancel");
+                List<int> foundEvents = new();
+                List<EventListObject> events = new();
                 while (row.Count > 0)
                 {
                     if(!editingEvents.Contains(Convert.ToInt32(row[key_id])))
                     {
                         foundEvents.Add(Convert.ToInt32(row[key_id]));
-                        eventSearchDialog.AddItem(row[key_id] + "_" + ColorPalette.Primary.Main + row[key_name] + ColorPalette.Primary.Lighten + " by " + ColorPalette.Primary.Main + row[key_creator]);
+                        events.Add(new EventListObject() { Id = Convert.ToInt32(row[key_id]), Name = row[key_name], Author = row[key_creator] });
+                        Console.WriteLine("event added: " + row[key_name]);
                     }
                     row = GameMode.MySQLConnector.GetNextRow();
                 }
+                EventListHUD eventListHUD = new(player, eventType, events);
                 GameMode.MySQLConnector.CloseReader();
                 if(foundEvents.Count == 0)
                 {
                     player.Notificate("No results");
                     ShowCreateEventNameDialog(player, eventType);
                 }
-                eventSearchDialog.Show(player);
-                eventSearchDialog.Response += (sender, eventArgs) =>
+                else
                 {
-                    if (eventArgs.DialogButton == DialogButton.Left)
+                    eventListHUD.Selected += (sender, eventArgs) =>
                     {
-                        if (eventType == EventType.Mission)
-                            CreateEvent(player, eventType, 1);
+                        player.CancelSelectTextDraw();
+                        eventListHUD.Unload();
+                        if (eventArgs.Id != 0)
+                        {
+                            if (eventType == EventType.Mission)
+                                CreateEvent(player, eventType, 1);
+                            else
+                                CreateEvent(player, eventType, eventArgs.Id);
+                        }
                         else
-                            CreateEvent(player, eventType, foundEvents[eventArgs.ListItem]);
-                    }
-                    else
+                        {
+                            player.Notificate("Cancelled");
+                            ShowCreateEventTypeDialog(player);
+                        }
+                    };
+                    player.SelectTextDraw(ColorPalette.Primary.Main.GetColor());
+                    player.CancelClickTextDraw += Player_CancelClickTextDraw;
+
+                    void Player_CancelClickTextDraw(object sender, SampSharp.GameMode.Events.PlayerEventArgs e)
                     {
-                        player.Notificate("Cancelled");
-                        ShowCreateEventTypeDialog(player);
+                        eventListHUD.Unload();
+                        player.CancelClickTextDraw -= Player_CancelClickTextDraw;
                     }
-                };
+                }
             }
         }
 
@@ -313,14 +442,14 @@ namespace SampSharpGameMode1.Events
                         {
                             if (eventArgs.ErrorMessage == null)
                             {
-                                if (player.IsConnected) player.SendClientMessage(ColorPalette.Primary.Main + $"Race {eventArgs.EventLoaded.Id} {Color.Green}loaded !");
+                                if (player.IsConnected) player.SendClientMessage(ColorPalette.Primary.Main + $"Race #{eventArgs.EventLoaded.Id} {Color.Green}loaded !");
                                 eventList.Add(eventArgs.EventLoaded);
                                 if (openedEvent == null)
                                 {
                                     openedEvent = eventArgs.EventLoaded;
-                                    eventArgs.EventLoaded.Open();
-                                    eventArgs.EventLoaded.Started += (sender, eventArgs) => { openedEvent = null; };
-                                    eventArgs.EventLoaded.Ended += (sender, eventArgs) => { eventList.Remove((Event)sender); };
+                                    openedEvent.Open();
+                                    openedEvent.Started += (sender, eventArgs) => { openedEvent = null; };
+                                    openedEvent.Ended += (sender, eventArgs) => { eventList.Remove((Event)sender); };
                                 }
                             }
                             else
@@ -338,14 +467,14 @@ namespace SampSharpGameMode1.Events
                         {
                             if (eventArgs.ErrorMessage == null)
                             {
-                                if (player.IsConnected) player.SendClientMessage(ColorPalette.Primary.Main + $"Derby {eventArgs.EventLoaded.Id} {Color.Green}loaded !");
+                                if (player.IsConnected) player.SendClientMessage(ColorPalette.Primary.Main + $"Derby #{eventArgs.EventLoaded.Id} {Color.Green}loaded !");
                                 eventList.Add(eventArgs.EventLoaded);
                                 if (openedEvent == null)
                                 {
                                     openedEvent = eventArgs.EventLoaded;
-                                    eventArgs.EventLoaded.Open();
-                                    eventArgs.EventLoaded.Started += (sender, eventArgs) => { openedEvent = null; };
-                                    eventArgs.EventLoaded.Ended += (sender, eventArgs) => { eventList.Remove((Event)sender); };
+                                    openedEvent.Open();
+                                    openedEvent.Started += (sender, eventArgs) => { openedEvent = null; };
+                                    openedEvent.Ended += (sender, eventArgs) => { eventList.Remove((Event)sender); };
                                 }
                             }
                             else
@@ -368,9 +497,9 @@ namespace SampSharpGameMode1.Events
                                 if (openedEvent == null)
                                 {
                                     openedEvent = eventArgs.EventLoaded;
-                                    eventArgs.EventLoaded.Open();
-                                    eventArgs.EventLoaded.Started += (sender, eventArgs) => { openedEvent = null; };
-                                    eventArgs.EventLoaded.Ended += (sender, eventArgs) => { eventList.Remove((Event)sender); };
+                                    openedEvent.Open();
+                                    openedEvent.Started += (sender, eventArgs) => { openedEvent = null; };
+                                    openedEvent.Ended += (sender, eventArgs) => { eventList.Remove((Event)sender); };
                                 }
                             }
                             else
