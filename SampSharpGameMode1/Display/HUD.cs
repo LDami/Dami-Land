@@ -119,6 +119,12 @@ namespace SampSharpGameMode1.Display
                     HasError = true;
                 }
             }
+            else
+            {
+                Logger.WriteLineAndClose("HUD.cs - HUD:_:E: Cannot load HUD: " + filename);
+                Logger.WriteLineAndClose("The file " + filename + " does not exists.");
+                HasError = true;
+            }
             layer.AutoUpdate = true;
         }
 
@@ -292,6 +298,8 @@ namespace SampSharpGameMode1.Display
             float spacing = 5f;
             Vector2 elementPosition = layer.GetTextdrawPosition(element);
             Vector2 elementSize = layer.GetTextdrawSize(element);
+            if (layer.GetTextdrawType(element) == TextdrawLayer.TextdrawType.Text) // The text textdraws manage width differently
+                elementSize = new Vector2(elementSize.X - elementPosition.X, elementSize.Y);
             Vector2 containerPosition = layer.GetTextdrawPosition(containerElement);
             Vector2 containerSize = layer.GetTextdrawSize(containerElement);
 
@@ -318,6 +326,7 @@ namespace SampSharpGameMode1.Display
                         );
                         layer.Duplicate(player, element, newName);
                         _ = layer.SetTextdrawPosition(newName, newPosition);
+                        _ = layer.SetTextdrawSize(newName, elementSize.X + (elementSize.X + spacing) * i, elementSize.Y);
                         Console.WriteLine("HUD.cs - HUD:DynamicDuplicateLayer:I: Adding " + newName + " at pos: " + layer.GetTextdrawPosition(newName).ToString());
                     }
                 }
