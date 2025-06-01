@@ -605,6 +605,11 @@ namespace SampSharpGameMode1.Events.Races
 
                     foreach (Player p in this.players)
                         UpdatePlayerCPLiveDisplay(p, playersData[player].nextCheckpoint.Idx -1);
+                    foreach (Player p in spectatingPlayers)
+                    {
+                        if (players[playersData[p].spectatePlayerIndex] == player)
+                            UpdatePlayerCPLiveDisplay(p, playersData[player].nextCheckpoint.Idx - 1);
+                    }
 
                     playerLastCheckpointData[player] = new PlayerCheckpointData(this.checkpoints[cpidx], cpTime, player.Vehicle.Model, player.Vehicle.Velocity, player.Vehicle.Angle);
 
@@ -627,9 +632,6 @@ namespace SampSharpGameMode1.Events.Races
 
         private void UpdatePlayerCPLiveDisplay(Player player, int cpidx)
         {
-            if (cpidx != playersData[player].nextCheckpoint.Idx - 1)
-                return;
-
             playerCPLiveHUD[player].Show("localCheckpointsBox");
             playerCPLiveHUD[player].SetSize("localCheckpointsBox", 640, 80 + 80 * checkpointLiveInfos[cpidx].Ranking.Count);
             playerCPLiveHUD[player].Show("localCheckpointsBoxLabel");
@@ -685,7 +687,7 @@ namespace SampSharpGameMode1.Events.Races
                     playerCPLiveHUD[player].Show($"localCheckpoint{idx}Label");
                     if (idx > 1)
                     {
-                        playerCPLiveHUD[player].SetText($"localCheckpoint{idx}GapLabel", $"{leaderTime - kvp.Value.Time:ss\\.ff}s");
+                        playerCPLiveHUD[player].SetText($"localCheckpoint{idx}GapLabel", $"+{leaderTime - kvp.Value.Time:ss\\.ff}s");
                         playerCPLiveHUD[player].Show($"localCheckpoint{idx}GapLabel");
                     }
                 }
@@ -912,6 +914,7 @@ namespace SampSharpGameMode1.Events.Races
                         if (vehicle is not null && !vehicle.IsDisposed) vehicle.Dispose();
                     }
                     player.pEvent.SetPlayerInSpectator(player);
+                    playersRecordsHUD[player].Hide();
                     spectatingPlayers.Add(player);
                     playersData[player].status = RacePlayerStatus.Spectating;
                     playersData[player].spectatePlayerIndex = 0;
@@ -958,6 +961,11 @@ namespace SampSharpGameMode1.Events.Races
         {
             if (!IsCreatorMode)
             {
+                foreach (Player sp in spectatingPlayers)
+                {
+                    sp.CancelSelectTextDraw();
+                    sp.pEvent.RemoveFromSpectating(sp);
+                }
                 foreach (Player p in BasePlayer.All.Cast<Player>())
                 {
                     if (p.VirtualWorld == this.virtualWorld)
@@ -990,6 +998,7 @@ namespace SampSharpGameMode1.Events.Races
 
         public bool IsPlayerSpectating(Player player)
         {
+            if (this.spectatingPlayers == null) return false; // can happen if /leave is entered before Race start
             return this.spectatingPlayers.Contains(player);
         }
 

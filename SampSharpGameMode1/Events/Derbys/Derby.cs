@@ -68,6 +68,11 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             Finished?.Invoke(this, e);
             Player.SendClientMessageToAll(Color.Wheat, $"[Event]{Color.White} The Derby {ColorPalette.Secondary.Main}{e.derby.Name}{Color.White} is finished, the winner is {Color.Orange}{(e.winner?.Name ?? "nobody")}{Color.White} !");
+            foreach (Player sp in spectatingPlayers)
+            {
+                sp.CancelSelectTextDraw();
+                sp.pEvent.RemoveFromSpectating(sp);
+            }
         }
         #endregion
 
@@ -511,6 +516,7 @@ namespace SampSharpGameMode1.Events.Derbys
 
         public bool IsPlayerSpectating(Player player)
         {
+            if (this.spectatingPlayers == null) return false; // can happen if /leave is entered before Race start
             return this.spectatingPlayers.Contains(player);
         }
 

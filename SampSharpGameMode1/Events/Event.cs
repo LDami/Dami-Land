@@ -1,16 +1,16 @@
-﻿using Microsoft.VisualBasic;
-using SampSharp.GameMode.SAMP;
+﻿using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace SampSharpGameMode1.Events
 {
     public class AnnounceHUD : HUD
     {
-        public AnnounceHUD(Player player) : base(player, "event-announce.json") // TODO: Improve to use Global Textdraws instead of Player Textdraws
+        public AnnounceHUD(Player player) : base(player, "eventannounce.json") // TODO: Improve to use Global Textdraws instead of Player Textdraws
         {
             this.Hide();
         }
@@ -18,7 +18,7 @@ namespace SampSharpGameMode1.Events
         {
             layer.SetTextdrawText("eventtype", $"A {evt.Type} is starting soon");
             layer.SetTextdrawText("eventname", evt.Name);
-            layer.SetTextdrawText("joincommand", $"/join to join the {evt.Type}");
+            layer.SetTextdrawText("joincommand", "/join to join the event");
             this.Show();
         }
     }
@@ -38,7 +38,7 @@ namespace SampSharpGameMode1.Events
             int idx = 0;
             foreach (Player p in players)
             {
-                layer.SetClickable("playername" + idx++);
+                layer.SetClickable($"playername[{idx++}]");
             }
             layer.TextdrawClicked += Layer_TextdrawClicked;
         }
@@ -47,12 +47,22 @@ namespace SampSharpGameMode1.Events
         {
             if(e.TextdrawName == "leavebutton")
             {
-                (sender as Player).pEvent.Leave(sender as Player);
+                (player as Player).pEvent.Leave(player as Player);
             }
             else if(e.TextdrawName.StartsWith("playername"))
             {
-                int idx = Convert.ToInt16(e.TextdrawName.Substring("playername".Length, e.TextdrawName.Length - "playername".Length));
-                player.SpectateVehicle((sender as Player).pEvent.Source.GetPlayers()[idx].Vehicle);
+                Regex regex = new(@"playername\[(\d)*\]");
+                try
+                {
+                    if (int.TryParse(regex.Matches(e.TextdrawName).First().Groups[1].Value, out int index))
+                    {
+                        player.SpectateVehicle((sender as Player).pEvent.Source.GetPlayers()[index].Vehicle);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.WriteLineAndClose("MapObjectSelector.cs - MapObjectSelect.Layer_TextdrawClicked:E: " + ex.Message);
+                }
             }
             player.CancelSelectTextDraw();
         }
@@ -77,7 +87,7 @@ namespace SampSharpGameMode1.Events
             int idx = 0;
             foreach(Player p in players)
             {
-                layer.SetTextdrawText("playername" + idx++, p.Name);
+                layer.SetTextdrawText($"playername[{idx++}]", p.Name);
             }
         }
     }
@@ -154,7 +164,7 @@ namespace SampSharpGameMode1.Events
         public void Open()
         {
             Slots = new List<EventSlot>();
-            Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " " + ColorPalette.Secondary.Main + this.Name + Color.White + " will start soon, join it with " + ColorPalette.Primary.Main + "/event join");
+            Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " " + ColorPalette.Secondary.Main + this.Name + Color.White + " is starting soon, join it with " + ColorPalette.Primary.Main + "/event join");
             this.Status = EventStatus.Waiting;
             foreach(Player player in Player.All.Cast<Player>())
             {
@@ -177,8 +187,8 @@ namespace SampSharpGameMode1.Events
                 Slots.Add(new EventSlot(player, Vector3R.Zero));
                 player.pEvent = this;
                 player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You joined the " + this.Type.ToString() + ", good luck !");
-                player.AnnounceHUD.Hide("joinCommand");
-                if (Slots.Count == Player.All.Count() || !this.HasAvailableSlots() || Player.All.OfType<Player>().Where(x => x.pEvent is null).Count() == 0)
+                player.AnnounceHUD.SetText("joincommand", "~g~~h~You're in !");
+                if (Slots.Count == Player.All.Count() || !this.HasAvailableSlots() || !Player.All.OfType<Player>().Where(x => x.pEvent is null).Any())
                 {
                     this.Start(Slots);
                 }
@@ -188,7 +198,10 @@ namespace SampSharpGameMode1.Events
         public void Leave(Player player)
 		{
             if (this.Source.IsPlayerSpectating(player))
+            {
+                RemoveFromSpectating(player);
                 this.Source.Eject(player);
+            }
             else
             {
                 if (Slots.Find(x => x.Player.Equals(player)) != null)
