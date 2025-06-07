@@ -326,7 +326,10 @@ namespace SampSharpGameMode1.Display
                         );
                         layer.Duplicate(player, element, newName);
                         _ = layer.SetTextdrawPosition(newName, newPosition);
-                        _ = layer.SetTextdrawSize(newName, elementSize.X + (elementSize.X + spacing) * i, elementSize.Y);
+                        if (layer.GetTextdrawType(element) == TextdrawLayer.TextdrawType.Text) // The text textdraws manage width differently
+                            _ = layer.SetTextdrawSize(newName, elementSize.X + (elementSize.X + spacing) * i, elementSize.Y);
+                        else
+                            _ = layer.SetTextdrawSize(newName, elementSize.X, elementSize.Y);
                         Console.WriteLine("HUD.cs - HUD:DynamicDuplicateLayer:I: Adding " + newName + " at pos: " + layer.GetTextdrawPosition(newName).ToString());
                     }
                 }
