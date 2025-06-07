@@ -1,6 +1,7 @@
 ﻿using SampSharp.GameMode.World;
 using SampSharpGameMode1.CustomDatas;
 using SampSharpGameMode1.Display;
+using SampSharpGameMode1.Events;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -22,30 +23,31 @@ namespace SampSharpGameMode1.Map
     public class MapObjectSelector : HUD
     {
         public event EventHandler<MapObjectSelected> Selected;
+        List<int> allObjects;
         List<int> shownObjects;
         int currentPage;
         int nbrOfPages;
+        int nbrOfItems;
         public MapObjectSelector(BasePlayer player, MapObjectGroupData group) : base(player, "mapobjectlist.json")
         {
             layer.SetTextdrawText("category", group.Name);
             layer.SetTextdrawText("description", group.Description);
-            List<MapObjectData> objList = MapObjectData.MapObjects.Where(x => x.Group.Name == group.Name).ToList();
-            int nbrOfItems = DynamicDuplicateLayer("model#", objList.Count, "background");
-            Console.WriteLine("MapObjectSelector.cs - MapObjectSelector._:I: objList = " + objList.Count);
+            allObjects = MapObjectData.MapObjects.Where(x => x.Group.Name == group.Name).Select(x => x.Id).ToList();
+            nbrOfItems = DynamicDuplicateLayer("model#", allObjects.Count, "background");
+            Console.WriteLine("MapObjectSelector.cs - MapObjectSelector._:I: allObjects = " + allObjects.Count);
             Console.WriteLine("MapObjectSelector.cs - MapObjectSelector._:I: nbrOfItems = " + nbrOfItems);
-            nbrOfPages = objList.Count / nbrOfItems;
+            nbrOfPages = allObjects.Count / nbrOfItems;
             Console.WriteLine("MapObjectSelector.cs - MapObjectSelector._:I: nbrOfPages = " + nbrOfPages);
-            if (nbrOfItems != objList.Count)
-                player.SendClientMessage("Warning: All objects cannot be displayed");
+            if (nbrOfItems != allObjects.Count)
+                player.SendClientMessage("Warning: All objects cannot be displayed on one page");
             shownObjects = new();
-            for (int i = 0; i < objList.Count; i++)
+            for (int i = 0; i < allObjects.Count; i++)
             {
                 if (i < nbrOfItems)
                 {
-                    layer.SetTextdrawPreviewModel($"model[{i}]", objList[i].Id);
+                    layer.SetTextdrawPreviewModel($"model[{i}]", allObjects[i]);
                     layer.SetClickable($"model[{i}]");
-                    shownObjects.Add(objList[i].Id);
-                    Console.WriteLine($"MapObjectSelector.cs - MapObjectSelector._:I: model[{i}] = " + objList[i].Id);
+                    shownObjects.Add(allObjects[i]);
                 }
             }
             currentPage = 1;
@@ -60,12 +62,12 @@ namespace SampSharpGameMode1.Map
             if (e.TextdrawName == "prevPage")
             {
                 currentPage = Math.Clamp(--currentPage, 1, nbrOfPages);
-                layer.SetTextdrawText("page", string.Format("{0,2}", currentPage));
+                UpdatePage();
             }
             else if (e.TextdrawName == "nextPage")
             {
                 currentPage = Math.Clamp(++currentPage, 1, nbrOfPages);
-                layer.SetTextdrawText("page", string.Format("{0,2}", currentPage));
+                UpdatePage();
             }
             else
             {
@@ -80,6 +82,23 @@ namespace SampSharpGameMode1.Map
                 catch(Exception ex)
                 {
                     Logger.WriteLineAndClose("MapObjectSelector.cs - MapObjectSelect.Layer_TextdrawClicked:E: " + ex.Message);
+                }
+            }
+        }
+        private void UpdatePage()
+        {
+            layer.SetTextdrawText("page", string.Format("{0,2}", currentPage));
+            shownObjects = new();
+            for (int i = 0; i < nbrOfItems - 1; i++)
+            {
+                if ((nbrOfItems * currentPage) - 1 + i >= allObjects.Count)
+                    layer.Hide($"model[{i}]");
+                else
+                {
+                    int id = allObjects[(nbrOfItems * currentPage) - 1 + i];
+                    layer.SetTextdrawPreviewModel($"model[{i}]", id);
+                    layer.SetClickable($"model[{i}]");
+                    shownObjects.Add(id);
                 }
             }
         }

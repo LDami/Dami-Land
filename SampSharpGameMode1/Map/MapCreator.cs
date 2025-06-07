@@ -297,9 +297,13 @@ namespace SampSharpGameMode1.Map
                     player.CancelClickTextDraw += (_, _) =>
                     {
                         mapObjectSelector?.Unload();
+                        hud.Show();
                     };
                 }
+                else
+                    hud.Show();
             };
+            hud.Hide();
             listDialog.Show(player);
         }
 

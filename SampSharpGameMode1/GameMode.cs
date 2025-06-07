@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Threading;
+using System.Xml;
+using System.Xml.Linq;
 using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.World;
@@ -186,39 +188,39 @@ namespace SampSharpGameMode1
         public static void ExtractMapObjectList()
         {
             // File containing map object's data
-            string filePath = "C:\\Serveur OpenMP\\scriptfiles\\mapobjects.txt";
 
             List<MapObjectData> mapObjects = new();
 
-            string[] lines = System.IO.File.ReadAllLines(filePath);
-            MapObjectGroupData currentCategory = new("A51 Replacement Land Bit", "");
-            string comment = "";
+            XmlDocument reader = new();
+            //reader.Load("https://github.com/multitheftauto/mtasa-resources/blob/master/%5Beditor%5D/editor_gui/client/browser/objects.xml");
+            reader.Load(@"C:\Users\ldami\Downloads\objects.xml");
 
-            foreach (string line in lines)
+            ;
+            foreach(XmlNode group in reader.FirstChild.ChildNodes)
             {
-                // Check if line is empty or starts with ### (which means it's a new category)
-                if (!string.IsNullOrWhiteSpace(line))
+                int objInCurrentGroup = 0;
+                MapObjectGroupData currentCategory = new(group.Attributes[0].Value, "");
+                foreach(XmlNode child in group.ChildNodes)
                 {
-                    if (line.StartsWith("###"))
+                    if(child.Name == "group")
                     {
-                        // Update current category
-                        currentCategory = new(line.Replace("###", "").Replace("*", "").Trim(), comment);
-                        comment = "";
+                        MapObjectGroupData innerCategory = new(currentCategory.Name + " - " + child.Attributes[0].Value, "");
+                        foreach(XmlNode obj in child.ChildNodes)
+                        {
+                            mapObjects.Add(new MapObjectData(Convert.ToInt32(obj.Attributes[0].Value), obj.Attributes[0].Value, innerCategory));
+                            objInCurrentGroup++;
+                        }
                     }
                     else
                     {
-                        string[] parts = line.Split('\t');
-                        if (int.TryParse(parts[0], out int id))
-                        {
-                            string name = parts[1];
-                            mapObjects.Add(new MapObjectData(id, name, currentCategory));
-                        }
-                        else
-                            comment += " " + line;
+                        mapObjects.Add(new MapObjectData(Convert.ToInt32(child.Attributes[0].Value), child.Attributes[0].Value, currentCategory));
+                        objInCurrentGroup++;
                     }
                 }
+                Console.WriteLine("group : " + currentCategory.Name + " = " + objInCurrentGroup);
             }
-            Console.WriteLine("GameMode.cs - GameMode.ExtractMapObjects:I: Got " + mapObjects.Count + " map objects");
+
+            Console.WriteLine("GameMode.cs - GameMode.ExtractMapObjects:I: Loaded " + mapObjects.Count + " map objects");
             MapObjectData.UpdateMapObject(mapObjects);
         }
     }
