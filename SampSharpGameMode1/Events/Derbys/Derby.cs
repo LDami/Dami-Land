@@ -253,11 +253,13 @@ namespace SampSharpGameMode1.Events.Derbys
                 for (int i = 0; i < slots.Count; i++)
                     remainingPos.Add(i);
                 int pos;
-                foreach (EventSlot slot in slots)
+                foreach (EventSlot slot in slots.Where(s => s.SpectateOnly == false))
                 {
-                    DerbyPlayer playerData = new();
-                    playerData.spectatePlayerIndex = -1;
-                    playerData.status = DerbyPlayerStatus.Running;
+                    DerbyPlayer playerData = new()
+                    {
+                        spectatePlayerIndex = 0,
+                        status = DerbyPlayerStatus.Running
+                    };
 
                     playersLiveInfoHUD[slot.Player] = new HUD(slot.Player, "derbyhud.json");
                     playersLiveInfoHUD[slot.Player].Hide("iconrockets");
@@ -286,6 +288,33 @@ namespace SampSharpGameMode1.Events.Derbys
                     veh.Died += OnPlayerVehicleDied;
                     slot.Player.PutInVehicle(veh);
                     players.Add(slot.Player);
+                }
+
+                foreach (EventSlot spectatorSlot in slots.Where(s => s.SpectateOnly == true))
+                {
+                    DerbyPlayer playerData = new()
+                    {
+                        spectatePlayerIndex = 0,
+                        status = DerbyPlayerStatus.Spectating
+                    };
+
+                    playersLiveInfoHUD[spectatorSlot.Player] = new HUD(spectatorSlot.Player, "derbyhud.json");
+                    playersLiveInfoHUD[spectatorSlot.Player].Hide("iconrockets");
+                    playersLiveInfoHUD[spectatorSlot.Player].Hide("remainingrockets");
+                    playersLiveInfoHUD[spectatorSlot.Player].SetText("remainingplayers", slots.Count.ToString(@"000"));
+
+                    spectatorSlot.Player.VirtualWorld = virtualWorld;
+                    spectatorSlot.Player.SetTime(this.Time.Hour, this.Time.Minute);
+                    spectatorSlot.Player.ToggleControllable(true);
+                    spectatorSlot.Player.ResetWeapons();
+                    Thread.Sleep(10); // Used to prevent AntiCheat to detect weapon before player enters in vehicle
+
+                    spectatorSlot.Player.Disconnected += OnPlayerDisconnect;
+                    spectatorSlot.Player.KeyStateChanged += OnPlayerKeyStateChanged;
+
+                    spectatorSlot.Player.pEvent.SetPlayerInSpectator(spectatorSlot.Player);
+                    spectatingPlayers.Add(spectatorSlot.Player);
+                    playersData.Add(spectatorSlot.Player, playerData);
                 }
 
                 if (!isAborted)
@@ -406,7 +435,9 @@ namespace SampSharpGameMode1.Events.Derbys
             }
 
             players.Remove(player);
-            foreach(Player p in players)
+            foreach (Player p in players)
+                playersLiveInfoHUD[p].SetText("remainingplayers", players.Count.ToString(@"000"));
+            foreach (Player p in spectatingPlayers)
                 playersLiveInfoHUD[p].SetText("remainingplayers", players.Count.ToString(@"000"));
             if (players.Count == 0) // Si c'est le vainqueur
             {
@@ -480,10 +511,18 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             if(!IsCreatorMode)
             {
-                foreach (Player p in BasePlayer.All.Cast<Player>())
+                if (players != null) // If event didn't start
                 {
-                    if (p.VirtualWorld == this.virtualWorld)
-                        Eject(p);
+                    foreach (Player sp in spectatingPlayers)
+                    {
+                        sp.CancelSelectTextDraw();
+                        sp.pEvent.RemoveFromSpectating(sp);
+                    }
+                    foreach (Player p in BasePlayer.All.Cast<Player>())
+                    {
+                        if (p.VirtualWorld == this.virtualWorld)
+                            Eject(p);
+                    }
                 }
             }
             map?.Unload();

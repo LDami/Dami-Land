@@ -164,7 +164,12 @@ namespace SampSharpGameMode1.Events
         public void Open()
         {
             Slots = new List<EventSlot>();
-            Player.SendClientMessageToAll(Color.Wheat, "[Event]" + Color.White + " The " + this.Type.ToString() + " " + ColorPalette.Secondary.Main + this.Name + Color.White + " is starting soon, join it with " + ColorPalette.Primary.Main + "/event join");
+            Player.SendClientMessageToAll(Color.Wheat,
+                $"[Event] {Color.White} The {this.Type} {ColorPalette.Secondary.Main}{this.Name}{Color.White} is starting soon, join it with {ColorPalette.Primary.Main}/event join"
+                );
+            Player.SendClientMessageToAll(Color.Wheat,
+                $"[Event] {Color.White} You can also spectate it with {ColorPalette.Primary.Main}/event spec[tate]"
+                );
             this.Status = EventStatus.Waiting;
             foreach(Player player in Player.All.Cast<Player>())
             {
@@ -180,13 +185,14 @@ namespace SampSharpGameMode1.Events
             return true;
         }
 
-        public void Join(Player player)
+        public void Join(Player player, bool spectateMode)
         {
             if (player.IsConnected && Slots.Find(x => x.Player.Equals(player)) == null && this.HasAvailableSlots())
             {
-                Slots.Add(new EventSlot(player, Vector3R.Zero));
+                Slots.Add(new EventSlot(player, Vector3R.Zero, spectateMode));
                 player.pEvent = this;
-                player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You joined the " + this.Type.ToString() + ", good luck !");
+                if(!spectateMode)
+                    player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You joined the " + this.Type.ToString() + ", good luck !");
                 player.AnnounceHUD.SetText("joincommand", "~g~~h~You're in !");
                 if (Slots.Count == Player.All.Count() || !this.HasAvailableSlots() || !Player.All.OfType<Player>().Where(x => x.pEvent is null).Any())
                 {
@@ -241,7 +247,7 @@ namespace SampSharpGameMode1.Events
 
         public void SetPlayerInSpectator(Player player)
         {
-            if (!this.Source.IsPlayerSpectating(player) && this.Status == EventStatus.Running)
+            if (!this.Source.IsPlayerSpectating(player) && (this.Status == EventStatus.Waiting || this.Status == EventStatus.Running))
             {
                 spectatingPlayersHUD[player] = new SpectatingHUD(player, this.Source.GetPlayers());
                 player.ToggleSpectating(true);

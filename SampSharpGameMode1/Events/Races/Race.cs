@@ -398,12 +398,12 @@ namespace SampSharpGameMode1.Events.Races
 
                 Dictionary<string, string> row;
                 playersVehicles = new Dictionary<BasePlayer, BaseVehicle>();
-                foreach (EventSlot slot in slots)
+                foreach (EventSlot slot in slots.Where(s => s.SpectateOnly == false))
                 {
                     slot.Player.Position = slot.Player.Position;
                     RacePlayer playerData = new()
                     {
-                        spectatePlayerIndex = -1,
+                        spectatePlayerIndex = 0,
                         status = RacePlayerStatus.Running,
                         nextCheckpoint = checkpoints[1]
                     };
@@ -468,7 +468,6 @@ namespace SampSharpGameMode1.Events.Races
                     remainingPos.Remove(pos);
 
                     playerData.startPosition = new Vector3R(this.SpawnPoints[pos].Position, this.SpawnPoints[pos].Rotation);
-                    playersData.Add(slot.Player, playerData);
 
                     BaseVehicle veh = BaseVehicle.Create(StartingVehicle.GetValueOrDefault(VehicleModelType.Bike), this.SpawnPoints[pos].Position, this.SpawnPoints[pos].Rotation, 1, 1);
                     veh.VirtualWorld = virtualWorld;
@@ -478,9 +477,53 @@ namespace SampSharpGameMode1.Events.Races
                     slot.Player.PutInVehicle(veh);
 
                     slot.Player.GameText("Press ~k~~CONVERSATION_YES~ ~n~or type /rr~n~ to respawn", 2000, 6);
+                    Event.SendEventMessageToPlayer(slot.Player, "Press ~k~~CONVERSATION_YES~ for a rolling respawn, or type /rr to respawn");
+                    players.Add(slot.Player);
+
+                    playersData.Add(slot.Player, playerData);
 
                     UpdatePlayerCheckpoint(slot.Player);
-                    players.Add(slot.Player);
+                }
+
+                foreach(EventSlot spectatorSlot in slots.Where(s => s.SpectateOnly == true))
+                {
+                    RacePlayer playerData = new()
+                    {
+                        spectatePlayerIndex = 0,
+                        status = RacePlayerStatus.Spectating,
+                        nextCheckpoint = checkpoints[1]
+                    };
+
+                    playersLiveInfoHUD[spectatorSlot.Player] = new HUD(spectatorSlot.Player, "racelive.json");
+                    playersLiveInfoHUD[spectatorSlot.Player].SetText("racename", this.Name);
+                    playersLiveInfoHUD[spectatorSlot.Player].SetText("authorname", $"Author: {this.Creator}");
+                    playersLiveInfoHUD[spectatorSlot.Player].SetText("stopwatch", "00:00:00.000");
+                    if (this.Laps > 0)
+                    {
+                        playersLiveInfoHUD[spectatorSlot.Player].Show("laps");
+                        playersLiveInfoHUD[spectatorSlot.Player].SetText("laps", $"Laps: 1/{this.Laps}");
+                    }
+                    else
+                        playersLiveInfoHUD[spectatorSlot.Player].Hide("laps");
+                    playersLiveInfoHUD[spectatorSlot.Player].SetText("checkpoints", $"CP: 0/{this.checkpoints.Count - 1}");
+                    playersLiveInfoHUD[spectatorSlot.Player].Hide("nitro");
+
+                    playerCPLiveHUD[spectatorSlot.Player] = new HUD(spectatorSlot.Player, "racecplive.json");
+                    playerCPLiveHUD[spectatorSlot.Player].Hide();
+
+                    spectatorSlot.Player.VirtualWorld = virtualWorld;
+                    spectatorSlot.Player.SetTime(this.Time.Hour, this.Time.Minute);
+                    spectatorSlot.Player.ToggleControllable(true);
+                    spectatorSlot.Player.ResetWeapons();
+                    Thread.Sleep(10); // Used to prevent AntiCheat to detect weapon before player enters in vehicle
+
+                    spectatorSlot.Player.Disconnected += OnPlayerDisconnect;
+                    spectatorSlot.Player.KeyStateChanged += OnPlayerKeyStateChanged;
+
+                    spectatorSlot.Player.pEvent.SetPlayerInSpectator(spectatorSlot.Player);
+                    spectatingPlayers.Add(spectatorSlot.Player);
+                    playersData.Add(spectatorSlot.Player, playerData);
+                    UpdatePlayerCheckpoint(spectatorSlot.Player);
                 }
 
                 stopWatchTimer = new SampSharp.GameMode.SAMP.Timer(10, true);
@@ -508,6 +551,10 @@ namespace SampSharpGameMode1.Events.Races
             if(this.isStarted)
             {
                 foreach (Player p in players)
+                {
+                    playersLiveInfoHUD[p].SetText("stopwatch", (DateTime.Now - startedTime).ToString(@"hh\:mm\:ss\.fff"));
+                }
+                foreach (Player p in spectatingPlayers)
                 {
                     playersLiveInfoHUD[p].SetText("stopwatch", (DateTime.Now - startedTime).ToString(@"hh\:mm\:ss\.fff"));
                 }
@@ -604,7 +651,7 @@ namespace SampSharpGameMode1.Events.Races
                     UpdatePlayerCheckpoint(player);
 
                     foreach (Player p in this.players)
-                        UpdatePlayerCPLiveDisplay(p, playersData[player].nextCheckpoint.Idx -1);
+                        UpdatePlayerCPLiveDisplay(p, playersData[player].nextCheckpoint.Idx - 1);
                     foreach (Player p in spectatingPlayers)
                     {
                         if (players[playersData[p].spectatePlayerIndex] == player)
@@ -929,7 +976,8 @@ namespace SampSharpGameMode1.Events.Races
         public void Eject(Player player)
         {
             playersLiveInfoHUD[player].Hide();
-            playersRecordsHUD[player].Hide();
+            if(playersData[player].status == RacePlayerStatus.Running)
+                playersRecordsHUD[player].Hide();
             playerCPLiveHUD[player].Hide();
             players.RemoveAll(x => x.Equals(player));
             spectatingPlayers.RemoveAll(x => x.Equals(player));
@@ -961,15 +1009,18 @@ namespace SampSharpGameMode1.Events.Races
         {
             if (!IsCreatorMode)
             {
-                foreach (Player sp in spectatingPlayers)
+                if(players != null) // If event didn't start
                 {
-                    sp.CancelSelectTextDraw();
-                    sp.pEvent.RemoveFromSpectating(sp);
-                }
-                foreach (Player p in BasePlayer.All.Cast<Player>())
-                {
-                    if (p.VirtualWorld == this.virtualWorld)
-                        Eject(p);
+                    foreach (Player sp in spectatingPlayers)
+                    {
+                        sp.CancelSelectTextDraw();
+                        sp.pEvent.RemoveFromSpectating(sp);
+                    }
+                    foreach (Player p in BasePlayer.All.Cast<Player>())
+                    {
+                        if (p.VirtualWorld == this.virtualWorld)
+                            Eject(p);
+                    }
                 }
             }
             map?.Unload();

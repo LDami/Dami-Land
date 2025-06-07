@@ -138,6 +138,7 @@ namespace SampSharpGameMode1.Events
 
         public Event openedEvent;
         private List<Event> eventList;
+        public List<Event> RunningEvents { get { return eventList; } }
         private List<int> usedIds;
 
         public EventManager()
@@ -237,6 +238,7 @@ namespace SampSharpGameMode1.Events
         public void ShowEventOptionDialog(Player player, Event evt)
         {
             ListDialog managerOptionDialog = new ListDialog(evt.Name, "Select", "Cancel");
+            managerOptionDialog.AddItem("Infos ...");
             if (evt.Status == EventStatus.Loaded)
                 managerOptionDialog.AddItem("Open event to players");
             else if (evt.Status == EventStatus.Waiting)
@@ -249,9 +251,34 @@ namespace SampSharpGameMode1.Events
             {
                 if (eventArgs.DialogButton == DialogButton.Left)
                 {
+                    if (eventArgs.ListItem == 0) // Infos
+                    {
+                        TablistDialog infoDialog = new(evt.Name + " infos", 2, "Close")
+                        {
+                            new string[] { "Id", evt.Id.ToString() },
+                            new string[] { "Name", evt.Name },
+                            new string[] { "Players", evt.Slots.Count.ToString() },
+                            new string[] { "Max players", evt.AvailableSlots.ToString() },
+                            new string[] { "Status", evt.Status.ToString() },
+                            new string[] { "VirtualWorld", evt.VirtualWorld.ToString() },
+                            new string[] { "Type", evt.Type.ToString() },
+                            new string[] { "Is playable ?", evt.Source.IsPlayable().ToString() },
+                            new string[] { "Player slots:", "" },
+                        };
+                        for(int i = 0; i < evt.Slots.Count; i++)
+                        {
+                            infoDialog.Add(new string[] { "Slot #" + i, evt.Slots[i].Player.Name + " " + (evt.Slots[i].SpectateOnly ? "(spectator)" : "(runner)").ToString() });
+                        }
+
+                        infoDialog.Show(player);
+                        infoDialog.Response += (sender, eventArgs) =>
+                        {
+                            ShowEventOptionDialog(player, evt);
+                        };
+                    }
                     if(evt.Status == EventStatus.Loaded || evt.Status == EventStatus.Waiting)
                     {
-                        if (eventArgs.ListItem == 0) // Open / Start
+                        if (eventArgs.ListItem == 1) // Open / Start
                         {
                             if (evt.Status == EventStatus.Loaded)
                             {
@@ -271,7 +298,7 @@ namespace SampSharpGameMode1.Events
                                 else player.SendClientMessage(Color.Red + "The event cannot be started (there are maybe no player)");
                             }
                         }
-                        else if (eventArgs.ListItem == 1) // Restart
+                        else if (eventArgs.ListItem == 2) // Restart
                         {
                             evt.End(EventFinishedReason.Aborted);
                             openedEvent = null;
@@ -279,7 +306,7 @@ namespace SampSharpGameMode1.Events
                             CreateEvent(player, evt.Type, evt.Id);
                             player.Notificate("Event restarted");
                         }
-                        else if (eventArgs.ListItem == 2) // Abort
+                        else if (eventArgs.ListItem == 3) // Abort
                         {
                             eventList.Remove(evt);
                             if (openedEvent == evt)
@@ -290,7 +317,7 @@ namespace SampSharpGameMode1.Events
                     }
                     else
                     {
-                        if (eventArgs.ListItem == 0) // Abort
+                        if (eventArgs.ListItem == 1) // Abort
                         {
                             eventList.Remove(evt);
                             if (openedEvent == evt)

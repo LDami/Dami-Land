@@ -155,7 +155,7 @@ namespace SampSharpGameMode1.Events.Derbys
 				case AvailableEvents.SuperPoweredLaser:
 					if (this.Player.InAnyVehicle)
 					{
-						this.Player.SendClientMessage("You received a super powered laser ! You can explode the other competitor with it !");
+						this.Player.SendClientMessage("You received a super powered laser ! You can explode the other competitors with it !");
 						if(this.Player.pEvent != null)
 							Event.SendEventMessageToAll(this.Player.pEvent, $"{this.Player.Name} has a super powered laser !");
 						float frontOfVehicle = BaseVehicle.GetModelInfo(this.Player.Vehicle.Model, SampSharp.GameMode.Definitions.VehicleModelInfoType.Size).Z / 2;
@@ -205,7 +205,7 @@ namespace SampSharpGameMode1.Events.Derbys
 									{
 										p.CreateExplosion(v.Position, SampSharp.GameMode.Definitions.ExplosionType.LargeVisibleDamageFire, 50.0f);
 										if (p.pEvent != null)
-											Event.SendEventMessageToPlayer(p, $"You've been blasted by the laser of {player.Name}");
+											Event.SendEventMessageToPlayer(p, $"You've been blasted by the laser of {player.Name}"); //TODO send the message only once, and not every update
 									}
 								}
 							}
