@@ -172,7 +172,8 @@ namespace SampSharpGameMode1
 
             if (!this.IsNPC)
             {
-                SaveAccount();
+                if(e.Reason != DisconnectReason.Kicked)
+                    SaveAccount();
                 isAuthenticated = false;
                 Adminlevel = 0;
 
