@@ -467,6 +467,9 @@ namespace SampSharpGameMode1.Display
 
         public void SetClickable(string name)
         {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SetClickable:D: Called for '{name}'");
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFoundException(name);
             textdrawList[name].Selectable = true;
             textdrawList[name].Click += (object sender, SampSharp.GameMode.Events.ClickPlayerTextDrawEventArgs e) =>
             {
