@@ -92,7 +92,7 @@ namespace SampSharpGameMode1.Events
             }
             else
             {
-                Regex regex = new(@"racename\[(\d)*\]");
+                Regex regex = new(@"racename\[(\d*)\]");
                 try
                 {
                     if (int.TryParse(regex.Matches(e.TextdrawName).First().Groups[1].Value, out int index))

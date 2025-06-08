@@ -71,7 +71,7 @@ namespace SampSharpGameMode1.Map
             }
             else
             {
-                Regex regex = new(@"model\[(\d)*\]");
+                Regex regex = new(@"model\[(\d*)\]");
                 try
                 {
                     if (int.TryParse(regex.Matches(e.TextdrawName).First().Groups[1].Value, out int index))

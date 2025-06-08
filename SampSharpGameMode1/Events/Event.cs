@@ -56,7 +56,7 @@ namespace SampSharpGameMode1.Events
             }
             else if(e.TextdrawName.StartsWith("playername"))
             {
-                Regex regex = new(@"playername\[(\d)*\]");
+                Regex regex = new(@"playername\[(\d*)\]");
                 try
                 {
                     if (int.TryParse(regex.Matches(e.TextdrawName).First().Groups[1].Value, out int index))
