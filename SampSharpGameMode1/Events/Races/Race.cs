@@ -952,6 +952,10 @@ namespace SampSharpGameMode1.Events.Races
             }
             else
             {
+                foreach(Player spectators in spectatingPlayers)
+                {
+                    spectators.pEvent.UpdateSpectatingPlayersHUD(spectators);
+                }
                 if(!reason.Equals("Disconnected"))
                 {
                     if (player.InAnyVehicle)
@@ -981,6 +985,7 @@ namespace SampSharpGameMode1.Events.Races
             playerCPLiveHUD[player].Hide();
             players.RemoveAll(x => x.Equals(player));
             spectatingPlayers.RemoveAll(x => x.Equals(player));
+            playersData.Remove(player);
 
             if (!player.IsDisposed)
             {
@@ -1051,6 +1056,46 @@ namespace SampSharpGameMode1.Events.Races
         {
             if (this.spectatingPlayers == null) return false; // can happen if /leave is entered before Race start
             return this.spectatingPlayers.Contains(player);
+        }
+
+        public void AddSpectator(Player player)
+        {
+            RacePlayer playerData = new()
+            {
+                spectatePlayerIndex = 0,
+                status = RacePlayerStatus.Spectating,
+                nextCheckpoint = checkpoints[1]
+            };
+
+            playersLiveInfoHUD[player] = new HUD(player, "racelive.json");
+            playersLiveInfoHUD[player].SetText("racename", this.Name);
+            playersLiveInfoHUD[player].SetText("authorname", $"Author: {this.Creator}");
+            playersLiveInfoHUD[player].SetText("stopwatch", "00:00:00.000");
+            if (this.Laps > 0)
+            {
+                playersLiveInfoHUD[player].Show("laps");
+                playersLiveInfoHUD[player].SetText("laps", $"Laps: 1/{this.Laps}");
+            }
+            else
+                playersLiveInfoHUD[player].Hide("laps");
+            playersLiveInfoHUD[player].SetText("checkpoints", $"CP: 0/{this.checkpoints.Count - 1}");
+            playersLiveInfoHUD[player].Hide("nitro");
+
+            playerCPLiveHUD[player] = new HUD(player, "racecplive.json");
+            playerCPLiveHUD[player].Hide();
+
+            player.VirtualWorld = virtualWorld;
+            player.SetTime(this.Time.Hour, this.Time.Minute);
+            player.ToggleControllable(true);
+            player.ResetWeapons();
+            Thread.Sleep(10); // Used to prevent AntiCheat to detect weapon before player enters in vehicle
+
+            player.Disconnected += OnPlayerDisconnect;
+            player.KeyStateChanged += OnPlayerKeyStateChanged;
+
+            spectatingPlayers.Add(player);
+            playersData.Add(player, playerData);
+            UpdatePlayerCheckpoint(player);
         }
 
         public List<Player> GetPlayers()

@@ -26,10 +26,13 @@ namespace SampSharpGameMode1.Events
     class SpectatingHUD : HUD
     {
         List<Player> players;
+        int currentSpectatingIndex = 0;
 
-        public SpectatingHUD(Player player, List<Player> players) : base(player, "eventspectating.json")
+        public SpectatingHUD(Player player, List<Player> _players) : base(player, "eventspectating.json")
         {
             player.KeyStateChanged += Player_KeyStateChanged;
+            players = _players;
+            this.DynamicDuplicateLayer("playernamelabel#", players.Count, "playerlistbg");
             this.DynamicDuplicateLayer("playername#", players.Count, "playerlistbg");
 
             SetPlayersList(players);
@@ -38,9 +41,11 @@ namespace SampSharpGameMode1.Events
             int idx = 0;
             foreach (Player p in players)
             {
-                layer.SetClickable($"playername[{idx++}]");
+                layer.SetClickable($"playername[{idx}]");
+                layer.SetTextdrawText($"playernamelabel[{idx++}]", p.Name);
             }
             layer.TextdrawClicked += Layer_TextdrawClicked;
+            SetSpectatingPlayer(0);
         }
 
         private void Layer_TextdrawClicked(object sender, TextdrawLayer.TextdrawEventArgs e)
@@ -56,7 +61,7 @@ namespace SampSharpGameMode1.Events
                 {
                     if (int.TryParse(regex.Matches(e.TextdrawName).First().Groups[1].Value, out int index))
                     {
-                        player.SpectateVehicle((sender as Player).pEvent.Source.GetPlayers()[index].Vehicle);
+                        SetSpectatingPlayer(index);
                     }
                 }
                 catch (Exception ex)
@@ -77,7 +82,15 @@ namespace SampSharpGameMode1.Events
         {
             if(e.NewKeys == SampSharp.GameMode.Definitions.Keys.Crouch)
             {
-                player.SelectTextDraw(ColorPalette.Primary.Main.GetColor());
+                player.SelectTextDraw(ColorPalette.Secondary.Main.GetColor());
+            }
+            if (e.NewKeys == SampSharp.GameMode.Definitions.Keys.Fire)
+            {
+                SetSpectatingPlayer(currentSpectatingIndex + 1);
+            }
+            if (e.NewKeys == SampSharp.GameMode.Definitions.Keys.Aim)
+            {
+                SetSpectatingPlayer(currentSpectatingIndex - 1);
             }
         }
 
@@ -87,8 +100,22 @@ namespace SampSharpGameMode1.Events
             int idx = 0;
             foreach(Player p in players)
             {
-                layer.SetTextdrawText($"playername[{idx++}]", p.Name);
+                layer.SetClickable($"playername[{idx}]");
+                layer.SetTextdrawText($"playernamelabel[{idx++}]", p.Name);
             }
+        }
+
+        private void SetSpectatingPlayer(int newIndex)
+        {
+            if (newIndex >= players.Count)
+                newIndex = 0;
+            else if(newIndex < 0)
+                newIndex = players.Count - 1;
+
+            player.SpectateVehicle((player as Player).pEvent.Source.GetPlayers()[newIndex].Vehicle);
+            layer.SetTextdrawColor($"playername[{currentSpectatingIndex}]", Color.White);
+            currentSpectatingIndex = newIndex;
+            layer.SetTextdrawColor($"playername[{newIndex}]", Color.Wheat);
         }
     }
 
@@ -165,10 +192,10 @@ namespace SampSharpGameMode1.Events
         {
             Slots = new List<EventSlot>();
             Player.SendClientMessageToAll(Color.Wheat,
-                $"[Event] {Color.White} The {this.Type} {ColorPalette.Secondary.Main}{this.Name}{Color.White} is starting soon, join it with {ColorPalette.Primary.Main}/event join"
+                $"[Event] {Color.White} The {this.Type} {ColorPalette.Secondary.Main}{this.Name}{Color.White} is starting soon, join it with {ColorPalette.Primary.Main}/join"
                 );
             Player.SendClientMessageToAll(Color.Wheat,
-                $"[Event] {Color.White} You can also spectate it with {ColorPalette.Primary.Main}/event spec[tate]"
+                $"[Event] {Color.White} You can also spectate it with {ColorPalette.Primary.Main}/specevent"
                 );
             this.Status = EventStatus.Waiting;
             foreach(Player player in Player.All.Cast<Player>())
@@ -191,7 +218,9 @@ namespace SampSharpGameMode1.Events
             {
                 Slots.Add(new EventSlot(player, Vector3R.Zero, spectateMode));
                 player.pEvent = this;
-                if(!spectateMode)
+                if(spectateMode)
+                    player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You will spectate the " + this.Type.ToString() + ", have fun !");
+                else
                     player.SendClientMessage(Color.Wheat, "[Event]" + Color.White + " You joined the " + this.Type.ToString() + ", good luck !");
                 player.AnnounceHUD.SetText("joincommand", "~g~~h~You're in !");
                 if (Slots.Count == Player.All.Count() || !this.HasAvailableSlots() || !Player.All.OfType<Player>().Where(x => x.pEvent is null).Any())
@@ -249,6 +278,11 @@ namespace SampSharpGameMode1.Events
         {
             if (!this.Source.IsPlayerSpectating(player) && (this.Status == EventStatus.Waiting || this.Status == EventStatus.Running))
             {
+                if(player.pEvent != this) // is not in the event
+                {
+                    player.pEvent = this;
+                    this.Source.AddSpectator(player);
+                }
                 spectatingPlayersHUD[player] = new SpectatingHUD(player, this.Source.GetPlayers());
                 player.ToggleSpectating(true);
                 player.SpectateVehicle(this.Source.GetPlayers()[0].Vehicle);
@@ -261,6 +295,17 @@ namespace SampSharpGameMode1.Events
             {
                 spectatingPlayersHUD[player].Dispose();
                 player.ToggleSpectating(false);
+            }
+        }
+
+        public void UpdateSpectatingPlayersHUD(Player player)
+        {
+            if (!this.Source.IsPlayerSpectating(player) && (this.Status == EventStatus.Waiting || this.Status == EventStatus.Running))
+            {
+                if(spectatingPlayersHUD.ContainsKey(player))
+                {
+                    spectatingPlayersHUD[player].SetPlayersList(this.Source.GetPlayers());
+                }
             }
         }
     }

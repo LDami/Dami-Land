@@ -222,6 +222,11 @@ namespace SampSharpGameMode1.Events.Missions
             return this.spectatingPlayers.Contains(player);
         }
 
+        public void AddSpectator(Player player)
+        {
+
+        }
+
         public List<Player> GetPlayers()
         {
             return this.players;

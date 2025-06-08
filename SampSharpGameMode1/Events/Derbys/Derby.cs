@@ -458,6 +458,10 @@ namespace SampSharpGameMode1.Events.Derbys
                     OnPlayerFinished(players.FindLast(player => player.Id >= 0), "Finished");
                 else
                 {
+                    foreach (Player spectators in spectatingPlayers)
+                    {
+                        spectators.pEvent.UpdateSpectatingPlayersHUD(spectators);
+                    }
                     if (!reason.Equals("Disconnected"))
                     {
                         if (player.InAnyVehicle)
@@ -557,6 +561,33 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             if (this.spectatingPlayers == null) return false; // can happen if /leave is entered before Race start
             return this.spectatingPlayers.Contains(player);
+        }
+
+        public void AddSpectator(Player player)
+        {
+            DerbyPlayer playerData = new()
+            {
+                spectatePlayerIndex = 0,
+                status = DerbyPlayerStatus.Spectating,
+            };
+
+            playersLiveInfoHUD[player] = new HUD(player, "derbyhud.json");
+            playersLiveInfoHUD[player].Hide("iconrockets");
+            playersLiveInfoHUD[player].Hide("remainingrockets");
+            playersLiveInfoHUD[player].SetText("remainingplayers", this.players.Count.ToString(@"000"));
+
+
+            player.VirtualWorld = virtualWorld;
+            player.SetTime(this.Time.Hour, this.Time.Minute);
+            player.ToggleControllable(true);
+            player.ResetWeapons();
+            Thread.Sleep(10); // Used to prevent AntiCheat to detect weapon before player enters in vehicle
+
+            player.Disconnected += OnPlayerDisconnect;
+            player.KeyStateChanged += OnPlayerKeyStateChanged;
+
+            spectatingPlayers.Add(player);
+            playersData.Add(player, playerData);
         }
 
         public List<Player> GetPlayers()
