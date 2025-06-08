@@ -67,7 +67,7 @@ namespace SampSharpGameMode1.Events.Races
         private Dictionary<Player, HUD> playersRecordsHUD = new();
         private Dictionary<Player, HUD> playersLiveInfoHUD = new();
         private Dictionary<Player, HUD> playerCPLiveHUD = new();
-        private List<CheckpointLiveInfo> checkpointLiveInfos = new();
+        private Dictionary<int, List<CheckpointLiveInfo>> checkpointLiveInfos = new(); // <Laps, List<CheckpointLiveInfo>> for each lap we store all checkpoints data
         private Dictionary<Player, TimeSpan> playersTimeSpan = new();
         private Dictionary<string, TimeSpan> records = new();
         Dictionary<BasePlayer, BaseVehicle> playersVehicles = new(); // Used in Prepare
@@ -206,6 +206,8 @@ namespace SampSharpGameMode1.Events.Races
                         this.Name = row["race_name"].ToString();
                         this.Creator = row["race_creator"].ToString();
                         this.Laps = Convert.ToInt32(row["race_laps"]);
+                        if (this.Laps == 0)
+                            this.Laps = 1;
                         this.MapId = Convert.ToInt32(row["race_map"] == "[null]" ? "-1" : row["race_map"]);
                         this.virtualWorld = virtualworld;
                         if (Convert.ToInt32(row["race_startvehicle"]) >= 400 && Convert.ToInt32(row["race_startvehicle"]) <= 611)
@@ -385,9 +387,14 @@ namespace SampSharpGameMode1.Events.Races
                 this.isPreparing = true;
                 this.players = new List<Player>();
                 this.spectatingPlayers = new List<Player>();
-                this.checkpointLiveInfos = new List<CheckpointLiveInfo>();
-                for(int i = 0; i < this.checkpoints.Count; i ++)
-                    this.checkpointLiveInfos.Add(new CheckpointLiveInfo());
+                this.checkpointLiveInfos = new Dictionary<int, List<CheckpointLiveInfo>>();
+                for(int i = 0; i < this.Laps; i ++)
+                {
+                    List<CheckpointLiveInfo> cpli = new();
+                    for (int j = 0; j < this.checkpoints.Count; j++)
+                        cpli.Add(new CheckpointLiveInfo());
+                    this.checkpointLiveInfos.Add(i, cpli);
+                }
 
                 Random rdm = new();
                 List<int> generatedPos = new();
@@ -405,7 +412,8 @@ namespace SampSharpGameMode1.Events.Races
                     {
                         spectatePlayerIndex = 0,
                         status = RacePlayerStatus.Running,
-                        nextCheckpoint = checkpoints[1]
+                        nextCheckpoint = checkpoints[1],
+                        currentLap = 1
                     };
 
                     // Get player record
@@ -429,10 +437,10 @@ namespace SampSharpGameMode1.Events.Races
                     playersLiveInfoHUD[slot.Player].SetText("racename", this.Name);
                     playersLiveInfoHUD[slot.Player].SetText("authorname", $"Author: {this.Creator}");
                     playersLiveInfoHUD[slot.Player].SetText("stopwatch", "00:00:00.000");
-                    if(this.Laps > 0)
+                    if(this.Laps > 1)
                     {
                         playersLiveInfoHUD[slot.Player].Show("laps");
-                        playersLiveInfoHUD[slot.Player].SetText("laps", $"Laps: 1/{this.Laps}");
+                        playersLiveInfoHUD[slot.Player].SetText("laps", $"Lap: 1/{this.Laps}");
                     }
                     else
                         playersLiveInfoHUD[slot.Player].Hide("laps");
@@ -498,10 +506,10 @@ namespace SampSharpGameMode1.Events.Races
                     playersLiveInfoHUD[spectatorSlot.Player].SetText("racename", this.Name);
                     playersLiveInfoHUD[spectatorSlot.Player].SetText("authorname", $"Author: {this.Creator}");
                     playersLiveInfoHUD[spectatorSlot.Player].SetText("stopwatch", "00:00:00.000");
-                    if (this.Laps > 0)
+                    if (this.Laps > 1)
                     {
                         playersLiveInfoHUD[spectatorSlot.Player].Show("laps");
-                        playersLiveInfoHUD[spectatorSlot.Player].SetText("laps", $"Laps: 1/{this.Laps}");
+                        playersLiveInfoHUD[spectatorSlot.Player].SetText("laps", $"Lap: 1/{this.Laps}");
                     }
                     else
                         playersLiveInfoHUD[spectatorSlot.Player].Hide("laps");
@@ -621,7 +629,7 @@ namespace SampSharpGameMode1.Events.Races
         {
             if(player.InAnyVehicle)
             {
-                if(playersData[player].nextCheckpoint == this.checkpoints[this.checkpoints.Count - 1])
+                if(playersData[player].nextCheckpoint == this.checkpoints[this.checkpoints.Count - 1] && playersData[player].currentLap >= this.Laps)
                 {
                     OnPlayerFinished(player, "Finished");
                 }
@@ -629,7 +637,7 @@ namespace SampSharpGameMode1.Events.Races
                 {
                     TimeSpan cpTime = DateTime.Now - startedTime;
 
-                    checkpointLiveInfos[playersData[player].nextCheckpoint.Idx].Add(player, cpTime);
+                    checkpointLiveInfos[playersData[player].currentLap-1][playersData[player].nextCheckpoint.Idx].Add(player, cpTime);
 
                     Player playerInFront;
                     TimeSpan gap = TimeSpan.MaxValue;
@@ -647,15 +655,40 @@ namespace SampSharpGameMode1.Events.Races
 
                     int cpidx = playersData[player].nextCheckpoint.Idx;
                     player.Notificate("CP: " + cpidx + "/" + (this.checkpoints.Count - 1).ToString());
-                    playersData[player].nextCheckpoint = this.checkpoints[cpidx+1];
+                    playersLiveInfoHUD[player].SetText("checkpoints", $"~y~~h~CP: {cpidx}/{this.checkpoints.Count - 1}");
+                    SampSharp.GameMode.SAMP.Timer.RunOnce(1500, () =>
+                    {
+                        if (!player.IsDisposed) // Can be disconnected during race
+                        {
+                            playersLiveInfoHUD[player].SetText("checkpoints", $"CP: {cpidx}/{this.checkpoints.Count - 1}");
+                        }
+                    });
+                    if(playersData[player].nextCheckpoint == this.checkpoints[0])
+                    {
+                        playersData[player].currentLap++;
+                        playersLiveInfoHUD[player].SetText("laps", $"~y~~h~Lap: {playersData[player].currentLap}/{this.Laps}");
+                        SampSharp.GameMode.SAMP.Timer.RunOnce(1500, () =>
+                        {
+                            if (!player.IsDisposed) // Can be disconnected during race
+                            {
+                                playersLiveInfoHUD[player].SetText("laps", $"Lap: {playersData[player].currentLap}/{this.Laps}");
+                            }
+                        });
+                    }
+                    if (playersData[player].nextCheckpoint == this.checkpoints[this.checkpoints.Count - 1] && playersData[player].currentLap < this.Laps)
+                    {
+                        playersData[player].nextCheckpoint = this.checkpoints[0];
+                    }
+                    else
+                        playersData[player].nextCheckpoint = this.checkpoints[cpidx + 1];
                     UpdatePlayerCheckpoint(player);
 
                     foreach (Player p in this.players)
-                        UpdatePlayerCPLiveDisplay(p, playersData[player].nextCheckpoint.Idx - 1);
+                        UpdatePlayerCPLiveDisplay(p, playersData[player].nextCheckpoint.Idx - 1, playersData[player].currentLap);
                     foreach (Player p in spectatingPlayers)
                     {
                         if (players[playersData[p].spectatePlayerIndex] == player)
-                            UpdatePlayerCPLiveDisplay(p, playersData[player].nextCheckpoint.Idx - 1);
+                            UpdatePlayerCPLiveDisplay(p, playersData[player].nextCheckpoint.Idx - 1, playersData[player].currentLap);
                     }
 
                     playerLastCheckpointData[player] = new PlayerCheckpointData(this.checkpoints[cpidx], cpTime, player.Vehicle.Model, player.Vehicle.Velocity, player.Vehicle.Angle);
@@ -666,21 +699,15 @@ namespace SampSharpGameMode1.Events.Races
                     if (this.checkpoints[cpidx].NextNitro == Checkpoint.EnableDisableEvent.Disable)
                         playersLiveInfoHUD[player].Hide("nitro");
                 }
-                playersLiveInfoHUD[player].SetText("checkpoints", $"~y~~h~CP: {playersData[player].nextCheckpoint.Idx - 1}/{this.checkpoints.Count - 1}");
-                SampSharp.GameMode.SAMP.Timer.RunOnce(1500, () =>
-                {
-                    if (!player.IsDisposed) // Can be disconnected during race
-                    {
-                        playersLiveInfoHUD[player].SetText("checkpoints", $"CP: {playersData[player].nextCheckpoint.Idx - 1}/{this.checkpoints.Count - 1}");
-                    }
-                });
             }
         }
 
-        private void UpdatePlayerCPLiveDisplay(Player player, int cpidx)
+        private void UpdatePlayerCPLiveDisplay(Player player, int cpidx, int lap)
         {
+            if (cpidx < 0)
+                cpidx = 0;
             playerCPLiveHUD[player].Show("localCheckpointsBox");
-            playerCPLiveHUD[player].SetSize("localCheckpointsBox", 640, 80 + 80 * checkpointLiveInfos[cpidx].Ranking.Count);
+            playerCPLiveHUD[player].SetSize("localCheckpointsBox", 640, 80 + 80 * checkpointLiveInfos[lap-1][cpidx].Ranking.Count);
             playerCPLiveHUD[player].Show("localCheckpointsBoxLabel");
             for(int i = 1; i <= 5; i ++)
             {
@@ -692,7 +719,7 @@ namespace SampSharpGameMode1.Events.Races
             string displayedCPTime;
             TimeSpan leaderTime = TimeSpan.Zero;
             bool isPlayerDisplayed = false; // Used to force display of player even if he's not in the 5 first players
-            foreach (KeyValuePair<Player, CheckpointLiveInfo.Rank> kvp in checkpointLiveInfos[cpidx].Ranking) // Ranking is already ordered
+            foreach (KeyValuePair<Player, CheckpointLiveInfo.Rank> kvp in checkpointLiveInfos[lap-1][cpidx].Ranking) // Ranking is already ordered
             {
                 if (kvp.Key == player)
                     isPlayerDisplayed = true;
@@ -721,7 +748,7 @@ namespace SampSharpGameMode1.Events.Races
 
                 if (idx == 5 && !isPlayerDisplayed)
                 {
-                    CheckpointLiveInfo.Rank rank = checkpointLiveInfos[cpidx].GetRankForPlayer(player);
+                    CheckpointLiveInfo.Rank rank = checkpointLiveInfos[lap - 1][cpidx].GetRankForPlayer(player);
                     displayedCPPos = "5th";
                     if (rank.Time.Hours > 0)
                         displayedCPTime = rank.Time.ToString(@"hh\:mm\:ss\.fff");
@@ -747,7 +774,7 @@ namespace SampSharpGameMode1.Events.Races
         {
             player.DisableRaceCheckpoint();
             Checkpoint cp = playersData[player].nextCheckpoint;
-            if (cp == this.checkpoints[this.checkpoints.Count - 1]) // If it's the last checkpoint
+            if (cp == this.checkpoints[this.checkpoints.Count - 1] && playersData[player].currentLap >= this.Laps) // If it's the last checkpoint
             {
                 player.SetRaceCheckpoint(cp.Type + 1, cp.Position, Vector3.Zero, cp.Size);
                 foreach (Player p in spectatingPlayers)
@@ -760,7 +787,11 @@ namespace SampSharpGameMode1.Events.Races
             {
                 try
                 {
-                    Checkpoint nextcp = this.checkpoints[cp.Idx + 1];
+                    Checkpoint nextcp;
+                    if (cp.Idx == this.checkpoints.Count -1) // last cp of this lap
+                         nextcp = this.checkpoints[0];
+                    else
+                        nextcp = this.checkpoints[cp.Idx + 1];
                     player.SetRaceCheckpoint(cp.Type, cp.Position, nextcp.Position, cp.Size);
                     foreach(Player p in spectatingPlayers)
                     {
@@ -1074,7 +1105,7 @@ namespace SampSharpGameMode1.Events.Races
             if (this.Laps > 0)
             {
                 playersLiveInfoHUD[player].Show("laps");
-                playersLiveInfoHUD[player].SetText("laps", $"Laps: 1/{this.Laps}");
+                playersLiveInfoHUD[player].SetText("laps", $"Lap: 1/{this.Laps}");
             }
             else
                 playersLiveInfoHUD[player].Hide("laps");
