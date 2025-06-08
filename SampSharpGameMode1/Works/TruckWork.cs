@@ -67,7 +67,7 @@ namespace SampSharpGameMode1.Works
             {
                 new DepositPoint { Position = new Vector3(2186.92, 1476.19, 11.38), Name = "Las Venturas Royal Casino" },
                 new DepositPoint { Position = new Vector3(1692.49, 1760.29, 11.39), Name = "Las Venturas Binco" },
-                new DepositPoint { Position = new Vector3(1070.48, 1457.05, 6.39), Name = "Dirtring backstage" },
+                new DepositPoint { Position = new Vector3(1070.48, 1457.05, 6.39), Name = "Dirtring Blackfield Stadium" },
                 new DepositPoint { Position = new Vector3(1138.64, 1917.85, 11.39), Name = "External storage" },
                 new DepositPoint { Position = new Vector3(1492.214, 2132.76, 11.34), Name = "Bandito Baseball club" },
                 new DepositPoint { Position = new Vector3(2783.2, 2575.85, 11.4), Name = "Las Venturas commercial center" },

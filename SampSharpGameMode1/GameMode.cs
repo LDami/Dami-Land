@@ -4,7 +4,6 @@ using System.Configuration;
 using System.Diagnostics;
 using System.Threading;
 using System.Xml;
-using System.Xml.Linq;
 using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.World;
@@ -29,6 +28,7 @@ namespace SampSharpGameMode1
 
             Console.WriteLine("\n----------------------------------");
             Console.WriteLine(" LDami's gamemode");
+            Console.WriteLine(" Pre-release Version 1.0");
 #if DEBUG
             Console.WriteLine(" Mode: DEBUG");
 #else
@@ -217,7 +217,6 @@ namespace SampSharpGameMode1
                         objInCurrentGroup++;
                     }
                 }
-                Console.WriteLine("group : " + currentCategory.Name + " = " + objInCurrentGroup);
             }
 
             Console.WriteLine("GameMode.cs - GameMode.ExtractMapObjects:I: Loaded " + mapObjects.Count + " map objects");

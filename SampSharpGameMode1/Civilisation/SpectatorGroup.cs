@@ -70,7 +70,7 @@ namespace SampSharpGameMode1.Civilisation
                 }
                 else
                     actors.Add(actor);
-                textLabels.Add(new((position + shiftPos).ToString(), Color.White, position + shiftPos, 300));
+                //textLabels.Add(new((position + shiftPos).ToString(), Color.White, position + shiftPos, 300));
             }
         }
 
