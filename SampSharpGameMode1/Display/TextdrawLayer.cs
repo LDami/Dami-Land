@@ -335,7 +335,7 @@ namespace SampSharpGameMode1.Display
 
         public void SetTextdrawText(string name, string text)
         {
-            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SetTextdrawText:D: Called for '{name}'");
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.SetTextdrawText:D: Called for '{name}', text = '{text}'");
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             if (text is null)
@@ -471,10 +471,23 @@ namespace SampSharpGameMode1.Display
             if (!textdrawList.ContainsKey(name))
                 throw new TextdrawNameNotFoundException(name);
             textdrawList[name].Selectable = true;
-            textdrawList[name].Click += (object sender, SampSharp.GameMode.Events.ClickPlayerTextDrawEventArgs e) =>
-            {
-                OnTextdrawClicked(new TextdrawEventArgs { TextdrawName = name });
-            };
+            textdrawList[name].Click += TextdrawLayer_Click;
+        }
+
+        public void ResetClickEvent(string name)
+        {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.ResetClickEvent:D: Called for '{name}'");
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFoundException(name);
+            textdrawList[name].Selectable = false;
+            textdrawList[name].Click -= TextdrawLayer_Click;
+        }
+
+        private void TextdrawLayer_Click(object sender, SampSharp.GameMode.Events.ClickPlayerTextDrawEventArgs e)
+        {
+            Textdraw t = (Textdraw)sender;
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.TextdrawLayer_Click:D: Called for '{t.name}'");
+            OnTextdrawClicked(new TextdrawEventArgs { TextdrawName = t.name });
         }
 
         public bool SelectTextdraw(string name)

@@ -33,7 +33,7 @@ namespace SampSharpGameMode1.Display
             {
                 AutoUpdate = false
             };
-            filename = $@"{Directory.GetCurrentDirectory()}\scriptfiles\{jsonFilename}";
+            filename = $@"{Directory.GetCurrentDirectory()}/scriptfiles/{jsonFilename}";
             this.Load();
             Console.WriteLine("Time for load HUD: " + sw.ElapsedMilliseconds + "ms (filename: " + jsonFilename + ")");
         }
@@ -312,6 +312,9 @@ namespace SampSharpGameMode1.Display
 
             int index = 0;
             int itemsPerRow = (int)Math.Truncate(containerSize.X / (elementSize.X + spacing));
+#if DEBUG
+            Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateLayer:D: itemsPerRow = " + itemsPerRow);
+#endif
 
             void AddItemsToRow(int row)
             {
@@ -330,7 +333,9 @@ namespace SampSharpGameMode1.Display
                             _ = layer.SetTextdrawSize(newName, elementSize.X + (elementSize.X + spacing) * i, elementSize.Y);
                         else
                             _ = layer.SetTextdrawSize(newName, elementSize.X, elementSize.Y);
-                        Console.WriteLine("HUD.cs - HUD:DynamicDuplicateLayer:I: Adding " + newName + " at pos: " + layer.GetTextdrawPosition(newName).ToString());
+#if DEBUG
+                        Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateLayer:I: Adding " + newName + " at pos: " + layer.GetTextdrawPosition(newName).ToString());
+#endif
                     }
                 }
             };
@@ -338,6 +343,9 @@ namespace SampSharpGameMode1.Display
             if (number > itemsPerRow)
             {
                 int possibleRows = (int)Math.Truncate((containerSize.Y - (elementPosition.Y - containerPosition.Y)) / (elementSize.Y + spacing));
+#if DEBUG
+                Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateLayer:D: possibleRows = " + possibleRows);
+#endif
                 for (int i = 0; i < possibleRows; i++)
                 {
                     AddItemsToRow(i);

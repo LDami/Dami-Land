@@ -54,7 +54,12 @@ namespace SampSharpGameMode1.Events
                 return;
             }
             currentPage = 1;
-            nbrOfPages = _eventList.Count / nbrOfItems;
+            nbrOfPages = (int)Math.Ceiling((double)_eventList.Count / (double)nbrOfItems);
+#if DEBUG
+            Logger.WriteLineAndClose("EventManager.cs : EventListHUD:_:D: nbrOfItems shown in page = " + nbrOfItems);
+            Logger.WriteLineAndClose("EventManager.cs : EventListHUD:_:D: _eventList.Count = " + _eventList.Count);
+            Logger.WriteLineAndClose("EventManager.cs : EventListHUD:_:D: nbrOfPages = " + nbrOfPages);
+#endif
             layer.SetTextdrawText("page", string.Format("{0,2}", currentPage) + "/" + string.Format("{0,2}", nbrOfPages));
 
             eventList = _eventList;
@@ -111,14 +116,15 @@ namespace SampSharpGameMode1.Events
         {
             layer.SetTextdrawText("page", string.Format("{0,2}", currentPage) + "/" + string.Format("{0,2}", nbrOfPages));
             shownObjects = new();
-            for (int i = 0; i < nbrOfItems - 1; i++)
+            for (int i = 0; i < nbrOfItems; i++)
             {
-                if ((nbrOfItems * currentPage) - 1 + i >= eventList.Count)
+                if (nbrOfItems * (currentPage - 1) + i >= eventList.Count)
                     layer.Hide($"racename[{i}]");
                 else
                 {
-                    EventListObject evt = eventList[(nbrOfItems * currentPage) - 1 + i];
+                    EventListObject evt = eventList[nbrOfItems * (currentPage - 1) + i];
                     layer.SetTextdrawText($"racename[{i}]", $"{evt.Name} by ~r~{evt.Author}");
+                    layer.ResetClickEvent($"racename[{i}]");
                     layer.SetClickable($"racename[{i}]");
                     shownObjects.Add(evt.Id);
                 }
@@ -415,7 +421,6 @@ namespace SampSharpGameMode1.Events
                     {
                         foundEvents.Add(Convert.ToInt32(row[key_id]));
                         events.Add(new EventListObject() { Id = Convert.ToInt32(row[key_id]), Name = row[key_name], Author = row[key_creator] });
-                        Console.WriteLine("event added: " + row[key_name]);
                     }
                     row = GameMode.MySQLConnector.GetNextRow();
                 }
