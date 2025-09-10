@@ -3,7 +3,9 @@ using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Xml.Linq;
 
 namespace SampSharpGameMode1.Display
 {
@@ -18,13 +20,13 @@ namespace SampSharpGameMode1.Display
         public bool IsDisposed = false;
 
         private Color editingColor = new Color(180, 50, 50);
-        private const bool DEBUG_TEXTDRAW_LAYER = false;
+        private const bool DEBUG_TEXTDRAW_LAYER = true;
         private bool isTextdrawCreator = false;
 
-        Dictionary<string, Textdraw> textdrawList = new Dictionary<string, Textdraw>();
-        Dictionary<string, TextdrawType> textdrawType = new Dictionary<string, TextdrawType>();
-        Dictionary<string, EditingMode> textdrawEditMode = new Dictionary<string, EditingMode>();
-        List<string> textdrawOrder = new List<string>();
+        private Dictionary<string, Textdraw> textdrawList = new();
+        private Dictionary<string, TextdrawType> textdrawType = new();
+        private Dictionary<string, EditingMode> textdrawEditMode = new();
+        private List<string> textdrawOrder = new();
 
 
         public enum TextdrawType { Background, Box, Text, PreviewModel };
@@ -64,7 +66,7 @@ namespace SampSharpGameMode1.Display
 
         public Textdraw CreateBackground(BasePlayer owner, string name, Vector2 position, Vector2 size, Color color)
         {
-            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.CreateBackground:D: Creating background '{name}' at pos {position} with size {size}and color {color}");
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.CreateBackground:D: Creating background '{name}' at pos {position} with size {size} and color {color}");
             //Console.WriteLine($"Creating background '{name}' at pos {position} with size {size} and color {color}");
             textdrawList.Add(name, new Textdraw(owner, name));
 
@@ -197,6 +199,46 @@ namespace SampSharpGameMode1.Display
             textdrawList[targetName].Show();
             textdrawType[targetName] = textdrawType[name];
             textdrawEditMode.Add(targetName, EditingMode.Unselected);
+        }
+
+        public Textdraw GetCopy(BasePlayer owner, string name, string targetName)
+        {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.GetCopy:D: Returning of copy of '{name}'");
+            if (!textdrawList.ContainsKey(name))
+                throw new TextdrawNameNotFoundException(name);
+
+            Textdraw result = new(owner, targetName)
+            {
+                Position = textdrawList[name].Position,
+                LetterSize = textdrawList[name].LetterSize,
+                Width = textdrawList[name].Width,
+                Height = textdrawList[name].Height,
+                Text = textdrawList[name].Text,
+                Font = textdrawList[name].Font,
+                ForeColor = textdrawList[name].ForeColor,
+                BackColor = textdrawList[name].BackColor,
+                Alignment = textdrawList[name].Alignment,
+                UseBox = textdrawList[name].UseBox,
+                Shadow = textdrawList[name].Shadow,
+                type = textdrawList[name].type
+            };
+            result.Show();
+            return result;
+        }
+
+        public void Add(Textdraw td, TextdrawType tdType)
+        {
+            if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.Add:D: Adding '{td.name}'");
+            if (!textdrawList.ContainsKey(td.name))
+            {
+                textdrawList.Add(td.name, td);
+                textdrawType.Add(td.name, tdType);
+                textdrawEditMode.Add(td.name, EditingMode.Unselected);
+            }
+            else
+            {
+                if (DEBUG_TEXTDRAW_LAYER) Logger.WriteLineAndClose($"TextdrawLayer.cs - TextdrawLayer.Add:W: Trying to add '{td.name}' but it already exists");
+            }
         }
 
         public void Delete(string name)

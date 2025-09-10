@@ -182,7 +182,7 @@ namespace SampSharpGameMode1
 
         public static List<string> GetStringsMatchingRegex(List<string> inputs, string pattern)
         {
-            List<string> result = new List<string>();
+            List<string> result = new();
             string inputsStr = string.Join("\n", inputs);
             //Console.WriteLine("inputStr: " + inputsStr);
             Regex rgx = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Multiline);
@@ -190,6 +190,7 @@ namespace SampSharpGameMode1
             //Console.WriteLine("Matches for " + pattern + ": " + collection.Count);
             foreach (Match match in collection)
             {
+                //Console.WriteLine("Match: " + match.Value);
                 result.Add(match.Value);
             }
             return result;

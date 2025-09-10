@@ -26,7 +26,7 @@ namespace SampSharpGameMode1.Events.Races
             }
             public void Destroy()
             {
-                layer.HideAll();
+                layers["base"].HideAll();
             }
             public void SetRaceName(string name)
             {
@@ -38,23 +38,23 @@ namespace SampSharpGameMode1.Events.Races
                     else
                         _name = name;
                 }
-                layer.SetTextdrawText("racename", _name);
+                layers["base"].SetTextdrawText("racename", _name);
             }
             public void SetSelectedIdx(string idx, EditingMode editingMode)
             {
                 selectedIdx = idx;
                 if(editingMode == EditingMode.Checkpoints)
-                    layer.SetTextdrawText("selectedidx", "Selected CP: " + idx);
+                    layers["base"].SetTextdrawText("selectedidx", "Selected CP: " + idx);
                 else if(editingMode == EditingMode.SpawnPos)
-                    layer.SetTextdrawText("selectedidx", "Spawn: " + idx);
+                    layers["base"].SetTextdrawText("selectedidx", "Spawn: " + idx);
             }
             public void SetTotalCP(int cp)
             {
-                layer.SetTextdrawText("totalcp", "Total CP: " + cp);
+                layers["base"].SetTextdrawText("totalcp", "Total CP: " + cp);
             }
             public void SetEditingMode(EditingMode editingMode)
             {
-                layer.SetTextdrawText("editingmode", editingMode.ToString());
+                layers["base"].SetTextdrawText("editingmode", editingMode.ToString());
                 this.SetSelectedIdx(selectedIdx, editingMode);
             }
         }
@@ -76,7 +76,7 @@ namespace SampSharpGameMode1.Events.Races
 
         SpawnerCreator spawnerCreator;
         BaseVehicle? playerVehicle;
-        List<Civilisation.SpectatorGroup> spectatorGroups;
+        List<SpectatorGroup> spectatorGroups;
 
         PlayerObject moverObject;
         const int moverObjectModelID = 19133;
@@ -87,19 +87,21 @@ namespace SampSharpGameMode1.Events.Races
             player = _player;
             editingRace = null;
             checkpointIndex = 0;
-            spectatorGroups = new List<Civilisation.SpectatorGroup>();
+            spectatorGroups = new List<SpectatorGroup>();
         }
 
         public void Create()
         {
-            editingRace = new Race();
-            editingRace.IsCreatorMode = true;
-            editingRace.Name = "[Untitled]";
-            editingRace.SpawnPoints = new List<Vector3R>();
-            editingRace.MapId = -1;
+            editingRace = new Race
+            {
+                IsCreatorMode = true,
+                Name = "[Untitled]",
+                SpawnPoints = new List<Vector3R>(),
+                MapId = -1
+            };
             checkpointIndex = 0;
             editingRace.StartingVehicle = VehicleModelType.Infernus;
-            spectatorGroups = new List<Civilisation.SpectatorGroup>();
+            spectatorGroups = new List<SpectatorGroup>();
             isNew = true;
             this.SetPlayerInEditor();
         }
@@ -172,12 +174,13 @@ namespace SampSharpGameMode1.Events.Races
             hud.SetRaceName(editingRace.Name);
             editingMode = EditingMode.Checkpoints;
             hud.SetSelectedIdx("S", editingMode);
-            hud.SetTotalCP(editingRace.checkpoints.Count - 1);
-            player.SendClientMessage("Race Creator loaded, here are the controls:");
-            player.SendClientMessage("    keypad 4:                                Select previous checkpoint");
-            player.SendClientMessage("    keypad 6:                                Select next checkpoint");
-            player.SendClientMessage("    submission key:                          Open Race menu");
-            player.SendClientMessage("    /race help                               Show the controls list");
+            hud.SetTotalCP(editingRace.checkpoints.Count);
+            player.SendClientMessage($"{ColorPalette.Primary.Main}Race Creator loaded, here are the controls:");
+            player.SendClientMessage($"    Key {Keys.AnalogLeft}:       Select previous checkpoint");
+            player.SendClientMessage($"    Key {Keys.AnalogRight}:      Select next checkpoint");
+            player.SendClientMessage($"    Key {Keys.No}:       Open the Race menu");
+            player.SendClientMessage($"    Key {Keys.Yes}:       Add a checkpoint to your position {ColorPalette.Secondary.Main}/race addcp{Color.White}");
+            player.SendClientMessage($"{ColorPalette.Secondary.Main}/race help{Color.White} : Show the controls list");
             player.SendClientMessage("Tip: Enter a checkpoint to open its settings menu");
             player.KeyStateChanged += Player_KeyStateChanged;
             player.EnterCheckpoint += Player_EnterCheckpoint;
@@ -214,7 +217,7 @@ namespace SampSharpGameMode1.Events.Races
 
             if (spectatorGroups != null)
             {
-                foreach (Civilisation.SpectatorGroup spectatorGroup in spectatorGroups)
+                foreach (SpectatorGroup spectatorGroup in spectatorGroups)
                     spectatorGroup.Dispose();
             }
             spectatorGroups = null;
@@ -500,9 +503,14 @@ namespace SampSharpGameMode1.Events.Races
                         }
                         break;
                     }
-                case Keys.Submission:
+                case Keys.No:
                     {
                         ShowRaceDialog();
+                        break;
+                    }
+                case Keys.Yes:
+                    {
+                        AddCheckpoint((sender as Player).Position);
                         break;
                     }
             }

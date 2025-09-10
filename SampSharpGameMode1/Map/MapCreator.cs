@@ -16,7 +16,7 @@ namespace SampSharpGameMode1.Map
     public class MapCreator
     {
         const int MAX_OBJECTS_PER_MAP = 1000;
-        const int MAX_GROUPS_PER_MAP = 5;
+        const int MAX_GROUPS_PER_MAP = 7;
         const int MAX_ITEMS_PER_GROUP = 6;
         enum Axis
         {
@@ -58,8 +58,7 @@ namespace SampSharpGameMode1.Map
                 markers = new PlayerObject[2];
                 textLabels = new Dictionary<int, DynamicTextLabel>();
                 deletedObjects = new List<int>();
-                p.SendClientMessage("Map creator initialized");
-                p.SendClientMessage("/mapping help for command list");
+                p.SendClientMessage($"{ColorPalette.Primary.Main}Map creator initialized");
             }
             else
                 Logger.WriteLineAndClose("MapCreator.cs - MapCreator._:E: MapCreator was initiliazed with an invalid player");
@@ -122,14 +121,27 @@ namespace SampSharpGameMode1.Map
             hud.SetText("mapname", editingMap.Name);
             hud.SetText("totalobj", "Total: " + editingMap.Objects.Count.ToString() + " objects");
 
-            hud.Hide("^group.*$");
+            try
+            {
+                hud.DynamicDuplicateLayer("group#", MAX_GROUPS_PER_MAP, "groups_bg", HUD.DuplicateMode.COLS);
+            }
+            catch(Exception e)
+            {
+#if DEBUG
+                player.SendClientMessage(Color.Red, "Error during the Map Creator initialization: " + e);
+#else
+                player.SendClientMessage(Color.Red, "Error during the Map Creator initialization");
+#endif
+            }
             UpdateGroupsHUD();
 
             Magnet = true;
             deletedObjects = new List<int>();
             player.SendClientMessage("Here are the controls:");
-            player.SendClientMessage("    Y/N:                    Unfreeze/Freeze (useful in Jetpack !)");
-            player.SendClientMessage("    Z/LShift:              Move camera during object edition");
+            player.SendClientMessage($"    Y or N:                    Unfreeze/Freeze the player (useful in Jetpack {ColorPalette.Secondary.Main}/jet{Color.White} !)");
+            player.SendClientMessage("    Z or LShift:             Move camera during object edition");
+            player.SendClientMessage($"Useful commands: {ColorPalette.Secondary.Main}/map help{Color.White} ; {ColorPalette.Secondary.Main}/map obj list{Color.White} to browse objects");
+            player.SendClientMessage($"You can add objects to a group to move, to remove or duplicate them easily.");
         }
 
         private void Player_Disconnected(object sender, DisconnectEventArgs e)
@@ -291,7 +303,34 @@ namespace SampSharpGameMode1.Map
                     mapObjectSelector.Selected += (_, f) =>
                     {
                         player.CancelSelectTextDraw();
-                        AddObject(f.Id);
+                        if(this.editingMap.Groups.Count == 0)
+                            AddObject(f.Id, 0);
+                        else if(this.editingMap.Groups.Count == 1)
+                            AddObject(f.Id, this.editingMap.Groups.First().Index);
+                        else
+                        {
+                            ListDialog<MapGroup> groupDialogs = new("Select a group to put the object in", "Select", "Cancel");
+                            groupDialogs.AddItems(this.editingMap.Groups);
+                            groupDialogs.AddItem(new MapGroup(-1, -1, Color.White, "Add group ..."));
+                            groupDialogs.Show(player);
+                            groupDialogs.Response += (object sender, DialogResponseEventArgs<MapGroup> selectedGroup) =>
+                            {
+                                AddObject(f.Id, selectedGroup.ItemValue.Index);
+                                if(selectedGroup.ItemValue.Index == -1) // Index = -1 for adding new group
+                                {
+
+                                    InputDialog newGroupName = new("Group name", "Please enter the new group name: ", false, "Select", "Cancel");
+                                    newGroupName.Show(player);
+                                    newGroupName.Response += (object sender, DialogResponseEventArgs groupName) =>
+                                    {
+                                        if(groupName.InputText.Length > 0)
+                                        {
+                                            AddObject(f.Id, AddGroup(groupName.InputText));
+                                        }
+                                    };
+                                }
+                            };
+                        }
                     };
                     player.SelectTextDraw(ColorPalette.Primary.Main.GetColor());
                     player.CancelClickTextDraw += (_, _) =>
@@ -307,11 +346,12 @@ namespace SampSharpGameMode1.Map
             listDialog.Show(player);
         }
 
-        public void AddGroup(string name)
+        public int AddGroup(string name)
         {
             int highestIndex = this.editingMap.Groups.Select(g => g.Index).OrderBy(idx => idx).LastOrDefault(0);
             this.editingMap.Groups.Add(new MapGroup(-1, highestIndex + 1, Color.White, name));
             UpdateGroupsHUD();
+            return highestIndex + 1;
         }
 
         public void DeleteGroup(int index)
@@ -441,7 +481,7 @@ namespace SampSharpGameMode1.Map
                 mapObject.Rotation = newRotation;
                 textLabels[mapObject.Id].Position = e.Position;
                 if (e.Response == SampSharp.GameMode.Definitions.EditObjectResponse.Final || e.Response == SampSharp.GameMode.Definitions.EditObjectResponse.Cancel)
-                    textLabels[mapObject.Id].Text = $"Object #{mapObject.Id}\nGroup {mapObject.Group?.Name}";
+                    textLabels[mapObject.Id].Text = $"Object #{mapObject.Id}\nGroup {mapObject.Group?.Index} {mapObject.Group?.Name}";
                 else if (e.Response == SampSharp.GameMode.Definitions.EditObjectResponse.Update)
                     textLabels[mapObject.Id].Text = $"Object #{mapObject.Id}\nPos: {mapObject.Position}\nRot: {mapObject.Rotation}";
 
@@ -511,7 +551,8 @@ namespace SampSharpGameMode1.Map
         {
             if (editingMap.Objects.Find(obj => obj.Id == objectid) is MapObject obj)
             {
-                AddObject(obj.ModelId, obj.Position, obj.Rotation);
+                int newObjID = AddObject(obj.ModelId, obj.Position, obj.Rotation);
+                SetObjectGroupId(newObjID, obj.Group.Index);
                 hud.SetText("totalobj", "Total: " + editingMap.Objects.Count.ToString() + " objects");
             }
             else
@@ -522,17 +563,19 @@ namespace SampSharpGameMode1.Map
         /// Change the object's group
         /// </summary>
         /// <param name="objectid">Object ID to change</param>
-        /// <param name="groupIndex">Group ID to affect</param>
+        /// <param name="groupIndex">Group index to affect</param>
         public void SetObjectGroupId(int objectid, int groupIndex)
         {
             if (editingMap.Objects.Find(obj => obj.Id == objectid) is MapObject obj)
             {
-                if(editingMap.Groups.FirstOrDefault(x => x.Index == groupIndex, new MapGroup(-1, editingMap.Groups.Count + 1, Color.White, "Untitled group")) is MapGroup group)
+                if(editingMap.Groups.Where(x => x.Index == groupIndex).FirstOrDefault(x => x.Index == groupIndex, new MapGroup(-1, groupIndex, Color.White, "Untitled group")) is MapGroup group)
                 {
                     obj.Group = group;
                     if (!editingMap.Groups.Contains(group))
+                    {
                         editingMap.Groups.Add(group);
-                    textLabels[obj.Id].Text = $"Object #{obj.Id}\nGroup {obj.Group?.Name}";
+                    }
+                    textLabels[obj.Id].Text = $"Object #{obj.Id}\nGroup {obj.Group?.Index} {obj.Group?.Name}";
                     textLabels[obj.Id].Color = group.ForeColor.GetValueOrDefault(Color.White);
                     player.SendClientMessage($"Object {obj.Id} has been put in group #{groupIndex} ({obj.Group.Name})");
                 }
@@ -544,22 +587,26 @@ namespace SampSharpGameMode1.Map
 
         private void UpdateGroupsHUD()
         {
-            foreach(MapGroup mapGroup in editingMap.Groups)
+#if DEBUG
+            Logger.WriteLineAndClose("MapCreator.cs - MapCreator.UpdateGroupsHUD:D: Called");
+#endif
+            hud.Hide("^group.*$");
+            foreach (MapGroup mapGroup in editingMap.Groups)
             {
-                string hudPrefix = "group" + mapGroup.Index;
-                hud.Show(hudPrefix + "_bg");
-                hud.SetText(hudPrefix + "_name", mapGroup.Name);
-                hud.Show(hudPrefix + "_name");
-                hud.Hide("^" + hudPrefix + "_item.*$");
+                string hudPrefix = "group[" + mapGroup.Index + "]";
+                hud.Show(hudPrefix + ":bg");
+                hud.SetText(hudPrefix + ":name", mapGroup.Name);
+                hud.Show(hudPrefix + ":name");
+                hud.Hide("^" + hudPrefix + ":item.*$");
                 int idxObj = 0;
-                foreach(MapObject mapObject in editingMap.Objects.Where(o => o.Group?.DbId == mapGroup.DbId))
+                foreach(MapObject mapObject in editingMap.Objects.Where(o => o.Group?.Index == mapGroup.Index))
                 {
                     if(mapObject != null)
                     {
                         if (++idxObj < MAX_ITEMS_PER_GROUP)
                         {
-                            hud.SetPreviewModel(hudPrefix + "_item" + idxObj, mapObject.ModelId);
-                            hud.Show(hudPrefix + "_item" + idxObj);
+                            hud.SetPreviewModel(hudPrefix + ":item" + idxObj, mapObject.ModelId);
+                            hud.Show(hudPrefix + ":item" + idxObj);
                         }
                     }
                 }

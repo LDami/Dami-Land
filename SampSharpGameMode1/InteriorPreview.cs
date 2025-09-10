@@ -13,12 +13,12 @@ namespace SampSharpGameMode1
             public event EventHandler<Display.TextdrawLayer.TextdrawEventArgs> Clicked;
             public HUD(Player player) : base(player, "interiorpreview.json")
             {
-                layer.SetTextdrawText("interiorid", "Unknown ID");
-                layer.SetTextdrawText("interiorname", "Unknown Name");
-                layer.UnselectAllTextdraw();
-                layer.SetClickable("leftbutton");
-                layer.SetClickable("rightbutton");
-                layer.TextdrawClicked += Layer_TextdrawClicked;
+                layers["base"].SetTextdrawText("interiorid", "Unknown ID");
+                layers["base"].SetTextdrawText("interiorname", "Unknown Name");
+                layers["base"].UnselectAllTextdraw();
+                layers["base"].SetClickable("leftbutton");
+                layers["base"].SetClickable("rightbutton");
+                layers["base"].TextdrawClicked += Layer_TextdrawClicked;
             }
 
             private void Layer_TextdrawClicked(object sender, Display.TextdrawLayer.TextdrawEventArgs e)
@@ -28,13 +28,13 @@ namespace SampSharpGameMode1
 
             public void Destroy()
             {
-                layer.HideAll();
+                layers["base"].HideAll();
             }
 
             public void SetInterior(int id, string name)
             {
-                layer.SetTextdrawText("interiorid", id.ToString());
-                layer.SetTextdrawText("interiorname", name);
+                layers["base"].SetTextdrawText("interiorid", id.ToString());
+                layers["base"].SetTextdrawText("interiorname", name);
             }
         }
 

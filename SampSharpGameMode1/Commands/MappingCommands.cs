@@ -302,15 +302,7 @@ namespace SampSharpGameMode1.Commands
             class MappingObjectCommandClass
             {
                 [Command("a", "add", UsageMessage = "Usage: /mapping obj(ect) a(dd) [modelid] ([group])")]
-                private static void AddObjectCommand(Player player, int modelid)
-                {
-                    if (player.mapCreator is not null)
-                        player.mapCreator.AddObject(modelid);
-                    else
-                        player.SendClientMessage(Color.Red, $"Map creator is not initialized, create or load a map first");
-                }
-                [Command("a", "add", UsageMessage = "Usage: /mapping obj(ect) a(dd) [modelid] ([group])")]
-                private static void AddObjectCommand(Player player, int modelid, int groupid)
+                private static void AddObjectCommand(Player player, int modelid, int groupid = 0)
                 {
                     if (player.mapCreator is not null)
                         player.mapCreator.AddObject(modelid, groupid);

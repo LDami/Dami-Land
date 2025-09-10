@@ -16,9 +16,9 @@ namespace SampSharpGameMode1.Events
         }
         public void Open(Event evt)
         {
-            layer.SetTextdrawText("eventtype", $"A {evt.Type} is starting soon");
-            layer.SetTextdrawText("eventname", evt.Name);
-            layer.SetTextdrawText("joincommand", "/join to join the event");
+            layers["base"].SetTextdrawText("eventtype", $"A {evt.Type} is starting soon");
+            layers["base"].SetTextdrawText("eventname", evt.Name);
+            layers["base"].SetTextdrawText("joincommand", "/join to join the event");
             this.Show();
         }
     }
@@ -32,19 +32,19 @@ namespace SampSharpGameMode1.Events
         {
             player.KeyStateChanged += Player_KeyStateChanged;
             players = _players;
-            this.DynamicDuplicateLayer("playernamelabel#", players.Count, "playerlistbg");
-            this.DynamicDuplicateLayer("playername#", players.Count, "playerlistbg");
+            this.DynamicDuplicateElement("playernamelabel#", players.Count, "playerlistbg");
+            this.DynamicDuplicateElement("playername#", players.Count, "playerlistbg");
 
             SetPlayersList(players);
 
-            layer.SetClickable("leavebutton");
+            layers["base"].SetClickable("leavebutton");
             int idx = 0;
             foreach (Player p in players)
             {
-                layer.SetClickable($"playername[{idx}]");
-                layer.SetTextdrawText($"playernamelabel[{idx++}]", p.Name);
+                layers["base"].SetClickable($"playername[{idx}]");
+                layers["base"].SetTextdrawText($"playernamelabel[{idx++}]", p.Name);
             }
-            layer.TextdrawClicked += Layer_TextdrawClicked;
+            layers["base"].TextdrawClicked += Layer_TextdrawClicked;
             SetSpectatingPlayer(0);
         }
 
@@ -100,8 +100,8 @@ namespace SampSharpGameMode1.Events
             int idx = 0;
             foreach(Player p in players)
             {
-                layer.SetClickable($"playername[{idx}]");
-                layer.SetTextdrawText($"playernamelabel[{idx++}]", p.Name);
+                layers["base"].SetClickable($"playername[{idx}]");
+                layers["base"].SetTextdrawText($"playernamelabel[{idx++}]", p.Name);
             }
         }
 
@@ -113,9 +113,9 @@ namespace SampSharpGameMode1.Events
                 newIndex = players.Count - 1;
 
             player.SpectateVehicle((player as Player).pEvent.Source.GetPlayers()[newIndex].Vehicle);
-            layer.SetTextdrawColor($"playername[{currentSpectatingIndex}]", Color.White);
+            layers["base"].SetTextdrawColor($"playername[{currentSpectatingIndex}]", Color.White);
             currentSpectatingIndex = newIndex;
-            layer.SetTextdrawColor($"playername[{newIndex}]", Color.Wheat);
+            layers["base"].SetTextdrawColor($"playername[{newIndex}]", Color.Wheat);
         }
     }
 

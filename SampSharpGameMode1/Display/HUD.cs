@@ -7,16 +7,29 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace SampSharpGameMode1.Display
 {
     public class HUD
     {
+        // The name of the textdraw will manage on which layer it should be set
+        // If there is a : in the textdraw name, the first part (before the :) will be the layer name.
+        // For example, all textdraws having name starting with `group:` will be in the layer "group"
+        // Textdraws named `group#` are not in the same layer as `group[1]`
+        // So if a method is called with a layer name, all textdraw inside will be changed, hidden, shown ...
+
         public bool HasError { get; private set; }
+        /// <summary>
+        /// The mode for the DynamicDuplicate method
+        /// </summary>
+        public enum DuplicateMode { ROWS_COLS, ROWS, COLS }
 
         protected BasePlayer player;
-        protected TextdrawLayer layer;
+        protected Dictionary<string, TextdrawLayer> layers; // <name, layer>
         protected string filename;
 
         /// <summary>
@@ -26,12 +39,16 @@ namespace SampSharpGameMode1.Display
         /// <param name="jsonFilename">The JSON file name, with ".json" extension</param>
         public HUD(BasePlayer _player, string jsonFilename)
         {
-            Stopwatch sw = new Stopwatch();
+            Stopwatch sw = new();
             sw.Start();
             player = _player;
-            layer = new TextdrawLayer
+            TextdrawLayer baseLayer = new TextdrawLayer
             {
                 AutoUpdate = false
+            };
+            layers = new Dictionary<string, TextdrawLayer>
+            {
+                { "base", baseLayer }
             };
             filename = $@"{Directory.GetCurrentDirectory()}/scriptfiles/{jsonFilename}";
             this.Load();
@@ -60,8 +77,21 @@ namespace SampSharpGameMode1.Display
                         string jsonData = new UTF8Encoding(true).GetString(output);
                         List<textdraw> textdraws = JsonConvert.DeserializeObject<List<textdraw>>(jsonData);
                         string lastTDName = "";
+                        TextdrawLayer layer;
                         foreach (textdraw textdraw in textdraws)
                         {
+                            if (textdraw.Name.Contains(':'))
+                            {
+                                string layerName = textdraw.Name[..textdraw.Name.IndexOf(":")];
+                                layer = layers.FirstOrDefault(l => l.Key.StartsWith(layerName)).Value;
+                                if(layer == null)
+                                {
+                                    layer = new TextdrawLayer() { AutoUpdate = false };
+                                    layers.Add(layerName, layer);
+                                }
+                            }
+                            else
+                                layer = layers.First().Value;
                             if (textdraw.Type.Equals("background"))
                             {
                                 layer.CreateBackground(player, textdraw.Name, new Vector2(textdraw.PosX, textdraw.PosY), new Vector2(textdraw.Width, textdraw.Height), textdraw.Color);
@@ -102,7 +132,8 @@ namespace SampSharpGameMode1.Display
                                 player.SendClientMessage(Color.Red, "Cannot set size for '" + textdraw.Name + "'");
                             lastTDName = textdraw.Name;
                         }
-                        layer.UnselectAllTextdraw();
+                        foreach(TextdrawLayer layertmp in layers.Values)
+                            layertmp.UnselectAllTextdraw();
                         fs.Close();
                     }
                 }
@@ -125,31 +156,86 @@ namespace SampSharpGameMode1.Display
                 Logger.WriteLineAndClose("The file " + filename + " does not exists.");
                 HasError = true;
             }
-            layer.AutoUpdate = true;
+            foreach (TextdrawLayer layertmp in layers.Values)
+                layertmp.AutoUpdate = true;
         }
 
         public void Unload()
         {
-            layer.Dispose();
+            foreach (TextdrawLayer layer in layers.Values)
+                layer.Dispose();
         }
 
         /// <summary>
-        /// Show all textdraw of this HUD layer or only the <paramref name="element"/> textdraw
-        /// <param name="element">The textdraw name. All textdraws if empty</param>
+        /// Returns true if the textdraw exist in it's layer
+        /// </summary>
+        /// <param name="element">Element to find</param>
+        public bool ElementExistsInALayer(string element, out TextdrawLayer elementLayer)
+        {
+            // remove regex characters
+            // https://regex101.com/r/9GBkL2/1
+            List<string> str = Regex.Match(element, @"[\^]?(?'all'(?'layer'[a-zA-Z#_0-9]*(\[\d*\])*)[:]?[a-zA-Z#_0-9]*)[$]?", RegexOptions.ExplicitCapture).Groups.Select((Group g) => g.Value).ToList();
+            string elementName = str[1];
+            string layerName = str[2];
+            if (layerName == elementName)
+                layerName = "base";
+
+            // The Regex remove the : (for example with duplicated layers: group[1].name, we get `group`)
+            TextdrawLayer layer = layers.FirstOrDefault(l => l.Key.StartsWith(layerName)).Value;
+            elementLayer = layer;
+            if (layer == null)
+                return false;
+            return layer.Exists(elementName);
+        }
+
+        /// <summary>
+        /// Show all textdraw of all HUD layer, the <paramref name="element"/> textdraw, or the all the layer passed in <paramref name="element"/> param
+        /// <param name="element">The textdraw or layer name. All textdraws of all layers if empty</param>
         /// </summary>
         public void Show(string element = "")
         {
+#if DEBUG
+            Logger.WriteLineAndClose("HUD.cs - HUD:Show:D: Called for '" + element + "'");
+#endif
             if (element == "")
-                layer.ShowAll();
+            {
+                foreach (TextdrawLayer layer in layers.Values)
+                    layer.ShowAll();
+            }
             else
             {
-                if (layer.Exists(element))
+                if (ElementExistsInALayer(element, out TextdrawLayer layer))
                     layer.Show(element);
                 else
                 {
-                    foreach (string td in Utils.GetStringsMatchingRegex(new List<string>(layer.GetTextdrawList().Keys), element))
+                    if(layer == null)
                     {
-                        layer.Show(td);
+                        throw new Exception("The given element is not inside an existing layer");
+                    }
+
+                    // If element does not exist, it's probably a regex
+                    // element will be now used as pattern, and the [] must be managed differently
+                    element = element.Replace("[", @"\[").Replace("]", @"\]");
+                    List<string> tdList;
+
+                    if (element.Contains(':')) // If regex is in a layer
+                    {
+                        tdList = new List<string>(layer.GetTextdrawList().Keys);
+                        foreach (string td in Utils.GetStringsMatchingRegex(tdList, element))
+                        {
+                            layer.Show(td);
+                        }
+                    }
+                    else
+                    {
+                        foreach (TextdrawLayer layer2 in layers.Values)
+                        {
+                            tdList = new List<string>(layer2.GetTextdrawList().Keys);
+                            foreach (string td in Utils.GetStringsMatchingRegex(tdList, element))
+                            {
+                                layer2.Show(td);
+                            }
+                        }
                     }
                 }
             }
@@ -161,18 +247,48 @@ namespace SampSharpGameMode1.Display
         /// </summary>
         public void Hide(string element = "")
         {
+#if DEBUG
+            Logger.WriteLineAndClose("HUD.cs - HUD:Hide:D: Called for '" + element + "'");
+#endif
             if (element == "")
-                layer.HideAll();
+            {
+                foreach (TextdrawLayer layer in layers.Values)
+                    layer.HideAll();
+            }
             else
             {
-                if(layer.Exists(element))
+                if (ElementExistsInALayer(element, out TextdrawLayer layer))
                     layer.Hide(element);
                 else
                 {
-                    foreach (string td in Utils.GetStringsMatchingRegex(new List<string>(layer.GetTextdrawList().Keys), element))
+                    if (layer == null)
                     {
-                        //Console.WriteLine("Hiding td " + td);
-                        layer.Hide(td);
+                        throw new Exception("The given element is not inside an existing layer");
+                    }
+
+                    // If element does not exist, it's probably a regex
+                    // element will be now used as pattern, and the [] must be managed differently
+                    element = element.Replace("[", @"\[").Replace("]", @"\]");
+                    List<string> tdList;
+
+                    if (element.Contains(':')) // If regex is in a layer
+                    {
+                        tdList = new List<string>(layer.GetTextdrawList().Keys);
+                        foreach (string td in Utils.GetStringsMatchingRegex(tdList, element))
+                        {
+                            layer.Hide(td);
+                        }
+                    }
+                    else
+                    {
+                        foreach (TextdrawLayer layer2 in layers.Values)
+                        {
+                            tdList = new List<string>(layer2.GetTextdrawList().Keys);
+                            foreach (string td in Utils.GetStringsMatchingRegex(tdList, element))
+                            {
+                                layer2.Hide(td);
+                            }
+                        }
                     }
                 }
             }
@@ -184,29 +300,8 @@ namespace SampSharpGameMode1.Display
         /// </summary>
         public void Refresh(string element = "")
         {
-            if (element == "")
-            {
-                layer.HideAll();
-                layer.ShowAll();
-            }
-            else
-            {
-                if (layer.Exists(element))
-                {
-                    layer.Hide(element);
-                    layer.Show(element);
-                }
-                else
-                {
-                    foreach (string td in Utils.GetStringsMatchingRegex(new List<string>(layer.GetTextdrawList().Keys), element))
-                    {
-                        if(td.EndsWith("bg"))
-                            Logger.WriteLineAndClose("HUD.cs - HUD.Refresh:I: " + td + " color: " + layer.GetTextdrawColor(td).ToString() + " " + layer.GetTextdrawColor(td).A);
-                        layer.Hide(td);
-                        layer.Show(td);
-                    }
-                }
-            }
+            this.Hide(element);
+            this.Show(element);
         }
 
         /// <summary>
@@ -218,7 +313,8 @@ namespace SampSharpGameMode1.Display
         {
             try
             {
-                layer.SetTextdrawText(element, value);
+                if (ElementExistsInALayer(element, out TextdrawLayer layer))
+                    layer.SetTextdrawText(element, value);
             }
             catch (TextdrawNameNotFoundException e)
             {
@@ -237,7 +333,8 @@ namespace SampSharpGameMode1.Display
         {
             try
             {
-                layer.SetTextdrawSize(element, width, height);
+                if (ElementExistsInALayer(element, out TextdrawLayer layer))
+                    layer.SetTextdrawSize(element, width, height);
             }
             catch (TextdrawNameNotFoundException e)
             {
@@ -255,7 +352,8 @@ namespace SampSharpGameMode1.Display
         {
             try
             {
-                layer.SetTextdrawColor(element, color);
+                if (ElementExistsInALayer(element, out TextdrawLayer layer))
+                    layer.SetTextdrawColor(element, color);
             }
             catch (TextdrawNameNotFoundException e)
             {
@@ -273,9 +371,12 @@ namespace SampSharpGameMode1.Display
         {
             try
             {
-                if (layer.GetTextdrawType(element) == TextdrawLayer.TextdrawType.PreviewModel)
+                if (ElementExistsInALayer(element, out TextdrawLayer layer))
                 {
-                    layer.SetTextdrawPreviewModel(element, model);
+                    if (layer.GetTextdrawType(element) == TextdrawLayer.TextdrawType.PreviewModel)
+                    {
+                        layer.SetTextdrawPreviewModel(element, model);
+                    }
                 }
             }
             catch (TextdrawNameNotFoundException e)
@@ -286,74 +387,221 @@ namespace SampSharpGameMode1.Display
         }
 
         /// <summary>
+        /// Duplicate all textdraws from a <paramref name="layer"/> inside a container element
+        /// </summary>
+        /// <param name="layer">The layer to duplicate</param>
+        /// <param name="number">Number of duplicate textdraws</param>
+        /// <param name="containerElement">The container textdraw</param>
+        /// <param name="mode">The mode of duplicate</param>
+        /// <exception cref="Exception">Throw an exception if the element textdraw name does not contain #</exception>
+        /// <returns>The number of item that has been correctly displayed</returns>
+        public int DynamicDuplicateLayer(string layerName, int number, string containerElement, DuplicateMode mode = DuplicateMode.ROWS_COLS)
+        {
+            if (!layerName.Contains('#'))
+            {
+                throw new Exception("Can't duplicate a layout having name without # char");
+            }
+
+            Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateLayer:D: Called for layer " + layerName);
+            Stopwatch sw = new();
+            sw.Start();
+            float spacing = 5f;
+
+            Vector2 bgElementPosition;
+            Vector2 bgElementSize;
+            Vector2 containerPosition;
+            Vector2 containerSize;
+
+            if (layers.ContainsKey(layerName))
+            {
+                // Find the biggest object of this layer to duplicate (usually the background)
+                string bgElement = layerName + ":bg";
+                if(ElementExistsInALayer(bgElement, out TextdrawLayer layer) && ElementExistsInALayer(containerElement, out TextdrawLayer layerContainer))
+                {
+#if DEBUG
+                    Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateLayer:D: bgElement and containerElement exists");
+#endif
+                    bgElementPosition = layer.GetTextdrawPosition(bgElement);
+                    bgElementSize = layer.GetTextdrawSize(bgElement);
+                    containerPosition = layerContainer.GetTextdrawPosition(containerElement);
+                    containerSize = layerContainer.GetTextdrawSize(containerElement);
+
+#if DEBUG
+                    Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateLayer:D: Hiding original layout");
+#endif
+                    this.Hide("^" + layerName + ".*$");
+                    Dictionary<string, Textdraw> elements = new(layer.GetTextdrawList().Where(td => td.Key.Contains('#')));
+
+                    int index = 0;
+                    int itemsPerRow = (int)Math.Truncate(containerSize.X / (bgElementSize.X + spacing));
+                    if (mode == DuplicateMode.COLS)
+                        itemsPerRow = 1;
+#if DEBUG
+                    Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateLayer:D: itemsPerRow = " + itemsPerRow);
+#endif
+
+                    void AddItemsToRow(int row)
+                    {
+                        Vector2 newPosition;
+                        Vector2 elementPosition;
+                        Vector2 elementSize;
+                        for (int i = 0; i < itemsPerRow; i++)
+                        {
+                            if (index < number)
+                            {
+                                string indexLayerName = layerName.Replace("#", $"[{index}]");
+                                if (!layers.ContainsKey(indexLayerName))
+                                    layers.Add(indexLayerName, new TextdrawLayer { AutoUpdate = false });
+
+                                TextdrawLayer layerOfIndex = layers.First(l => l.Key == indexLayerName).Value;
+                                foreach (KeyValuePair<string, Textdraw> td in elements)
+                                {
+                                    string newName = td.Key.Replace("#", $"[{index}]");
+                                    elementPosition = layer.GetTextdrawPosition(td.Key);
+                                    elementSize = layer.GetTextdrawSize(td.Key);
+                                    newPosition = new(
+                                        containerPosition.X + (bgElementSize.X + spacing) * i + spacing +(elementPosition.X - bgElementPosition.X) * (i + 1),
+                                        containerPosition.Y + (bgElementSize.Y + spacing) * row + (elementPosition.Y - bgElementPosition.Y) * (i + 1)
+                                    );
+                                    Textdraw newTD = layer.GetCopy(player, td.Key, newName);
+                                    layerOfIndex.Add(newTD, layer.GetTextdrawType(td.Key));
+                                    _ = layerOfIndex.SetTextdrawPosition(newName, newPosition);
+                                    if (layer.GetTextdrawType(td.Key) == TextdrawLayer.TextdrawType.Text) // The text textdraws manage width differently
+                                        _ = layerOfIndex.SetTextdrawSize(newName, elementSize.X + (elementSize.X + spacing) * i, elementSize.Y);
+                                    else
+                                        _ = layerOfIndex.SetTextdrawSize(newName, elementSize.X, elementSize.Y);
+#if DEBUG
+                                    Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateLayer:I: Adding " + newName + " at pos: " + layerOfIndex.GetTextdrawPosition(newName).ToString());
+#endif
+                                }
+                                index++;
+                            }
+                        }
+                    }
+                    ;
+
+                    if (number > itemsPerRow)
+                    {
+                        int possibleRows = (int)Math.Truncate((containerSize.Y - (bgElementPosition.Y - containerPosition.Y)) / (bgElementSize.Y + spacing));
+                        if (mode == DuplicateMode.ROWS)
+                            possibleRows = 1;
+#if DEBUG
+                        Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateLayer:D: possibleRows = " + possibleRows);
+#endif
+                        for (int i = 0; i < possibleRows; i++)
+                        {
+                            AddItemsToRow(i);
+                        }
+                    }
+                    else
+                        AddItemsToRow(0);
+                    Console.WriteLine("HUD.cs - HUD:DynamicDuplicateLayer:D: Time for duplicate layer: " + sw.ElapsedMilliseconds + "ms (layer: " + layerName + ")");
+                    return index;
+
+                }
+                else
+                {
+                    Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateLayer:E: Can't duplicate the layer '" + layerName + "' because it does not contain 'bg' textdraw");
+                    throw new Exception("The layer " + layerName + " does not contain any background layer");
+                }
+            }
+            else
+            {
+                Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateLayer:E: Can't duplicate the layer '" + layerName + "' because it does exist");
+                throw new Exception("The layer " + layerName + " does not exist");
+            }
+        }
+
+        /// <summary>
         /// Duplicate the element textdraw inside a container element
         /// </summary>
         /// <param name="element">The textdraw to duplicate</param>
         /// <param name="number">Number of duplicate textdraws</param>
         /// <param name="containerElement">The container textdraw</param>
+        /// <param name="mode">The mode of duplicate</param>
         /// <exception cref="Exception">Throw an exception if the element textdraw name does not contain #</exception>
         /// <returns>The number of item that has been correctly displayed</returns>
-        public int DynamicDuplicateLayer(string element, int number, string containerElement)
+        public int DynamicDuplicateElement(string element, int number, string containerElement, DuplicateMode mode = DuplicateMode.ROWS_COLS)
         {
-            float spacing = 5f;
-            Vector2 elementPosition = layer.GetTextdrawPosition(element);
-            Vector2 elementSize = layer.GetTextdrawSize(element);
-            if (layer.GetTextdrawType(element) == TextdrawLayer.TextdrawType.Text) // The text textdraws manage width differently
-                elementSize = new Vector2(elementSize.X - elementPosition.X, elementSize.Y);
-            Vector2 containerPosition = layer.GetTextdrawPosition(containerElement);
-            Vector2 containerSize = layer.GetTextdrawSize(containerElement);
-
-            if(!element.Contains('#'))
+            if (!element.Contains('#'))
             {
                 throw new Exception("Can't duplicate an element having name without # char");
             }
 
-            layer.Hide(element);
+            float spacing = 5f;
 
-            int index = 0;
-            int itemsPerRow = (int)Math.Truncate(containerSize.X / (elementSize.X + spacing));
-#if DEBUG
-            Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateLayer:D: itemsPerRow = " + itemsPerRow);
-#endif
+            Vector2 elementPosition;
+            Vector2 elementSize;
+            Vector2 containerPosition;
+            Vector2 containerSize;
 
-            void AddItemsToRow(int row)
+            if (ElementExistsInALayer(element, out TextdrawLayer layer))
             {
-                for (int i = 0; i < itemsPerRow; i++)
-                {
-                    if (index < number)
-                    {
-                        string newName = element.Replace("#", $"[{index++}]");
-                        Vector2 newPosition = new(
-                            containerPosition.X + (elementSize.X + spacing) * i + spacing,
-                            elementPosition.Y + (elementSize.Y + spacing) * row
-                        );
-                        layer.Duplicate(player, element, newName);
-                        _ = layer.SetTextdrawPosition(newName, newPosition);
-                        if (layer.GetTextdrawType(element) == TextdrawLayer.TextdrawType.Text) // The text textdraws manage width differently
-                            _ = layer.SetTextdrawSize(newName, elementSize.X + (elementSize.X + spacing) * i, elementSize.Y);
-                        else
-                            _ = layer.SetTextdrawSize(newName, elementSize.X, elementSize.Y);
+                elementPosition = layer.GetTextdrawPosition(element);
+                elementSize = layer.GetTextdrawSize(element);
+                if (layer.GetTextdrawType(element) == TextdrawLayer.TextdrawType.Text) // The text textdraws manage width differently
+                    elementSize = new Vector2(elementSize.X - elementPosition.X, elementSize.Y);
+                containerPosition = layer.GetTextdrawPosition(containerElement);
+                containerSize = layer.GetTextdrawSize(containerElement);
+
+                layer.Hide(element);
+
+                int index = 0;
+                int itemsPerRow = (int)Math.Truncate(containerSize.X / (elementSize.X + spacing));
+                if (mode == DuplicateMode.COLS)
+                    itemsPerRow = 1;
 #if DEBUG
-                        Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateLayer:I: Adding " + newName + " at pos: " + layer.GetTextdrawPosition(newName).ToString());
+                Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateElement:D: itemsPerRow = " + itemsPerRow);
 #endif
+
+                void AddItemsToRow(int row)
+                {
+                    for (int i = 0; i < itemsPerRow; i++)
+                    {
+                        if (index < number)
+                        {
+                            string newName = element.Replace("#", $"[{index++}]");
+                            Vector2 newPosition = new(
+                                containerPosition.X + (elementSize.X + spacing) * i + spacing,
+                                elementPosition.Y + (elementSize.Y + spacing) * row
+                            );
+                            layer.Duplicate(player, element, newName);
+                            _ = layer.SetTextdrawPosition(newName, newPosition);
+                            if (layer.GetTextdrawType(element) == TextdrawLayer.TextdrawType.Text) // The text textdraws manage width differently
+                                _ = layer.SetTextdrawSize(newName, elementSize.X + (elementSize.X + spacing) * i, elementSize.Y);
+                            else
+                                _ = layer.SetTextdrawSize(newName, elementSize.X, elementSize.Y);
+#if DEBUG
+                            Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateElement:I: Adding " + newName + " at pos: " + layer.GetTextdrawPosition(newName).ToString());
+#endif
+                        }
                     }
                 }
-            };
+            ;
 
-            if (number > itemsPerRow)
-            {
-                int possibleRows = (int)Math.Truncate((containerSize.Y - (elementPosition.Y - containerPosition.Y)) / (elementSize.Y + spacing));
-#if DEBUG
-                Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateLayer:D: possibleRows = " + possibleRows);
-#endif
-                for (int i = 0; i < possibleRows; i++)
+                if (number > itemsPerRow)
                 {
-                    AddItemsToRow(i);
+                    int possibleRows = (int)Math.Truncate((containerSize.Y - (elementPosition.Y - containerPosition.Y)) / (elementSize.Y + spacing));
+                    if (mode == DuplicateMode.ROWS)
+                        possibleRows = 1;
+#if DEBUG
+                    Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateElement:D: possibleRows = " + possibleRows);
+#endif
+                    for (int i = 0; i < possibleRows; i++)
+                    {
+                        AddItemsToRow(i);
+                    }
                 }
+                else
+                    AddItemsToRow(0);
+                return index;
+
             }
             else
-                AddItemsToRow(0);
-            return index;
+            {
+                Logger.WriteLineAndClose("HUD.cs - HUD:DynamicDuplicateElement:E: Can't duplicate the element '" + element + "' because it does not exists");
+                throw new Exception("The element " + element + " does not exist in this layer");
+            }
         }
     }
 }

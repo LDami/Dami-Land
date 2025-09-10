@@ -45,8 +45,8 @@ namespace SampSharpGameMode1.Events
                 this.Hide();
                 return;
             }
-            layer.SetTextdrawText("title", $"Select a {_eventType}");
-            nbrOfItems = DynamicDuplicateLayer("racename#", _eventList.Count, "bg");
+            layers["base"].SetTextdrawText("title", $"Select a {_eventType}");
+            nbrOfItems = DynamicDuplicateElement("racename#", _eventList.Count, "bg");
             if (nbrOfItems == 0)
             {
                 Logger.WriteLineAndClose("EventManager.cs : EventListHUD:_:E: The number of items that can be displayed is 0.");
@@ -60,20 +60,20 @@ namespace SampSharpGameMode1.Events
             Logger.WriteLineAndClose("EventManager.cs : EventListHUD:_:D: _eventList.Count = " + _eventList.Count);
             Logger.WriteLineAndClose("EventManager.cs : EventListHUD:_:D: nbrOfPages = " + nbrOfPages);
 #endif
-            layer.SetTextdrawText("page", string.Format("{0,2}", currentPage) + "/" + string.Format("{0,2}", nbrOfPages));
+            layers["base"].SetTextdrawText("page", string.Format("{0,2}", currentPage) + "/" + string.Format("{0,2}", nbrOfPages));
 
             eventList = _eventList;
             shownObjects = new();
             for (int i = 0; i < nbrOfItems; i++)
             {
-                layer.SetTextdrawText($"racename[{i}]", $"{eventList[i].Name} ~r~by ~b~~h~~h~{eventList[i].Author}");
-                layer.SetClickable($"racename[{i}]");
+                layers["base"].SetTextdrawText($"racename[{i}]", $"{eventList[i].Name} ~r~by ~b~~h~~h~{eventList[i].Author}");
+                layers["base"].SetClickable($"racename[{i}]");
                 shownObjects.Add(eventList[i].Id);
             }
-            layer.SetClickable("prevPage");
-            layer.SetClickable("nextPage");
-            layer.SetClickable("gotolastpage");
-            layer.TextdrawClicked += Layer_TextdrawClicked;
+            layers["base"].SetClickable("prevPage");
+            layers["base"].SetClickable("nextPage");
+            layers["base"].SetClickable("gotolastpage");
+            layers["base"].TextdrawClicked += Layer_TextdrawClicked;
 
         }
 
@@ -114,18 +114,18 @@ namespace SampSharpGameMode1.Events
 
         private void UpdatePage()
         {
-            layer.SetTextdrawText("page", string.Format("{0,2}", currentPage) + "/" + string.Format("{0,2}", nbrOfPages));
+            layers["base"].SetTextdrawText("page", string.Format("{0,2}", currentPage) + "/" + string.Format("{0,2}", nbrOfPages));
             shownObjects = new();
             for (int i = 0; i < nbrOfItems; i++)
             {
                 if (nbrOfItems * (currentPage - 1) + i >= eventList.Count)
-                    layer.Hide($"racename[{i}]");
+                    layers["base"].Hide($"racename[{i}]");
                 else
                 {
                     EventListObject evt = eventList[nbrOfItems * (currentPage - 1) + i];
-                    layer.SetTextdrawText($"racename[{i}]", $"{evt.Name} by ~r~{evt.Author}");
-                    layer.ResetClickEvent($"racename[{i}]");
-                    layer.SetClickable($"racename[{i}]");
+                    layers["base"].SetTextdrawText($"racename[{i}]", $"{evt.Name} by ~r~{evt.Author}");
+                    layers["base"].ResetClickEvent($"racename[{i}]");
+                    layers["base"].SetClickable($"racename[{i}]");
                     shownObjects.Add(evt.Id);
                 }
             }

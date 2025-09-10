@@ -29,18 +29,18 @@ namespace SampSharpGameMode1.Display
             {
                 if (isSwitched)
                 {
-                    foreach (KeyValuePair<string, Textdraw> textdraw in layer.GetTextdrawList())
+                    foreach (KeyValuePair<string, Textdraw> textdraw in layers["base"].GetTextdrawList())
                     {
-                        layer.SetTextdrawPosition(textdraw.Key, textdrawDefaultPos[textdraw.Key]);
+                        layers["base"].SetTextdrawPosition(textdraw.Key, textdrawDefaultPos[textdraw.Key]);
                         //layer.SetTextdrawSize(textdraw.Key, textdrawDefaultSize[textdraw.Key].X, textdrawDefaultSize[textdraw.Key].Y);
                     }
                     isSwitched = false;
                 }
                 else
                 {
-                    foreach (KeyValuePair<string, Textdraw> textdraw in layer.GetTextdrawList())
+                    foreach (KeyValuePair<string, Textdraw> textdraw in layers["base"].GetTextdrawList())
                     {
-                        layer.SetTextdrawPosition(textdraw.Key, new Vector2(0, -1));
+                        layers["base"].SetTextdrawPosition(textdraw.Key, new Vector2(0, -1));
                         //layer.SetTextdrawSize(textdraw.Key, 150.0f, textdrawDefaultSize[textdraw.Key].Y);
                     }
                     isSwitched = true;
@@ -49,25 +49,25 @@ namespace SampSharpGameMode1.Display
 
             public void SetRuler(Vector2 pos, Vector2 size)
             {
-                layer.SetTextdrawPosition("x-axis-ruler", new Vector2(pos.X, 0));
-                layer.SetTextdrawSize("x-axis-ruler", size.X, 20);
-                layer.SetTextdrawPosition("y-axis-ruler", new Vector2(0, pos.Y));
-                layer.SetTextdrawSize("y-axis-ruler", 5, size.Y);
+                layers["base"].SetTextdrawPosition("x-axis-ruler", new Vector2(pos.X, 0));
+                layers["base"].SetTextdrawSize("x-axis-ruler", size.X, 20);
+                layers["base"].SetTextdrawPosition("y-axis-ruler", new Vector2(0, pos.Y));
+                layers["base"].SetTextdrawSize("y-axis-ruler", 5, size.Y);
             }
 
             public void SetSelectedFileName(string name)
             {
-                layer.SetTextdrawText("filename", "Name: " + name);
+                layers["base"].SetTextdrawText("filename", "Name: " + name);
             }
 
             public void SetSelectedTextdrawName(string name)
             {
-                layer.SetTextdrawText("tdselected", "TD: " + name);
+                layers["base"].SetTextdrawText("tdselected", "TD: " + name);
             }
 
             public void SetMode(string mode)
             {
-                layer.SetTextdrawText("tdmode", "Mode: " + mode);
+                layers["base"].SetTextdrawText("tdmode", "Mode: " + mode);
             }
         }
         class TextdrawMenuHUD : HUD
@@ -84,45 +84,45 @@ namespace SampSharpGameMode1.Display
                 this.tdCreatorInstance = tdCreatorInstance;
                 for (int i = 0; i < layers.Count; i++)
                 {
-                    layer.Duplicate(player, "layer#bg", $"layer{i}bg");
-                    layer.SetTextdrawPosition($"layer{i}bg", layer.GetTextdrawPosition("layer#bg") + new Vector2(0, i * gapBetweenLayers));
-                    layer.SetClickable($"layer{i}bg");
+                    base.layers["base"].Duplicate(player, "layer#bg", $"layer{i}bg");
+                    base.layers["base"].SetTextdrawPosition($"layer{i}bg", base.layers["base"].GetTextdrawPosition("layer#bg") + new Vector2(0, i * gapBetweenLayers));
+                    base.layers["base"].SetClickable($"layer{i}bg");
 
-                    layer.Duplicate(player, "layer#name", $"layer{i}name");
-                    layer.SetTextdrawPosition($"layer{i}name", layer.GetTextdrawPosition("layer#name") + new Vector2(0, i * gapBetweenLayers));
-                    layer.SetTextdrawText($"layer{i}name", "Layer # " + i);
+                    base.layers["base"].Duplicate(player, "layer#name", $"layer{i}name");
+                    base.layers["base"].SetTextdrawPosition($"layer{i}name", base.layers["base"].GetTextdrawPosition("layer#name") + new Vector2(0, i * gapBetweenLayers));
+                    base.layers["base"].SetTextdrawText($"layer{i}name", "Layer # " + i);
 
                     List<Textdraw> tdList = new List<Textdraw>(layers[i].GetTextdrawList().Values);
                     for (int j = 0; j < tdList.Count && j <= 10; j ++)
                     {
-                        layer.Duplicate(player, "item#bg", $"item{j}bg");
-                        layer.SetTextdrawPosition($"item{j}bg", layer.GetTextdrawPosition("item#bg") + new Vector2(0, j * gapBetweenItems));
-                        layer.SetClickable($"item{j}bg");
+                        base.layers["base"].Duplicate(player, "item#bg", $"item{j}bg");
+                        base.layers["base"].SetTextdrawPosition($"item{j}bg", base.layers["base"].GetTextdrawPosition("item#bg") + new Vector2(0, j * gapBetweenItems));
+                        base.layers["base"].SetClickable($"item{j}bg");
                         if(j==0)
-                            layer.SetTextdrawColor($"item{j}bg", new Color(25, 255, 25, 94));
+                            base.layers["base"].SetTextdrawColor($"item{j}bg", new Color(25, 255, 25, 94));
                         else
-                            layer.SetTextdrawColor($"item{j}bg", new Color(255, 25, 25, 94));
+                            base.layers["base"].SetTextdrawColor($"item{j}bg", new Color(255, 25, 25, 94));
 
-                        layer.Duplicate(player, "item#name", $"item{j}name");
-                        layer.SetTextdrawPosition($"item{j}name", layer.GetTextdrawPosition("item#name") + new Vector2(0, j * gapBetweenItems));
-                        layer.SetTextdrawText($"item{j}name", tdList[j].name);
+                        base.layers["base"].Duplicate(player, "item#name", $"item{j}name");
+                        base.layers["base"].SetTextdrawPosition($"item{j}name", base.layers["base"].GetTextdrawPosition("item#name") + new Vector2(0, j * gapBetweenItems));
+                        base.layers["base"].SetTextdrawText($"item{j}name", tdList[j].name);
                         nameIndex.Add(j, tdList[j].name);
                         //layer.SetTextdrawText($"item{j}name", $"item{j}name");
                     }
                 }
-                layer.SetClickable("menu-select");
-                layer.SetClickable("menu-duplicate");
-                layer.SetClickable("menu-delete");
+                base.layers["base"].SetClickable("menu-select");
+                base.layers["base"].SetClickable("menu-duplicate");
+                base.layers["base"].SetClickable("menu-delete");
                 
-                layer.PutInFront(player, "menubg");
-                layer.PutInFront(player, "menu-select");
-                layer.PutInFront(player, "menu-duplicate");
-                layer.PutInFront(player, "menu-delete");
+                base.layers["base"].PutInFront(player, "menubg");
+                base.layers["base"].PutInFront(player, "menu-select");
+                base.layers["base"].PutInFront(player, "menu-duplicate");
+                base.layers["base"].PutInFront(player, "menu-delete");
                 
                 this.Hide(@"^layer#.*$");
                 this.Hide(@"^item#.*$");
                 this.Hide(@"^menu.*$");
-                layer.TextdrawClicked += OnTextdrawClicked;
+                base.layers["base"].TextdrawClicked += OnTextdrawClicked;
             }
             private void OnTextdrawClicked(object sender, TextdrawLayer.TextdrawEventArgs e)
             {
@@ -131,7 +131,7 @@ namespace SampSharpGameMode1.Display
                     if (lastItemNameClicked == e.TextdrawName)
                         CloseMenu();
                     else
-                        OpenMenu(layer.GetTextdrawPosition(e.TextdrawName));
+                        OpenMenu(layers["base"].GetTextdrawPosition(e.TextdrawName));
                     lastItemNameClicked = e.TextdrawName;
                 }
                 else if(e.TextdrawName.StartsWith("menu"))
@@ -161,10 +161,10 @@ namespace SampSharpGameMode1.Display
 
             public void OpenMenu(Vector2 position)
             {
-                layer.SetTextdrawPosition("menubg", position + new Vector2(0, 20));
-                layer.SetTextdrawPosition("menu-select", position + new Vector2(10, 27));
-                layer.SetTextdrawPosition("menu-duplicate", position + new Vector2(10, 44));
-                layer.SetTextdrawPosition("menu-delete", position + new Vector2(10, 62));
+                layers["base"].SetTextdrawPosition("menubg", position + new Vector2(0, 20));
+                layers["base"].SetTextdrawPosition("menu-select", position + new Vector2(10, 27));
+                layers["base"].SetTextdrawPosition("menu-duplicate", position + new Vector2(10, 44));
+                layers["base"].SetTextdrawPosition("menu-delete", position + new Vector2(10, 62));
                 this.Show(@"^menu.*$");
                 /*
                 player.CancelSelectTextDraw();

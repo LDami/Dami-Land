@@ -18,27 +18,27 @@ namespace SampSharpGameMode1.Events.Derbys
         {
             public HUD(Player player) : base(player, "derbycreator.json")
             {
-                layer.SetTextdrawText("derbynamelabel", "Derby Name:");
-                layer.SetTextdrawText("derbyname", "None");
-                layer.SetTextdrawText("selectedidx", "Spawn nbr:");
-                layer.SetTextdrawText("editingmode", "Mode: None");
-                layer.UnselectAllTextdraw();
+                layers["base"].SetTextdrawText("derbynamelabel", "Derby Name:");
+                layers["base"].SetTextdrawText("derbyname", "None");
+                layers["base"].SetTextdrawText("selectedidx", "Spawn nbr:");
+                layers["base"].SetTextdrawText("editingmode", "Mode: None");
+                layers["base"].UnselectAllTextdraw();
             }
             public void Destroy()
             {
-                layer.HideAll();
+                layers["base"].HideAll();
             }
             public void SetDerbyName(string name)
             {
-                layer.SetTextdrawText("derbyname", name);
+                layers["base"].SetTextdrawText("derbyname", name);
             }
             public void SetSelectedIdx(int idx)
             {
-                layer.SetTextdrawText("selectedidx", idx.ToString());
+                layers["base"].SetTextdrawText("selectedidx", idx.ToString());
             }
             public void SetEditingMode(EditingMode editingMode)
             {
-                layer.SetTextdrawText("editingmode", "Mode: " + editingMode.ToString());
+                layers["base"].SetTextdrawText("editingmode", "Mode: " + editingMode.ToString());
             }
         }
         enum EditingMode { None, SpawnPos }

@@ -23,5 +23,10 @@ namespace SampSharpGameMode1.Map
             ForeColor = foreColor;
             Modified = false;
         }
+
+        public override string ToString()
+        {
+            return $"{this.Index} {this.Name}";
+        }
     }
 }

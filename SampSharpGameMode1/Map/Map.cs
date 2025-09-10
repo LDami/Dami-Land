@@ -77,6 +77,7 @@ namespace SampSharpGameMode1.Map
 
                     if (!errorFlag)
                     {
+                        // TODO add group index to keep groups sorted
                         GameMode.MySQLConnector.OpenReader("SELECT mapobjects.*, groups.group_Color, groups.group_Name FROM mapobjects LEFT JOIN mapobjects_groups AS groups ON (mapobjects.group_id = groups.group_id) WHERE map_id=@id", param);
                         row = GameMode.MySQLConnector.GetNextRow();
                         Objects.Clear();

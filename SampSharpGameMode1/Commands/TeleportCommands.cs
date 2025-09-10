@@ -20,8 +20,8 @@ namespace SampSharpGameMode1.Commands
         {
             if (mySQLConnector != null)
             {
-                float scaleX = 6000 / layer.GetTextdrawSize("mapbox").X;
-                float scaleY = 6000 / layer.GetTextdrawSize("mapbox").Y;
+                float scaleX = 6000 / layers["base"].GetTextdrawSize("mapbox").X;
+                float scaleY = 6000 / layers["base"].GetTextdrawSize("mapbox").Y;
 
                 Dictionary<string, object> param = new();
                 mySQLConnector.OpenReader("SELECT * FROM teleportations WHERE 1=1", param);
@@ -42,33 +42,33 @@ namespace SampSharpGameMode1.Commands
                     );
                     teleportations[tlpID] = new Vector3R(tlpPosition, (float)Convert.ToDouble(row["teleport_angle"]));
                     tlpDisplayedPosition = new Vector2(
-                        (tlpPosition.X + 3000) / scaleX + layer.GetTextdrawPosition("mapbox").X,
-                        ((tlpPosition.Y * -1) + 3000) / scaleY + layer.GetTextdrawPosition("mapbox").Y
+                        (tlpPosition.X + 3000) / scaleX + layers["base"].GetTextdrawPosition("mapbox").X,
+                        ((tlpPosition.Y * -1) + 3000) / scaleY + layers["base"].GetTextdrawPosition("mapbox").Y
                     );
-                    layer.CreateBackground(player, "tlps_" + tlpID, tlpDisplayedPosition, new Vector2(5, 5), ColorPalette.Secondary.Main.GetColor());
-                    layer.SetTextdrawText("tlps_" + tlpID, "LD_POOL:nib");
-                    layer.UpdateTextdraw("tlps_" + tlpID);
-                    layer.SetClickable("tlps_" + tlpID);
+                    layers["base"].CreateBackground(player, "tlps_" + tlpID, tlpDisplayedPosition, new Vector2(5, 5), ColorPalette.Secondary.Main.GetColor());
+                    layers["base"].SetTextdrawText("tlps_" + tlpID, "LD_POOL:nib");
+                    layers["base"].UpdateTextdraw("tlps_" + tlpID);
+                    layers["base"].SetClickable("tlps_" + tlpID);
 
                     Color color = ColorPalette.Primary.Main.GetColor();
                     color = new Color(color.R, color.G, color.B, 0.8f);
-                    layer.CreateTextdraw(player, "info_" + tlpID, TextdrawLayer.TextdrawType.Box);
-                    layer.SetTextdrawText("info_" + tlpID, $"{tlpName}");
-                    layer.SetTextdrawSize("info_" + tlpID, 5, 50);
-                    layer.SetTextdrawColor("info_" + tlpID, ColorPalette.Secondary.Main.GetColor());
-                    layer.SetTextdrawBoxColor("info_" + tlpID, new Color(100, 100, 100, 0.8f));
-                    layer.SetTextdrawPosition("info_" + tlpID, layer.GetTextdrawPosition("tlps_" + tlpID) + new Vector2(0, 8));
-                    layer.SetTextdrawLetterSize("info_" + tlpID, 0.15f, 0.6f);
-                    layer.SetTextdrawFont("info_" + tlpID, 1);
-                    layer.SetTextdrawAlignment("info_" + tlpID, 2);
-                    layer.SetClickable("info_" + tlpID);
+                    layers["base"].CreateTextdraw(player, "info_" + tlpID, TextdrawLayer.TextdrawType.Box);
+                    layers["base"].SetTextdrawText("info_" + tlpID, $"{tlpName}");
+                    layers["base"].SetTextdrawSize("info_" + tlpID, 5, 50);
+                    layers["base"].SetTextdrawColor("info_" + tlpID, ColorPalette.Secondary.Main.GetColor());
+                    layers["base"].SetTextdrawBoxColor("info_" + tlpID, new Color(100, 100, 100, 0.8f));
+                    layers["base"].SetTextdrawPosition("info_" + tlpID, layers["base"].GetTextdrawPosition("tlps_" + tlpID) + new Vector2(0, 8));
+                    layers["base"].SetTextdrawLetterSize("info_" + tlpID, 0.15f, 0.6f);
+                    layers["base"].SetTextdrawFont("info_" + tlpID, 1);
+                    layers["base"].SetTextdrawAlignment("info_" + tlpID, 2);
+                    layers["base"].SetClickable("info_" + tlpID);
 
                     row = mySQLConnector.GetNextRow();
                 }
                 mySQLConnector.CloseReader();
-                layer.UnselectAllTextdraw();
+                layers["base"].UnselectAllTextdraw();
 
-                layer.TextdrawClicked += OnTextdrawClicked;
+                layers["base"].TextdrawClicked += OnTextdrawClicked;
             }
             else
             {

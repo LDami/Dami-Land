@@ -23,7 +23,7 @@ namespace SampSharpGameMode1.Events.Missions
             }
             public void Destroy()
             {
-                layer.HideAll();
+                layers["base"].HideAll();
             }
             public void SetMissionName(string name)
             {
@@ -35,16 +35,16 @@ namespace SampSharpGameMode1.Events.Missions
                     else
                         _name = name;
                 }
-                layer.SetTextdrawText("missionname", _name);
+                layers["base"].SetTextdrawText("missionname", _name);
             }
             public void SetSelectedStage(string idx)
             {
                 selectedIdx = idx;
-                layer.SetTextdrawText("selectedidx", "Stage: " + idx);
+                layers["base"].SetTextdrawText("selectedidx", "Stage: " + idx);
             }
             public void SetTotalStages(int totalStages)
             {
-                layer.SetTextdrawText("totalstage", "Total stages: " + totalStages);
+                layers["base"].SetTextdrawText("totalstage", "Total stages: " + totalStages);
             }
         }
 
