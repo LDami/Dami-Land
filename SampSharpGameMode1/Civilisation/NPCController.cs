@@ -15,10 +15,12 @@ namespace SampSharpGameMode1.Civilisation
 
         public void RegisterEvents(BaseMode gameMode)
         {
+            /*
             gameMode.PlayerConnected += GameMode_PlayerConnected;
             gameMode.PlayerSpawned += GameMode_PlayerSpawned;
             gameMode.PlayerUpdate += GameMode_PlayerUpdate;
             Console.WriteLine("NPCController.cs - NPCController.Init:I: NPC Controller initialized.");
+        */
         }
 
         public static void Add(string npcScriptName, Queue<Vector3> path)
