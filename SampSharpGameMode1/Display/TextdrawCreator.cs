@@ -7,6 +7,7 @@ using SampSharp.GameMode.World;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -533,7 +534,8 @@ namespace SampSharpGameMode1.Display
                     switch (eventArgs.ListItem)
                     {
                         case 0: // Color
-                            InputDialog colorDialog = new InputDialog("Enter color", "Supported formats: 0xFF0000 ; 0xFF0000FF ; rbg(255, 0, 0) ; rbg(255, 0, 0, 255)", false, "Set", "Cancel");
+                            InputDialog colorDialog = new ("Enter color", "Supported formats: 0xFF0000 ; 0xFF0000FF ; rbg(255, 0, 0) ; rbg(255, 0, 0, 255) ; \n" +
+                                "primary.(main|lighten|darken) ; secondary.(main|lighten|darken)", false, "Set", "Cancel");
                             colorDialog.Show(player);
                             colorDialog.Response += (sender, eventArgs) =>
                             {
@@ -839,6 +841,7 @@ namespace SampSharpGameMode1.Display
                 {
                     layers[layerIndex].Delete(name);
                     player.SendClientMessage("Textdraw deleted: " + name);
+                    Select(layers[layerIndex].TextdrawList.First().Key);
                 }
             }
         }

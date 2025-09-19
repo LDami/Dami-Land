@@ -27,15 +27,15 @@ namespace SampSharpGameMode1.Display
 		}
 		public static class Primary
 		{
-			public static SAMPColor Main = new SAMPColor(Color.FromArgb(231, 213, 164));
-			public static SAMPColor Lighten = new SAMPColor(Color.FromArgb(112, 145, 197));
-			public static SAMPColor Darken = new SAMPColor(Color.FromArgb(53, 82, 128));
+            public static readonly SAMPColor Main = new(Color.FromArgb(93, 183, 222));
+            public static readonly SAMPColor Lighten = new (Color.FromArgb(112, 145, 197));
+			public static readonly SAMPColor Darken = new (Color.FromArgb(53, 82, 128));
 		}
 		public static class Secondary
-		{
-			public static SAMPColor Main = new SAMPColor(Color.FromArgb(93, 183, 222));
-			public static SAMPColor Lighten = new SAMPColor(Color.FromArgb(243, 245, 247));
-			public static SAMPColor Darken = new SAMPColor(Color.FromArgb(194, 207, 214));
+        {
+            public static readonly SAMPColor Main = new(Color.FromArgb(231, 213, 164));
+			public static readonly SAMPColor Lighten = new (Color.FromArgb(243, 245, 247));
+			public static readonly SAMPColor Darken = new (Color.FromArgb(194, 207, 214));
 		}
 		public static class Error
 		{

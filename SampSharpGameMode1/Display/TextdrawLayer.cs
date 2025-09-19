@@ -20,7 +20,7 @@ namespace SampSharpGameMode1.Display
         public bool IsDisposed = false;
 
         private Color editingColor = new Color(180, 50, 50);
-        private const bool DEBUG_TEXTDRAW_LAYER = true;
+        private const bool DEBUG_TEXTDRAW_LAYER = false;
         private bool isTextdrawCreator = false;
 
         private Dictionary<string, Textdraw> textdrawList = new();
@@ -28,6 +28,7 @@ namespace SampSharpGameMode1.Display
         private Dictionary<string, EditingMode> textdrawEditMode = new();
         private List<string> textdrawOrder = new();
 
+        public Dictionary<string, Textdraw> TextdrawList { get => textdrawList; }
 
         public enum TextdrawType { Background, Box, Text, PreviewModel };
         public enum EditingMode { Unselected, Position, WidthHeight };

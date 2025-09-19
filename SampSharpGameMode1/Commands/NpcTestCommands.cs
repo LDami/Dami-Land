@@ -1,21 +1,24 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
 using SampSharp.GameMode.Display;
+using SampSharp.GameMode.Events;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.SAMP.Commands;
 using SampSharp.GameMode.World;
-using SampSharp.Streamer;
 using SampSharp.Streamer.World;
 using SampSharpGameMode1.Civilisation;
+using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 #pragma warning disable IDE0051 // Disable useless private members
 
 namespace SampSharpGameMode1.Commands
 {
-    class NpcTestCommands
+    public class NpcTestCommands
     {
         private enum NextClipMapAction
         {
@@ -64,12 +67,48 @@ namespace SampSharpGameMode1.Commands
             { "Set weapon", WeaponAndCombat_SetWeapon },
             { "Set ammo", WeaponAndCombat_SetAmmo },
             { "Set ammo in clip", WeaponAndCombat_SetAmmoInClip },
-            { "Set keys", null },
+            { "Set keys [TODO do not use]", null },
             { "Melee attack", WeaponAndCombat_MeleeAttack },
             { "Stop Melee attack", WeaponAndCombat_StopMeleeAttack },
             { "Set fighting style", WeaponAndCombat_SetFightingStyle },
             { "Toggle reloading", WeaponAndCombat_ToggleReloading },
             { "Toggle infinite ammo", WeaponAndCombat_ToggleInfiniteAmmo },
+            { "Shoot", WeaponAndCombat_Shoot },
+            { "Aim at object", WeaponAndCombat_AimAt },
+            { "Aim at player", WeaponAndCombat_AimAtPlayer },
+            { "Stop aim", WeaponAndCombat_StopAim },
+            { "Set weapon accuracy", WeaponAndCombat_SetWeaponAccuracy },
+            { "Get weaon accuracy", WeaponAndCombat_GetWeaponAccuracy },
+        };
+        readonly static Dictionary<string, Action<Player, Npc>> VehicleList = new()
+        {
+            { "Print infos ...", Vehicle_PrintInfos },
+            { "Enter vehicle", Vehicle_EnterVehicle },
+            { "Exit vehicle", Vehicle_ExitVehicle},
+            { "Put in vehicle", Vehicle_PutInVehicle},
+            { "Remove from vehicle", Vehicle_RemoveFromVehicle },
+            { "Use vehicle siren", Vehicle_UseSiren},
+            { "Set vehicle health", Vehicle_SetHealth },
+            { "Set vehicle hydra thrusters", Vehicle_SetHydraThrusters },
+            { "Toggle vehicle gear state", Vehicle_ToggleGearState },
+            { "Set train speed", Vehicle_SetTrainSpeed },
+            { "Honk", Vehicle_Honk },
+        };
+        readonly static Dictionary<string, Action<Player, Npc>> AnimationList = new()
+        {
+            { "Print infos ...", Animation_PrintInfos },
+            { "Reset animation", Animation_ResetAnimation },
+            { "Set animation", Animation_SetAnimation},
+            { "Apply animation", Animation_ApplyAnimation},
+            { "Clear animations", Animation_ClearAnimations},
+            { "SetSpecialAction", Animation_SetSpecialAction},
+        };
+        readonly static Dictionary<string, Action<Player, Npc>> PathList = new()
+        {
+            { "Print infos ...", Paths_PrintInfos },
+            { "Start HUD", Paths_StartHUD },
+            { "Stop HUD", Paths_StopHUD },
+            { "Move to current path", Paths_MoveToPath },
         };
 
         readonly static Dictionary<string, Dictionary<string, Action<Player, Npc>>> methodDictionaries = new()
@@ -79,40 +118,171 @@ namespace SampSharpGameMode1.Commands
             { "Appearance", AppearanceList },
             { "Health & Combat", HealthAndCombatList },
             { "Weapon & Combat", WeaponAndCombatList },
+            { "Vehicle", VehicleList },
+            { "Animation", AnimationList },
+            { "Path", PathList },
         };
+
+        public class NpcTestHUD : HUD
+        {
+            Npc.Path path = null;
+            List<DynamicCheckpoint> checkpoints = new();
+            public NpcTestHUD(Player player) : base(player, "npcpathtest.json")
+            {
+                layers["base"].SetClickable("label_create");
+                layers["base"].SetClickable("label_destroy");
+                layers["base"].SetClickable("label_addpoint");
+                layers["base"].SetClickable("label_removepoint");
+                layers["base"].SetClickable("label_clear");
+                layers["base"].TextdrawClicked += NpcTestHUD_TextdrawClicked;
+                layers["base"].AutoUpdate = true;
+                if (Npc.Path.All.Any())
+                    path = Npc.Path.All.First();
+            }
+
+            public void SetInClickableMode()
+            {
+                player.CancelSelectTextDraw();
+                player.SelectTextDraw(ColorPalette.Primary.Lighten.GetColor());
+            }
+
+            private void NpcTestHUD_TextdrawClicked(object sender, TextdrawLayer.TextdrawEventArgs e)
+            {
+                switch(e.TextdrawName)
+                {
+                    case "label_create":
+                        {
+                            if (!Npc.Path.All.Any())
+                            {
+                                path = Npc.Path.Create(1);
+                                UpdateStatus();
+                                player.SendClientMessage("Path created");
+                            }
+                            else
+                                player.SendClientMessage(Color.Red, "There is already a Path, only one is supported at once");
+                            break;
+                        }
+                    case "label_destroy":
+                        {
+                            if (Npc.Path.All.Any())
+                            {
+                                Npc.Path.DestroyAll();
+                                checkpoints.Clear();
+                                player.SendClientMessage("All Path destroyed");
+                            }
+                            else
+                                player.SendClientMessage(Color.Red, "There is no Path");
+                            break;
+                        }
+                    case "label_addpoint":
+                        {
+                            if (Npc.Path.All.Any())
+                            {
+                                Npc.Path.Find(1).AddPoint(player.Position, 5.0f);
+                                checkpoints.Add(new DynamicCheckpoint(player.Position, 5.0f, player: player));
+                                UpdateStatus();
+                                player.SendClientMessage("Path point added");
+                            }
+                            else
+                                player.SendClientMessage(Color.Red, "There is no Path");
+                            break;
+                        }
+                    case "label_removepoint":
+                        {
+                            if (Npc.Path.All.Any())
+                            {
+                                // TODO afficher tous les points dans des TD dupliqués ?
+                                //Npc.Path.Find(1).RemovePoint()
+                                //checkpoints.Add(new DynamicCheckpoint(player.Position, 5.0f, player: player));
+                                UpdateStatus();
+                                player.SendClientMessage("todo");
+                            }
+                            else
+                                player.SendClientMessage(Color.Red, "There is no Path");
+                            break;
+                        }
+                    case "label_clear":
+                        {
+                            if (Npc.Path.All.Any())
+                            {
+                                Npc.Path.Find(1).Clear();
+                                checkpoints.Clear();
+                                UpdateStatus();
+                                player.SendClientMessage("Path point all cleared");
+                            }
+                            else
+                                player.SendClientMessage(Color.Red, "There is no Path");
+                            break;
+                        }
+                }
+            }
+
+            public void UpdateStatus()
+            {
+                layers["base"].SetTextdrawText("pointcount", "Points: " + path.PointCount);
+                layers["base"].SetTextdrawText("isvalidpath", "Is valid = " + path.IsValid.ToString());
+                layers["base"].SetTextdrawText("pointindex", "Current point: " + path.PointIndex);
+            }
+        }
 
 
         [Command("npc-create")]
         private static void NpcCreateCommand(Player player, string npcname)
         {
-            Npc npc = Npc.Create(npcname);
-            if (npc.Id == BasePlayer.InvalidId)
+            if (Npc.Create(npcname))
             {
-                player.SendClientMessage(Color.Red, "Unable to create the NPC, try with another name");
-                return;
+                Task.Run(() => WaitNpcToConnectAsync(player, npcname));
             }
-            npc.Spawned += (sender, e) =>
+            else
+                player.SendClientMessage(Color.Red, "Unable to create NPC");
+        }
+        private static async Task WaitNpcToConnectAsync(Player player, string name)
+        { // Le thread n'as pas accès à Npc.All ? Le Npc est bien créé avec l'id 49 mais avec aucune donnée, et pas de nom
+          // crash si on tente d'accéder à Npc.All avec debugger
+            await Task.Run(() =>
             {
-                player.SendClientMessage("the NPC spawned!");
-            };
-            npc.FinishedMove += (sender, e) =>
-            {
-                player.SendClientMessage("the NPC reached you !");
-            };
-            npc.Died += (sender, e) =>
-            {
-                player.SendClientMessage("the NPC died !");
-            };
-            npc.TakeDamage += (sender, e) =>
-            {
-                player.SendClientMessage("the NPC takes " + e.Amount + " damage in " + e.BodyPart.ToString());
-            };
+                const int maxTries = 3;
+                int tries = 0;
+                Npc npc = null;
+                while (tries++ < maxTries && npc == null)
+                {
+                    Thread.Sleep(500);
+                    if(Npc.All.Count() > 1)
+                    {
+                        npc = Npc.All.First(n => n.Name == name);
+                    }
+                }
+                if (npc != null)
+                {
+
+                    npc.Spawned += (sender, e) =>
+                    {
+                        player.SendClientMessage("the NPC spawned !");
+                    };
+                    npc.FinishedMove += (sender, e) =>
+                    {
+                        player.SendClientMessage("the NPC reached you !");
+                    };
+                    npc.Died += (sender, e) =>
+                    {
+                        player.SendClientMessage("the NPC died !");
+                    };
+                    npc.TakeDamage += (sender, e) =>
+                    {
+                        player.SendClientMessage("the NPC takes " + e.Amount + " damage in " + e.BodyPart.ToString());
+                    };
+                    Core_Spawn(player, npc);
+                    PosAndMove_SetPosNextToPlayer(player, npc);
+                }
+                else
+                    player.SendClientMessage(Color.Red, "Unable to get NPC connection");
+            });
         }
 
         [Command("npc")]
         private static void NpcCommand(Player player)
         {
-            if(!Npc.All.Any())
+            if (!Npc.All.Any())
             {
                 player.SendClientMessage(Color.Red, "Create a npc first with /npc-create");
                 return;
@@ -151,7 +321,7 @@ namespace SampSharpGameMode1.Commands
                                                 {
                                                     foreach (KeyValuePair<string, Action<Player, Npc>> str in methodDictionary.Value.Where(txt => txt.Key.Contains(searchDialogResponse.InputText)))
                                                     {
-                                                        searchDialogResult.Add(new string[] { str.Key , methodDictionary.Key });
+                                                        searchDialogResult.Add(new string[] { str.Key, methodDictionary.Key });
                                                         resultList.Add(str.Key, str.Value);
                                                     }
                                                 }
@@ -193,6 +363,21 @@ namespace SampSharpGameMode1.Commands
                                         ShowDialogFromDictionary(player, selectNpcDialogResponse.ItemValue, "Weapon & Combat", WeaponAndCombatList);
                                         break;
                                     }
+                                case 6: // Vehicle
+                                    {
+                                        ShowDialogFromDictionary(player, selectNpcDialogResponse.ItemValue, "Vehicle", VehicleList);
+                                        break;
+                                    }
+                                case 7: // Animation
+                                    {
+                                        ShowDialogFromDictionary(player, selectNpcDialogResponse.ItemValue, "Animation", AnimationList);
+                                        break;
+                                    }
+                                case 8: // Path
+                                    {
+                                        ShowDialogFromDictionary(player, selectNpcDialogResponse.ItemValue, "Path", PathList);
+                                        break;
+                                    }
                             }
                         }
                     };
@@ -211,7 +396,7 @@ namespace SampSharpGameMode1.Commands
                 new string[] { "Is valid", npc.IsValid.ToString() },
                 new string[] { "Is dead", (!npc.IsAlive).ToString() },
             };
-            coreInfoDialog.Response += (sender, coreInfoDialogResponse) => ShowDialogFromDictionary(player, npc, "Core", CoreList);
+            coreInfoDialog.Response += (sender, _) => ShowDialogFromDictionary(player, npc, "Core", CoreList);
             coreInfoDialog.Show(player);
         }
         private static void Core_Destroy(Player player, Npc npc)
@@ -304,7 +489,7 @@ namespace SampSharpGameMode1.Commands
         }
         private static void PosAndMove_MoveToPlayer(Player player, Npc npc)
         {
-            npc.MoveToPlayer(player);
+            npc.MoveToPlayer(player, npc.InAnyVehicle ? NPCMoveType.Drive : NPCMoveType.Jog);
             player.SendClientMessage($"NPC {npc.Name} is following you");
             ShowDialogFromDictionary(player, npc, "Position and movement", PosAndMovementList);
         }
@@ -324,7 +509,7 @@ namespace SampSharpGameMode1.Commands
                 new string[] { "Is streamed in by somebody", npc.IsAnyStreamedIn().ToString() },
                 new string[] { "Interior id", npc.Interior.ToString() },
             };
-            appearanceInfoDialog.Response += (sender, appearanceInfoDialogResponse) => ShowDialogFromDictionary(player, npc, "Appearance", AppearanceList);
+            appearanceInfoDialog.Response += (sender, _) => ShowDialogFromDictionary(player, npc, "Appearance", AppearanceList);
             appearanceInfoDialog.Show(player);
         }
         private static void Appearance_SetSkin(Player player, Npc npc)
@@ -379,7 +564,7 @@ namespace SampSharpGameMode1.Commands
                 new string[] { "Armour", npc.Armour.ToString() },
                 new string[] { "Invulnerable", npc.Invulnerable.ToString() },
             };
-            healthAndCombatInfoDialog.Response += (sender, healthAndCombatInfoDialogResponse) => ShowDialogFromDictionary(player, npc, "Health & Combat", HealthAndCombatList);
+            healthAndCombatInfoDialog.Response += (sender, _) => ShowDialogFromDictionary(player, npc, "Health & Combat", HealthAndCombatList);
             healthAndCombatInfoDialog.Show(player);
         }
         private static void HealthAndCombat_SetHealth(Player player, Npc npc)
@@ -450,22 +635,23 @@ namespace SampSharpGameMode1.Commands
                 new string[] { "Is Aiming", npc.IsAiming().ToString() },
                 new string[] { "Is Aiming at player", npc.IsAimingAtPlayer(player).ToString() },
             };
-            weaponAndCombatInfoDialog.Response += (sender, weaponAndCombatInfoDialogResponse) => ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
+            weaponAndCombatInfoDialog.Response += (sender, _) => ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
             weaponAndCombatInfoDialog.Show(player);
         }
         private static void WeaponAndCombat_SetWeapon(Player player, Npc npc)
         {
-            ListDialog giveWeaponDialog = new("Select weapon to give", "Give", "Cancel");
-            List<string> weapons = Enum.GetValues(typeof(Weapon)).Cast<Weapon>().Select(v => v.ToString()).ToList();
-            giveWeaponDialog.AddItems(weapons);
-            giveWeaponDialog.Response += (sender, giveWeaponDialogResponse) =>
+            Task.Run(() => WeaponAndCombat_SetWeaponAsync(player, npc));
+        }
+        private static async Task WeaponAndCombat_SetWeaponAsync(Player player, Npc npc)
+        {
+            Weapon? weapon = await Utils.ShowWeaponDialog(player,
+                () => ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList));
+            if (weapon != null)
             {
-                // TODO to fix: gives the wrong weapon (gives the index of array, but weapon enum is not constantly incrementing)
-                npc.Weapon = (Weapon)(giveWeaponDialogResponse.ListItem - 1);
-                player.SendClientMessage($"NPC {npc.Name} has now {weapons[giveWeaponDialogResponse.ListItem]}");
+                npc.Weapon = weapon.Value;
+                player.SendClientMessage($"NPC {npc.Name} has now {weapon}");
                 ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
-            };
-            giveWeaponDialog.Show(player);
+            }
         }
         private static void WeaponAndCombat_SetAmmo(Player player, Npc npc)
         {
@@ -563,11 +749,12 @@ namespace SampSharpGameMode1.Commands
         }
         private static void WeaponAndCombat_Shoot(Player player, Npc npc)
         {
-            ListDialog<BasePlayer> targetDialog = new("Select target", "Select", "Cancel");
-            targetDialog.AddItems(BasePlayer.All);
+            ListDialog<string> targetDialog = new("Select target", "Select", "Cancel");
+            targetDialog.AddItems(BasePlayer.All.Select(p => p.Name));
             targetDialog.Response += (sender, targetDialogResponse) =>
             {
-                if (targetDialogResponse.DialogButton == DialogButton.Left && targetDialogResponse.ItemValue != null)
+                BasePlayer foundPlayer = BasePlayer.All.First(p => p.Name == targetDialogResponse.ItemValue);
+                if (targetDialogResponse.DialogButton == DialogButton.Left && foundPlayer != null)
                 {
                     ListDialog entityCheckFlagDialog = new("Select entity check flag", "Shoot !", "Cancel");
                     List<string> entityCheckFlags = Enum.GetValues(typeof(NPCEntityCheck)).Cast<NPCEntityCheck>().Select(v => v.ToString()).ToList();
@@ -576,19 +763,21 @@ namespace SampSharpGameMode1.Commands
                     {
                         if (targetDialogResponse.DialogButton == DialogButton.Left)
                         {
-                            npc.Shoot(npc.Weapon, targetDialogResponse.ItemValue.Id, BulletHitType.Player, targetDialogResponse.ItemValue.Position, Vector3.Zero, true,
+                            npc.Shoot(npc.Weapon, foundPlayer.Id, BulletHitType.Player, foundPlayer.Position, Vector3.Zero, true,
                                 (NPCEntityCheck)entityCheckFlagDialogResponse.ListItem);
-                            player.SendClientMessage($"NPC {npc.Name} is shooting {targetDialogResponse.ItemValue.Name}");
+                            player.SendClientMessage($"NPC {npc.Name} is shooting {foundPlayer.Name}");
                         }
                         else
                             ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
                     };
+                    entityCheckFlagDialog.Show(player);
                 }
                 else
                     ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
             };
+            targetDialog.Show(player);
         }
-        private static void WeaponAndCombat_AimtAt(Player player, Npc npc)
+        private static void WeaponAndCombat_AimAt(Player player, Npc npc)
         {
             ListDialog<DynamicObject> targetDialog = new("Select target", "Select", "Cancel");
             targetDialog.AddItems(DynamicObject.All);
@@ -603,19 +792,29 @@ namespace SampSharpGameMode1.Commands
                     {
                         if (targetDialogResponse.DialogButton == DialogButton.Left)
                         {
-                            npc.AimAt(targetDialogResponse.ItemValue.Position, false, 0, true, Vector3.Zero, (NPCEntityCheck)entityCheckFlagDialogResponse.ListItem);
-                            player.SendClientMessage($"NPC {npc.Name} is aimint at {targetDialogResponse.ItemValue.Position}");
-                            ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
+                            MessageDialog shootDialog = new("Shoot ?", "Do you want to shoot after 1000ms ?", "Yes", "No");
+                            shootDialog.Response += (sender, shootDialogResponse) =>
+                            {
+                                if (shootDialogResponse.DialogButton == DialogButton.Left)
+                                    npc.AimAt(targetDialogResponse.ItemValue.Position, true, 100, true, Vector3.Zero, (NPCEntityCheck)entityCheckFlagDialogResponse.ListItem);
+                                else
+                                    npc.AimAt(targetDialogResponse.ItemValue.Position, false, 100, true, Vector3.Zero, (NPCEntityCheck)entityCheckFlagDialogResponse.ListItem);
+                                player.SendClientMessage($"NPC {npc.Name} is aiming at {targetDialogResponse.ItemValue.Position}");
+                                ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
+                            };
+                            shootDialog.Show(player);
                         }
                         else
                             ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
                     };
+                    entityCheckFlagDialog.Show(player);
                 }
                 else
                     ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
             };
+            targetDialog.Show(player);
         }
-        private static void WeaponAndCombat_AimtAtPlayer(Player player, Npc npc)
+        private static void WeaponAndCombat_AimAtPlayer(Player player, Npc npc)
         {
             ListDialog<BasePlayer> targetDialog = new("Select target", "Select", "Cancel");
             targetDialog.AddItems(BasePlayer.All);
@@ -630,17 +829,27 @@ namespace SampSharpGameMode1.Commands
                     {
                         if (targetDialogResponse.DialogButton == DialogButton.Left)
                         {
-                            npc.AimAtPlayer(targetDialogResponse.ItemValue, false, 0, true, Vector3.Zero, Vector3.Zero, (NPCEntityCheck)entityCheckFlagDialogResponse.ListItem);
-                            player.SendClientMessage($"NPC {npc.Name} is aiming at {targetDialogResponse.ItemValue.Name}");
-                            ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
+                            MessageDialog shootDialog = new("Shoot ?", "Do you want to shoot after 1000ms ?", "Yes", "No");
+                            shootDialog.Response += (sender, shootDialogResponse) =>
+                            {
+                                if (shootDialogResponse.DialogButton == DialogButton.Left)
+                                    npc.AimAtPlayer(targetDialogResponse.ItemValue, true, 100, true, Vector3.Zero, Vector3.Zero, (NPCEntityCheck)entityCheckFlagDialogResponse.ListItem);
+                                else
+                                    npc.AimAtPlayer(targetDialogResponse.ItemValue, false, 100, true, Vector3.Zero, Vector3.Zero, (NPCEntityCheck)entityCheckFlagDialogResponse.ListItem);
+                                player.SendClientMessage($"NPC {npc.Name} is aiming at {targetDialogResponse.ItemValue.Position}");
+                                ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
+                            };
+                            shootDialog.Show(player);
                         }
                         else
                             ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
                     };
+                    entityCheckFlagDialog.Show(player);
                 }
                 else
                     ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
             };
+            targetDialog.Show(player);
         }
         private static void WeaponAndCombat_StopAim(Player player, Npc npc)
         {
@@ -650,73 +859,445 @@ namespace SampSharpGameMode1.Commands
         }
         private static void WeaponAndCombat_SetWeaponAccuracy(Player player, Npc npc)
         {
-            InputDialog weaponDialog = new("Weapon accuracy", "Enter the weapon name", false, "Set", "Cancel");
-            weaponDialog.Response += (sender, weaponDialogResponse) =>
+            Task.Run(() => WeaponAndCombat_SetWeaponAccuracyAsync(player, npc));
+        }
+        private static async Task WeaponAndCombat_SetWeaponAccuracyAsync(Player player, Npc npc)
+        {
+            Weapon? weapon = await Utils.ShowWeaponDialog(player,
+                () => ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList));
+            if (weapon != null)
             {
-                if(weaponDialogResponse.DialogButton == DialogButton.Left)
+                string inputStr = await ShowInputDialog(player,
+                    () => ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList),
+                    "Weapon accuracy", "Enter the accuracy (between 0,0 and 1,0) for " + weapon, "Set");
+
+                if (float.TryParse(inputStr, out float accuracy))
                 {
-                    if (Enum.TryParse(typeof(Weapon), weaponDialogResponse.InputText, out object weapon))
-                    {
-                        InputDialog accuracyDialog = new("ammo", "Enter the accuracy (between 0.0 and 1.0)", false, "Set", "Cancel");
-                        accuracyDialog.Response += (sender, meleeAttacktimeDialogResponse) =>
-                        {
-                            if (weaponDialogResponse.DialogButton == DialogButton.Left)
-                            {
-                                if (float.TryParse(meleeAttacktimeDialogResponse.InputText, out float accuracy))
-                                {
-                                    if (accuracy < 0.0f || accuracy > 1.0f)
-                                        player.SendClientMessage(Color.Red, "The accuracy must be between 0.0 and 1.0");
-                                    else
-                                    {
-                                            npc.SetWeaponAccuracy((Weapon)weapon, accuracy);
-                                            player.SendClientMessage($"NPC {npc.Name} Set the accuracy for {weapon} to {accuracy}");
-                                            ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
-                                    }
-                                }
-                                else
-                                    player.SendClientMessage(Color.Red, "Invalid to parse the given number");
-                            }
-                            else
-                                ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
-                        };
-                        accuracyDialog.Show(player);
-                    }
+                    if (accuracy < 0.0f || accuracy > 1.0f)
+                        player.SendClientMessage(Color.Red, "The accuracy must be between 0,0 and 1,0");
                     else
-                        player.SendClientMessage(Color.Red, "Invalid to parse the given weapon");
+                    {
+                        npc.SetWeaponAccuracy((Weapon)weapon, accuracy);
+                        player.SendClientMessage($"NPC {npc.Name} Set the accuracy for {weapon} to {accuracy}");
+                        ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
+                    }
                 }
                 else
-                    ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
-            };
-            weaponDialog.Show(player);
+                    player.SendClientMessage(Color.Red, "Invalid to parse the given number");
+            }
         }
         private static void WeaponAndCombat_GetWeaponAccuracy(Player player, Npc npc)
         {
-            InputDialog weaponDialog = new("Weapon accuracy", "Enter the weapon name", false, "Set", "Cancel");
-            weaponDialog.Response += (sender, weaponDialogResponse) =>
+            Task.Run(() => WeaponAndCombat_GetWeaponAccuracyAsync(player, npc));
+        }
+        private static async Task WeaponAndCombat_GetWeaponAccuracyAsync(Player player, Npc npc)
+        {
+            Weapon? weapon = await Utils.ShowWeaponDialog(player,
+                () => ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList));
+            if (weapon != null)
             {
-                if (weaponDialogResponse.DialogButton == DialogButton.Left)
+                player.SendClientMessage($"NPC {npc.Name} Accuracy for {weapon} = {npc.GetWeaponAccuracy((Weapon)weapon)}");
+                ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
+            }
+        }
+        #endregion
+        #region Vehicles
+        private static void Vehicle_PrintInfos(Player player, Npc npc)
+        {
+            TablistDialog vehicleInfoDialog = new("Vehicles infos", 2, "Select", "Cancel")
+            {
+                new string[] { "Vehicle", npc.Vehicle?.ToString() },
+                new string[] { "Vehicle ID", npc.Vehicle?.Id.ToString() },
+                new string[] { "Vehicle seat", npc.VehicleSeat.ToString() },
+                new string[] { "Entering vehicle", npc.GetEnteringVehicle()?.ToString() },
+                new string[] { "Is entering vehicle", npc.IsEnteringVehicle().ToString() },
+                new string[] { "Is vehicle siren used", npc.IsVehicleSirenUsed().ToString() },
+                new string[] { "Vehicle health", npc.Vehicle?.Health.ToString() },
+                new string[] { "Vehicle hydra thrusters", npc.Vehicle?.HydraReactorAngle.ToString() },
+                new string[] { "Vehicle hydra thrusters (npc)", npc.GetHydraThrusters().ToString() },
+                new string[] { "Is gear up", npc.Vehicle?.IsGearUp.ToString() },
+                new string[] { "Is gear up (npc)", npc.GetGearState().ToString() },
+                new string[] { "Vehicle train speed", npc.GetVehicleTrainSpeed().ToString() },
+            };
+            vehicleInfoDialog.Response += (sender, _) => ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList);
+            vehicleInfoDialog.Show(player);
+        }
+        private static void Vehicle_EnterVehicle(Player player, Npc npc)
+        {
+            Task.Run(() => Vehicle_EnterVehicleAsync(player, npc));
+        }
+        private static async Task Vehicle_EnterVehicleAsync(Player player, Npc npc)
+        {
+            // Get vehicle ID
+            string inputStr = await ShowInputDialog(player,
+                () => ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList),
+                "Vehicle ID", "Enter the vehicle ID", "Select");
+
+            if (int.TryParse(inputStr, out int vehID))
+            {
+                BaseVehicle foundVeh = BaseVehicle.Find(vehID);
+                if (foundVeh == null)
+                    player.SendClientMessage(Color.Red, "Invalid vehicle id");
+                else
                 {
-                    if (Enum.TryParse(typeof(Weapon), weaponDialogResponse.InputText, out object weapon))
+                    // Get seat
+                    inputStr = await ShowInputDialog(player,
+                        () => ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList),
+                        "Vehicle seat", "Enter the vehicle seat", "Select");
+
+                    if (int.TryParse(inputStr, out int vehSeat))
                     {
-                        player.SendClientMessage($"NPC {npc.Name} Accuracy for {weapon} = {npc.GetWeaponAccuracy((Weapon)weapon)}");
-                        ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
+                        if (vehSeat >= 0 && vehSeat <= VehicleModelInfo.ForVehicle(foundVeh).SeatCount)
+                        {
+                            if (npc.EnterInVehicle(foundVeh, vehSeat, NPCMoveType.Walk))
+                            {
+                                player.SendClientMessage($"NPC {npc.Name} enters in vehicle {foundVeh.Id} in seat {vehSeat}");
+                                ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList);
+                            }
+                        }
+                        else
+                            player.SendClientMessage(Color.Red, "Invalid seat number");
                     }
                     else
-                        player.SendClientMessage(Color.Red, "Invalid to parse the given weapon");
+                        player.SendClientMessage(Color.Red, "Invalid to parse the given number");
+                }
+            }
+            else
+                player.SendClientMessage(Color.Red, "Invalid to parse the given number");
+        }
+        private static void Vehicle_ExitVehicle(Player player, Npc npc)
+        {
+            if (npc.ExitFromVehicle())
+            {
+                player.SendClientMessage($"NPC {npc.Name} exits from his vehicle");
+                ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList);
+            }
+        }
+        private static void Vehicle_PutInVehicle(Player player, Npc npc)
+        {
+            Task.Run(() => Vehicle_PutInVehicleAsync(player, npc));
+        }
+        private static async Task Vehicle_PutInVehicleAsync(Player player, Npc npc)
+        {
+            // Get vehicle ID
+            string inputStr = await ShowInputDialog(player,
+                () => ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList),
+                "Vehicle ID", "Enter the vehicle ID", "Select");
+
+            if (int.TryParse(inputStr, out int vehID))
+            {
+                BaseVehicle foundVeh = BaseVehicle.Find(vehID);
+                if (foundVeh == null)
+                    player.SendClientMessage(Color.Red, "Invalid vehicle id");
+                else
+                {
+                    // Get seat
+                    inputStr = await ShowInputDialog(player,
+                        () => ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList),
+                        "Vehicle seat", "Enter the vehicle seat", "Select");
+
+                    if (int.TryParse(inputStr, out int vehSeat))
+                    {
+                        if (vehSeat >= 0 && vehSeat <= VehicleModelInfo.ForVehicle(foundVeh).SeatCount)
+                        {
+                            if (npc.PutInVehicle(foundVeh, vehSeat))
+                            {
+                                player.SendClientMessage($"NPC {npc.Name} has been put in vehicle {foundVeh.Id} in seat {vehSeat}");
+                                ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList);
+                            }
+                        }
+                        else
+                            player.SendClientMessage(Color.Red, "Invalid seat number");
+                    }
+                    else
+                        player.SendClientMessage(Color.Red, "Invalid to parse the given number");
+                }
+            }
+            else
+                player.SendClientMessage(Color.Red, "Invalid to parse the given number");
+        }
+        private static void Vehicle_RemoveFromVehicle(Player player, Npc npc)
+        {
+            if (npc.ExitFromVehicle())
+            {
+                player.SendClientMessage($"NPC {npc.Name} has been removed from his vehicle");
+                ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList);
+            }
+        }
+        private static void Vehicle_UseSiren(Player player, Npc npc)
+        {
+            if (npc.InAnyVehicle)
+            {
+                if (npc.UseVehicleSiren(!npc.IsVehicleSirenUsed()))
+                {
+                    player.SendClientMessage($"NPC {npc.Name} siren state = " + npc.IsVehicleSirenUsed());
+                    ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList);
+                }
+            }
+            else
+                player.SendClientMessage(Color.Red, "The NPC is not in a vehicle");
+        }
+        private static void Vehicle_SetHealth(Player player, Npc npc)
+        {
+            if (npc.InAnyVehicle)
+                Task.Run(() => Vehicle_SetHealthAsync(player, npc));
+            else
+                player.SendClientMessage(Color.Red, "The NPC is not in a vehicle");
+        }
+        private static async Task Vehicle_SetHealthAsync(Player player, Npc npc)
+        {
+            string inputStr = await ShowInputDialog(player,
+                () => ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList),
+                "Vehicle health", "Enter the vehicle health (between 0,0 and 1000,0)", "Select");
+
+            if (float.TryParse(inputStr, out float health))
+            {
+                if (health < 0.0f || health > 1000.0f)
+                {
+                    player.SendClientMessage(Color.Red, "Invalid health number");
                 }
                 else
-                    ShowDialogFromDictionary(player, npc, "Weapon & Combat", WeaponAndCombatList);
-            };
-            weaponDialog.Show(player);
+                {
+                    npc.Vehicle.Health = health;
+                    player.SendClientMessage($"NPC {npc.Name} vehicle health set to " + health);
+                    ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList);
+                }
+            }
+            else
+                player.SendClientMessage(Color.Red, "Invalid to parse the given number");
         }
+        private static void Vehicle_SetHydraThrusters(Player player, Npc npc)
+        {
+            if (npc.InAnyVehicle && npc.Vehicle.Model == VehicleModelType.Hydra)
+                Task.Run(() => Vehicle_SetHydraThrustersAsync(player, npc));
+            else
+                player.SendClientMessage(Color.Red, "The NPC is not in a hydra");
+        }
+        private static async Task Vehicle_SetHydraThrustersAsync(Player player, Npc npc)
+        {
+            string inputStr = await ShowInputDialog(player,
+                () => ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList),
+                "Hydra thrusters", "Enter the thrusters angle (0 or 1)", "Select");
 
+            if (int.TryParse(inputStr, out int angle))
+            {
+                if (angle != 0 && angle != 1)
+                {
+                    player.SendClientMessage(Color.Red, "Invalid angle number");
+                }
+                else
+                {
+                    npc.SetHydraThrusters(angle);
+                    player.SendClientMessage($"NPC {npc.Name} vehicle hydra thrusters set to " + npc.Vehicle.HydraReactorAngle);
+                    ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList);
+                }
+            }
+            else
+                player.SendClientMessage(Color.Red, "Invalid to parse the given number");
+        }
+        private static void Vehicle_ToggleGearState(Player player, Npc npc)
+        {
+            if (npc.InAnyVehicle && npc.Vehicle.ModelInfo.Category == VehicleCategory.Airplane)
+                npc.SetGearState(npc.GetGearState() == 0 ? 1 : 0);
+            else
+                player.SendClientMessage(Color.Red, "The NPC is not in a hydra");
+        }
+        private static void Vehicle_SetTrainSpeed(Player player, Npc npc)
+        {
+            if (npc.InAnyVehicle && (npc.Vehicle.Model == VehicleModelType.FreightTrain || npc.Vehicle.Model == VehicleModelType.BrownstreakTrain))
+                Task.Run(() => Vehicle_SetTrainSpeedAsync(player, npc));
+            else
+                player.SendClientMessage(Color.Red, "The NPC is not in a train");
+        }
+        private static async Task Vehicle_SetTrainSpeedAsync(Player player, Npc npc)
+        {
+            string inputStr = await ShowInputDialog(player,
+                () => ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList),
+                "Train speed", "Enter speed", "Select");
+
+            if (float.TryParse(inputStr, out float speed))
+            {
+                if (speed < -1000)
+                {
+                    player.SendClientMessage(Color.Red, "Invalid speed number");
+                }
+                else
+                {
+                    npc.SetVehicleTrainSpeed(speed);
+                    player.SendClientMessage($"NPC {npc.Name} vehicle train speed set to " + speed);
+                    ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList);
+                }
+            }
+            else
+                player.SendClientMessage(Color.Red, "Invalid to parse the given number");
+        }
+        private static void Vehicle_Honk(Player player, Npc npc)
+        {
+            npc.SetKeys(0, 0, Keys.Crouch);
+            player.SendClientMessage($"NPC {npc.Name} honked !");
+            ShowDialogFromDictionary(player, npc, "Vehicle", VehicleList);
+            SampSharp.GameMode.SAMP.Timer t = new(1000, false);
+            t.Tick += (sender, e) => npc.SetKeys(0, 0, 0);
+        }
+        #endregion
+        #region Animations
+        private static void Animation_PrintInfos(Player player, Npc npc)
+        {
+            npc.GetAnimation(out int animId, out float delta, out bool loop, out bool lockX, out bool lockY, out bool freeze, out int time);
+            string animationString = $"animId: {animId} ; delta: {delta} ; loop: {loop} ; lockX: {lockX} ; lockY {lockY} ; freeze: {freeze} ; int: {time}";
+            TablistDialog animationInfoDialog = new("Animations infos", 2, "Select", "Cancel")
+            {
+                new string[] { "Animation", animationString },
+                new string[] { "Special action", npc.SpecialAction.ToString() },
+            };
+            animationInfoDialog.Response += (sender, _) => ShowDialogFromDictionary(player, npc, "Animation", AnimationList);
+            animationInfoDialog.Show(player);
+        }
+        private static void Animation_ResetAnimation(Player player, Npc npc)
+        {
+            npc.ResetAnimation();
+            player.SendClientMessage($"NPC {npc.Name} has reset his animation");
+        }
+        private static void Animation_SetAnimation(Player player, Npc npc)
+        {
+            Task.Run(() => Animation_SetAnimationAsync(player, npc));
+        }
+        private static async Task Animation_SetAnimationAsync(Player player, Npc npc)
+        {
+            string inputStr = await ShowInputDialog(player,
+                () => ShowDialogFromDictionary(player, npc, "Animation", AnimationList),
+                "Animation ID", "Enter the animation ID", "Select");
+
+            if (int.TryParse(inputStr, out int animId))
+            {
+                if (animId < 0)
+                {
+                    player.SendClientMessage(Color.Red, "Invalid animId number");
+                }
+                else
+                {
+                    npc.SetAnimation(animId, 4.1f, true, false, false, false, 0);
+                    player.SendClientMessage($"NPC {npc.Name} set animation to " + animId);
+                    ShowDialogFromDictionary(player, npc, "Animation", AnimationList);
+                }
+            }
+            else
+                player.SendClientMessage(Color.Red, "Invalid to parse the given number");
+        }
+        private static void Animation_ApplyAnimation(Player player, Npc npc)
+        {
+            Task.Run(() => Animation_ApplyAnimationAsync(player, npc));
+        }
+        private static async Task Animation_ApplyAnimationAsync(Player player, Npc npc)
+        {
+            string animlib = await ShowInputDialog(player,
+                () => ShowDialogFromDictionary(player, npc, "Animation", AnimationList),
+                "Animation lib", "Enter the animation library", "Select");
+
+            if (animlib.Length > 0)
+            {
+                string animname = await ShowInputDialog(player,
+                    () => ShowDialogFromDictionary(player, npc, "Animation", AnimationList),
+                    "Animation name", "Enter the animation name", "Select");
+                if (animname.Length > 0)
+                {
+                    npc.ApplyAnimation(animlib, animname, 4.1f, true, false, false, false, 0);
+                    player.SendClientMessage($"NPC {npc.Name} applied animation to " + animlib + " " + animname);
+                    ShowDialogFromDictionary(player, npc, "Animation", AnimationList);
+                }
+                else
+                    player.SendClientMessage(Color.Red, "Abort: animname was empty");
+            }
+            else
+                player.SendClientMessage(Color.Red, "Abort: animlib was empty");
+        }
+        private static void Animation_ClearAnimations(Player player, Npc npc)
+        {
+            npc.ClearAnimations();
+            player.SendClientMessage($"NPC {npc.Name} cleared all animations");
+        }
+        private static void Animation_SetSpecialAction(Player player, Npc npc)
+        {
+            Task.Run(() => Animation_SetSpecialActionAsync(player, npc));
+        }
+        private static async Task Animation_SetSpecialActionAsync(Player player, Npc npc)
+        {
+            SpecialAction? specialAction = await Utils.ShowSpecialActionDialog(player,
+                () => ShowDialogFromDictionary(player, npc, "Animation", AnimationList));
+            if (specialAction != null)
+            {
+                npc.SpecialAction = specialAction.Value;
+                player.SendClientMessage($"NPC {npc.Name} has now special action = {specialAction}");
+                ShowDialogFromDictionary(player, npc, "Animation", AnimationList);
+            }
+        }
+        #endregion
+        #region Paths
+        private static void Paths_PrintInfos(Player player, Npc npc)
+        {
+            TablistDialog pathInfoDialog = new("Animations infos", 2, "Select", "Cancel")
+            {
+                new string[] { "Path count", Npc.Path.All.Count().ToString() },
+                new string[] { "Special action", npc.SpecialAction.ToString() },
+            };
+            foreach(Npc.Path path in Npc.Path.All)
+            {
+                pathInfoDialog.Add(new string[] { path.Id.ToString(), path.ToString() });
+            }
+            pathInfoDialog.Response += (sender, _) => ShowDialogFromDictionary(player, npc, "Path", PathList);
+            pathInfoDialog.Show(player);
+        }
+        private static void Paths_StartHUD(Player player, Npc npc)
+        {
+            if (player.npcTestHUD == null)
+            {
+                player.npcTestHUD = new NpcTestHUD(player);
+            }
+            player.npcTestHUD.SetInClickableMode();
+        }
+        private static void Paths_StopHUD(Player player, Npc npc)
+        {
+            if (player.npcTestHUD != null)
+            {
+                player.CancelSelectTextDraw();
+                player.npcTestHUD.Unload();
+                player.npcTestHUD = null;
+            }
+        }
+        private static void Paths_MoveToPath(Player player, Npc npc)
+        {
+            Task.Run(() => Paths_MoveToPathAsync(player, npc));
+        }
+        private static async Task Paths_MoveToPathAsync(Player player, Npc npc)
+        {
+            NPCMoveType? moveType = await Utils.ShowNPCMoveTypeDialog(player,
+                () => ShowDialogFromDictionary(player, npc, "Path", PathList));
+            if(moveType != null)
+            {
+                npc.MoveByPath(Npc.Path.Find(1), moveType.Value);
+            }
+        }
         #endregion
 
+
+        private static async Task<string> ShowInputDialog(Player player, Action methodToCallIfCancel, string title, string bodyText, string buttonLeft)
+        {
+            InputDialog inputDialog = new(title, bodyText, false, buttonLeft, "Cancel");
+            DialogResponseEventArgs inputDialogResponse = await inputDialog.ShowAsync(player);
+
+            if (inputDialogResponse.DialogButton == DialogButton.Left)
+            {
+                return inputDialogResponse.InputText;
+            }
+            else
+                methodToCallIfCancel();
+            return "";
+        }
         private static void ShowDialogFromDictionary(Player player, Npc npc, string title, Dictionary<string, Action<Player, Npc>> dict)
         {
             // Update items to set current values in item
             List<string> updatedKeys = new(dict.Keys);
-            for(int i = 0; i < updatedKeys.Count; i++)
+            for (int i = 0; i < updatedKeys.Count; i++)
             {
                 string newVal = updatedKeys[i];
 
@@ -740,6 +1321,19 @@ namespace SampSharpGameMode1.Commands
                 if (updatedKeys[i] == "Set fighting style") AddValueAtEnd(ref newVal, npc.FightStyle);
                 if (updatedKeys[i] == "Toggle reloading") AddValueAtEnd(ref newVal, npc.IsReloadEnabled);
                 if (updatedKeys[i] == "Toggle infinite ammo") AddValueAtEnd(ref newVal, npc.IsInfiniteAmmoEnabled);
+                if (updatedKeys[i] == "Shoot") AddValueAtEnd(ref newVal, npc.IsShooting ? "shooting" : "not shooting");
+                if (updatedKeys[i] == "Aim at object") AddValueAtEnd(ref newVal, npc.IsAiming() ? "aiming" : "not aiming");
+                if (updatedKeys[i] == "Aim at player") AddValueAtEnd(ref newVal, npc.IsAimingAtPlayer(player) ? "aiming" : "not aiming");
+                if (updatedKeys[i] == "Stom aim") AddValueAtEnd(ref newVal, npc.IsAiming() ? "aiming" : "not aiming");
+
+                if (updatedKeys[i] == "Use vehicle siren") AddValueAtEnd(ref newVal, npc.IsVehicleSirenUsed() ? "on" : "off");
+                if (updatedKeys[i] == "Set vehicle health") AddValueAtEnd(ref newVal, npc.Vehicle?.Health);
+                if (updatedKeys[i] == "Set vehicle hydra thrusters") AddValueAtEnd(ref newVal, npc.GetHydraThrusters());
+                if (updatedKeys[i] == "Toggle vehicle gear state") AddValueAtEnd(ref newVal, npc.GetGearState());
+                if (updatedKeys[i] == "Set train speed") AddValueAtEnd(ref newVal, npc.GetVehicleTrainSpeed());
+
+                if (updatedKeys[i] == "Start HUD") AddValueAtEnd(ref newVal, (player.npcTestHUD == null) ? "Off" : "On");
+
 
                 updatedKeys[i] = newVal;
             }
@@ -763,19 +1357,19 @@ namespace SampSharpGameMode1.Commands
         }
         private static void Player_ClickMap(object sender, SampSharp.GameMode.Events.PositionEventArgs e)
         {
-            if(lastSelectedNpcId != -1)
+            if (lastSelectedNpcId != -1)
             {
                 Npc npc = Npc.Find(lastSelectedNpcId);
-                if(npc != null)
+                if (npc != null)
                 {
                     if (nextClipMapAction == NextClipMapAction.SetPosition)
                     {
                         npc.Position = e.Position;
                         (sender as Player).Notificate("NPC position set");
                     }
-                    else if(nextClipMapAction == NextClipMapAction.MoveTo)
+                    else if (nextClipMapAction == NextClipMapAction.MoveTo)
                     {
-                        npc.Move(e.Position);
+                        npc.Move(e.Position, npc.InAnyVehicle ? NPCMoveType.Drive : NPCMoveType.Jog);
                         (sender as Player).Notificate("NPC move to position set");
                     }
                 }

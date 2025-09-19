@@ -53,6 +53,7 @@ namespace SampSharpGameMode1.Civilisation
 
         public void OnUpdate()
         {
+            /*
             if (npcPlayer.InAnyVehicle && status != "Destination reached")
             {
                 if (Vector3.Distance(npcPlayer.Position, destination) < 1)
@@ -72,6 +73,7 @@ namespace SampSharpGameMode1.Civilisation
                     labelStatus.Text = "Status: " + status + " " + DateTime.Now.ToString("hh:mm:ss") + " dest: " + ((destination == Vector3.Zero) ? "unknown" : "known");
                 }
             }
+            */
         }
 
         public void Kick()

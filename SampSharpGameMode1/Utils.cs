@@ -1,10 +1,15 @@
 ﻿using SampSharp.GameMode;
 using SampSharp.GameMode.Definitions;
+using SampSharp.GameMode.Display;
+using SampSharp.GameMode.Events;
 using SampSharp.GameMode.SAMP;
 using SampSharp.GameMode.World;
+using SampSharpGameMode1.Display;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace SampSharpGameMode1
 {
@@ -132,6 +137,7 @@ namespace SampSharpGameMode1
             Color? result = null;
             if (str.Length > 0)
             {
+                str = str.ToLower();
                 if (str.StartsWith("0x"))
                 {
                     if (str.Length == 8 || str.Length == 10)
@@ -161,7 +167,7 @@ namespace SampSharpGameMode1
                 }
                 else if (str.StartsWith("rgb("))
                 {
-                    Regex regex = new Regex(@"[r][g][b][(](\d{1,3})[,;]\s*(\d{1,3})[,;]\s*(\d{1,3})(?>[,;]\s*(\d{1,3}))?[)]", RegexOptions.IgnoreCase);
+                    Regex regex = new (@"[r][g][b][(](\d{1,3})[,;]\s*(\d{1,3})[,;]\s*(\d{1,3})(?>[,;]\s*(\d{1,3}))?[)]", RegexOptions.IgnoreCase);
                     Match match = regex.Match(str);
                     if (match.Success)
                     {
@@ -175,6 +181,22 @@ namespace SampSharpGameMode1
 
                         result = new Color(r, g, b, a);
                     }
+                }
+                else
+                {
+                    if(str == "primary" || str == "primary.main")
+                        result = ColorPalette.Primary.Main.GetColor();
+                    else if (str == "primary.lighten")
+                        result = ColorPalette.Primary.Lighten.GetColor();
+                    else if(str == "primary.darken")
+                        result = ColorPalette.Primary.Darken.GetColor();
+
+                    if (str == "secondary " || str == "secondary.main")
+                        result = ColorPalette.Secondary.Main.GetColor();
+                    else if (str == "secondary.lighten")
+                        result = ColorPalette.Secondary.Lighten.GetColor();
+                    else if (str == "secondary.darken")
+                        result = ColorPalette.Secondary.Darken.GetColor();
                 }
             }
             return result;
@@ -199,6 +221,58 @@ namespace SampSharpGameMode1
         public static double GetKmhSpeedFromVelocity(Vector3 vel)
         {
             return Math.Sqrt(vel.LengthSquared) * 181.5;
+        }
+
+        public static async Task<Weapon?> ShowWeaponDialog(Player player, Action methodToCallIfCancel,
+            string title = "Weapon list")
+        {
+            ListDialog weaponDialog = new(title, "Select", "Cancel");
+            Dictionary<int, string> weapons = Enum.GetValues(typeof(Weapon)).Cast<Weapon>()
+                .Where(w => (int)w < 46 && (int)w != 0) // Filter to remove both 0 values and after 46 as they are not weapon but death cause
+                .ToDictionary(w => (int)w, w => w.ToString());
+            weaponDialog.AddItems(weapons.Values);
+            DialogResponseEventArgs weaponDialogResponse = await weaponDialog.ShowAsync(player);
+            if (weaponDialogResponse.DialogButton == DialogButton.Left)
+            {
+                return (Weapon)(weapons.Keys.ToList()[weaponDialogResponse.ListItem]);
+            }
+            else
+                methodToCallIfCancel();
+            return null;
+        }
+
+        public static async Task<SpecialAction?> ShowSpecialActionDialog(Player player, Action methodToCallIfCancel,
+            string title = "Special action list")
+        {
+            ListDialog specialActionDialog = new(title, "Select", "Cancel");
+            Dictionary<int, string> specialActions = Enum.GetValues(typeof(SpecialAction)).Cast<SpecialAction>()
+                .ToDictionary(w => (int)w, w => w.ToString());
+            specialActionDialog.AddItems(specialActions.Values);
+            DialogResponseEventArgs specialActionDialogResponse = await specialActionDialog.ShowAsync(player);
+            if (specialActionDialogResponse.DialogButton == DialogButton.Left)
+            {
+                return (SpecialAction)(specialActions.Keys.ToList()[specialActionDialogResponse.ListItem]);
+            }
+            else
+                methodToCallIfCancel();
+            return null;
+        }
+
+        public static async Task<NPCMoveType?> ShowNPCMoveTypeDialog(Player player, Action methodToCallIfCancel,
+            string title = "NPC Move type list")
+        {
+            ListDialog NPCMoveTypeDialog = new(title, "Select", "Cancel");
+            Dictionary<int, string> NPCMoveTypes = Enum.GetValues(typeof(NPCMoveType)).Cast<NPCMoveType>()
+                .ToDictionary(w => (int)w, w => w.ToString());
+            NPCMoveTypeDialog.AddItems(NPCMoveTypes.Values);
+            DialogResponseEventArgs NPCMoveTypeDialogResponse = await NPCMoveTypeDialog.ShowAsync(player);
+            if (NPCMoveTypeDialogResponse.DialogButton == DialogButton.Left)
+            {
+                return (NPCMoveType)(NPCMoveTypes.Keys.ToList()[NPCMoveTypeDialogResponse.ListItem]);
+            }
+            else
+                methodToCallIfCancel();
+            return null;
         }
     }
 }
